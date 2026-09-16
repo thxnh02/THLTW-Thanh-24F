@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import type { ReactNode } from "react";
 
 import { SiteHeader } from "@/components/SiteHeader";
 
@@ -25,7 +26,7 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="vi" className="h-full antialiased">
       <body className="min-h-full bg-slate-50 text-slate-950">
