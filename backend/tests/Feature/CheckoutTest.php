@@ -74,10 +74,9 @@ class CheckoutTest extends TestCase
     {
         $this->seed();
         $user = User::factory()->create();
-        $token = $user->createToken('web')->plainTextToken;
         $variant = ProductVariant::query()->firstOrFail();
 
-        $this->withHeader('Authorization', 'Bearer '.$token)
+        $this->actingAs($user)
             ->postJson('/api/v1/checkout', [
                 'customer' => [
                     'name' => $user->name,

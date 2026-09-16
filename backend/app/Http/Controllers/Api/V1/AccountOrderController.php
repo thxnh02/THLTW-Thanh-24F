@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Concerns\ApiResponses;
+use App\Http\Controllers\Concerns\RendersOrderInvoice;
 use App\Http\Controllers\Controller;
 use App\Models\InventoryMovement;
 use App\Models\Order;
@@ -10,11 +11,13 @@ use App\Models\OrderStatusHistory;
 use App\Models\ProductVariant;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 
 class AccountOrderController extends Controller
 {
     use ApiResponses;
+    use RendersOrderInvoice;
 
     public function index(Request $request): JsonResponse
     {
@@ -31,6 +34,13 @@ class AccountOrderController extends Controller
         $order = $this->orderForUser($request, $code)->load(['items', 'payment']);
 
         return $this->success($order);
+    }
+
+    public function invoice(Request $request, string $code): Response
+    {
+        return response($this->renderInvoiceHtml($this->orderForUser($request, $code)), 200, [
+            'Content-Type' => 'text/html; charset=UTF-8',
+        ]);
     }
 
     public function cancel(Request $request, string $code): JsonResponse

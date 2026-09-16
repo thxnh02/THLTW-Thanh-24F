@@ -9,6 +9,8 @@ Project mon Thuc hanh lap trinh Web: Laravel REST API + Next.js frontend.
 - API prefix: `http://localhost:8000/api/v1`
 - Frontend dev: `http://localhost:3000`
 - Payment: COD ready, VNPay Sandbox integration configurable by env
+- Auth: Laravel Sanctum SPA session/cookie flow
+- Extras: media uploads, order email, printable invoices, CSV export, SEO sitemap/robots, CI
 
 ## Structure
 
@@ -40,6 +42,7 @@ npm run dev
 ```
 
 Set `NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1` in `frontend/.env.local`.
+Set `NEXT_PUBLIC_SITE_URL=http://localhost:3000` for SEO sitemap/canonical URLs.
 
 Optional VNPay sandbox env:
 

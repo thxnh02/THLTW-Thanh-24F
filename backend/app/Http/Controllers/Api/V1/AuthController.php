@@ -39,7 +39,7 @@ class AuthController extends Controller
 
         $this->loginSession($request, $user);
 
-        return $this->success($this->tokenPayload($user), 'Dang ky thanh cong.', status: 201);
+        return $this->success(['user' => $user], 'Dang ky thanh cong.', status: 201);
     }
 
     public function login(Request $request): JsonResponse
@@ -75,7 +75,7 @@ class AuthController extends Controller
 
         $this->loginSession($request, $user);
 
-        return $this->success($this->tokenPayload($user), 'Dang nhap thanh cong.');
+        return $this->success(['user' => $user], 'Dang nhap thanh cong.');
     }
 
     public function me(Request $request): JsonResponse
@@ -85,7 +85,11 @@ class AuthController extends Controller
 
     public function logout(Request $request): JsonResponse
     {
-        $request->user()?->currentAccessToken()?->delete();
+        $accessToken = $request->user()?->currentAccessToken();
+
+        if ($accessToken && method_exists($accessToken, 'delete')) {
+            $accessToken->delete();
+        }
 
         if ($request->hasSession()) {
             Auth::guard('web')->logout();
@@ -167,20 +171,6 @@ class AuthController extends Controller
         }
 
         return $this->success(null, 'Da dat lai mat khau.');
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function tokenPayload(User $user): array
-    {
-        $token = $user->createToken('web')->plainTextToken;
-
-        return [
-            'token' => $token,
-            'token_type' => 'Bearer',
-            'user' => $user,
-        ];
     }
 
     private function loginSession(Request $request, User $user): void

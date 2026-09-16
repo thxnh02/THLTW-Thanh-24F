@@ -1,11 +1,26 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { FormEvent, Suspense, useState } from "react";
 
 import { apiPost } from "@/lib/api";
 
 export default function ResetPasswordPage() {
-  const [form, setForm] = useState({ email: "", token: "", password: "", password_confirmation: "" });
+  return (
+    <Suspense fallback={<main className="mx-auto max-w-md px-4 py-12">Dang tai form dat lai mat khau...</main>}>
+      <ResetPasswordContent />
+    </Suspense>
+  );
+}
+
+function ResetPasswordContent() {
+  const searchParams = useSearchParams();
+  const [form, setForm] = useState({
+    email: searchParams.get("email") ?? "",
+    token: searchParams.get("token") ?? "",
+    password: "",
+    password_confirmation: "",
+  });
   const [message, setMessage] = useState("");
 
   async function submit(event: FormEvent<HTMLFormElement>) {

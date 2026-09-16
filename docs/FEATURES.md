@@ -7,7 +7,7 @@ Implemented in this slice:
 - Product detail with variants and related products
 - Guest cart in localStorage with versioned schema
 - Server-side cart quote and promotion validation
-- Token auth endpoints for register, login, logout, profile and password changes
+- Sanctum SPA cookie/session auth for register, login, logout, profile and password changes
 - Locked accounts are blocked from login
 - Protected admin API routes with admin role middleware
 - Member cart stored in backend and guest cart merge after login/register
@@ -28,9 +28,10 @@ Implemented in this slice:
 - Admin image upload/media manager with safe delete, product galleries, banner/post/settings image upload
 - Admin order listing/search/filter/detail and status transitions
 - Admin order cancel restores stock once and records order status history
+- Order confirmation email via Laravel mail/log/SMTP
+- Frontend password reset links generated from Laravel reset token emails
+- Printable invoice pages for admin/member orders
+- Admin CSV export for products and orders
+- SEO foundation with metadata, robots.txt and sitemap.xml
+- GitHub Actions CI for backend tests and frontend lint/type/build
 - Demo seed data
-
-Pending larger phases:
-
-- Cookie/session SPA Sanctum flow instead of bearer-token storage
-- More polished admin layout/sidebar and confirmation modals

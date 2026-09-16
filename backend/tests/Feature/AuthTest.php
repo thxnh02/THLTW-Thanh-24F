@@ -10,9 +10,9 @@ class AuthTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_member_can_register_and_receive_token(): void
+    public function test_member_can_register_and_start_session(): void
     {
-        $response = $this->postJson('/api/v1/auth/register', [
+        $response = $this->withHeader('Origin', 'http://localhost:3000')->postJson('/api/v1/auth/register', [
             'name' => 'Tran Van B',
             'email' => 'member-new@example.com',
             'phone' => '0911222333',
@@ -23,7 +23,8 @@ class AuthTest extends TestCase
         $response
             ->assertCreated()
             ->assertJsonPath('success', true)
-            ->assertJsonStructure(['data' => ['token', 'token_type', 'user' => ['id', 'name', 'email', 'role', 'status']]]);
+            ->assertJsonStructure(['data' => ['user' => ['id', 'name', 'email', 'role', 'status']]])
+            ->assertJsonMissingPath('data.token');
 
         $this->assertDatabaseHas('users', [
             'email' => 'member-new@example.com',
@@ -39,15 +40,17 @@ class AuthTest extends TestCase
             'password' => 'Password@123',
         ]);
 
-        $login = $this->postJson('/api/v1/auth/login', [
+        $login = $this->withHeader('Origin', 'http://localhost:3000')->postJson('/api/v1/auth/login', [
             'email' => 'login@example.com',
             'password' => 'Password@123',
         ]);
 
-        $token = $login->assertOk()->json('data.token');
+        $login
+            ->assertOk()
+            ->assertJsonPath('data.user.email', 'login@example.com')
+            ->assertJsonMissingPath('data.token');
 
-        $this->withHeader('Authorization', 'Bearer '.$token)
-            ->getJson('/api/v1/auth/me')
+        $this->withHeader('Origin', 'http://localhost:3000')->getJson('/api/v1/auth/me')
             ->assertOk()
             ->assertJsonPath('data.email', 'login@example.com');
     }

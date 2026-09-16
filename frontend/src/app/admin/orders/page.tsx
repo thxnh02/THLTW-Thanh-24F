@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { ApiError, apiGet, apiPatch } from "@/lib/api";
+import { API_BASE_URL, ApiError, apiGet, apiPatch } from "@/lib/api";
 import { formatVnd } from "@/lib/format";
 import type { Order } from "@/types/api";
 
@@ -67,6 +67,11 @@ export default function AdminOrdersPage() {
   return (
     <main className="mx-auto max-w-7xl px-4 py-8">
       <h1 className="text-3xl font-bold text-slate-950">Quan ly don hang</h1>
+      <div className="mt-4 flex justify-end">
+        <a href={`${API_BASE_URL}/admin/orders/export${searchParams ? `?${searchParams}` : ""}`} className="rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold">
+          Xuat CSV
+        </a>
+      </div>
       <div className="mt-6 grid gap-3 rounded-md border border-slate-200 bg-white p-4 shadow-sm md:grid-cols-[1fr_220px]">
         <label className="block text-sm font-semibold text-slate-700">
           Tim kiem
@@ -152,6 +157,14 @@ export default function AdminOrdersPage() {
                 <Row label="Thanh toan" value={selectedOrder.payment_status} />
               </dl>
               <div className="mt-5 flex flex-wrap gap-2">
+                <a
+                  href={`${API_BASE_URL}/admin/orders/${selectedOrder.id}/invoice`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold"
+                >
+                  Hoa don
+                </a>
                 {nextStatuses[selectedOrder.status].map((nextStatus) => (
                   <button
                     key={nextStatus}

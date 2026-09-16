@@ -21,6 +21,7 @@ npm run build
 Current focused tests cover:
 
 - Register, login and locked account login rejection
+- Sanctum SPA session login/logout behavior and frontend password reset URL generation
 - Admin dashboard access: guest/member blocked, admin allowed
 - Product catalog search/filter/sort/pagination shape
 - Member cart add/update/remove and guest cart merge cap by stock
@@ -33,6 +34,9 @@ Current focused tests cover:
 - Member address book, wishlist and purchase-gated review rules
 - Admin order list/search, valid status transition, invalid transition rejection
 - Admin order cancel stock restore once
+- Order confirmation email after checkout
+- Member/admin invoice authorization
+- Admin product/order CSV export
 - Admin brand create/update/delete and delete guard
 - Admin product create/update/delete, SKU/default variant persistence and sale price validation
 - Admin promotion create/update/list/delete, validation and delete guard
@@ -40,3 +44,7 @@ Current focused tests cover:
 - Admin content/settings CRUD
 - Admin stock import/export and negative stock prevention
 - Admin image upload/list/delete validation and public disk storage
+
+CI:
+
+- `.github/workflows/ci.yml` runs Laravel tests and frontend lint/typecheck/build on push/PR.

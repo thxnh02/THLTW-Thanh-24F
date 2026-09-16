@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1\Admin;
 
 use App\Http\Controllers\Concerns\ApiResponses;
+use App\Http\Controllers\Concerns\RendersOrderInvoice;
 use App\Http\Controllers\Controller;
 use App\Models\InventoryMovement;
 use App\Models\Order;
@@ -10,11 +11,14 @@ use App\Models\OrderStatusHistory;
 use App\Models\ProductVariant;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class OrderController extends Controller
 {
     use ApiResponses;
+    use RendersOrderInvoice;
 
     /**
      * @var array<string, array<int, string>>
@@ -59,6 +63,45 @@ class OrderController extends Controller
     public function show(Order $order): JsonResponse
     {
         return $this->success($order->load(['items', 'payment', 'histories']));
+    }
+
+    public function export(Request $request): StreamedResponse
+    {
+        $query = Order::query()->latest();
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->string('status'));
+        }
+
+        return response()->streamDownload(function () use ($query): void {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, ['code', 'customer', 'email', 'phone', 'status', 'payment_status', 'payment_method', 'grand_total', 'created_at']);
+
+            $query->chunk(200, function ($orders) use ($handle): void {
+                foreach ($orders as $order) {
+                    fputcsv($handle, [
+                        $order->code,
+                        $order->customer_name,
+                        $order->customer_email,
+                        $order->customer_phone,
+                        $order->status,
+                        $order->payment_status,
+                        $order->payment_method,
+                        $order->grand_total,
+                        $order->created_at?->toDateTimeString(),
+                    ]);
+                }
+            });
+
+            fclose($handle);
+        }, 'orders.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
+    public function invoice(Order $order): Response
+    {
+        return response($this->renderInvoiceHtml($order), 200, [
+            'Content-Type' => 'text/html; charset=UTF-8',
+        ]);
     }
 
     public function updateStatus(Request $request, Order $order): JsonResponse

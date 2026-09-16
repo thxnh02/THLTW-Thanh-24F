@@ -15,7 +15,6 @@ import type { AuthPayload, User } from "@/types/api";
 
 type AuthContextValue = {
   user: User | null;
-  token: string | null;
   ready: boolean;
   login: (email: string, password: string) => Promise<User>;
   register: (payload: {
@@ -32,12 +31,10 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [ready, setReady] = useState(false);
 
   const storeAuth = useCallback((payload: AuthPayload): User => {
-    setToken(payload.token);
     setUser(payload.user);
 
     return payload.user;
@@ -47,7 +44,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       setUser(await apiGet<User>("/auth/me"));
     } catch {
-      setToken(null);
       setUser(null);
     } finally {
       setReady(true);
@@ -84,14 +80,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await apiPost("/auth/logout", {});
     } finally {
-      setToken(null);
       setUser(null);
     }
   }, []);
 
   const value = useMemo<AuthContextValue>(
-    () => ({ user, token, ready, login, register, logout, refreshUser }),
-    [login, logout, ready, refreshUser, register, token, user],
+    () => ({ user, ready, login, register, logout, refreshUser }),
+    [login, logout, ready, refreshUser, register, user],
   );
 
   return <AuthContext value={value}>{children}</AuthContext>;

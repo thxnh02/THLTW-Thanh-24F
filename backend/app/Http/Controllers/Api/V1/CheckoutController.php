@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Concerns\ApiResponses;
 use App\Http\Controllers\Controller;
+use App\Mail\OrderConfirmationMail;
 use App\Models\Cart;
 use App\Models\InventoryMovement;
 use App\Models\Order;
@@ -11,13 +12,14 @@ use App\Models\OrderItem;
 use App\Models\Payment;
 use App\Models\ProductVariant;
 use App\Models\PromotionUsage;
-use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
-use Laravel\Sanctum\PersonalAccessToken;
 use Symfony\Component\HttpKernel\Exception\HttpException;
+use Throwable;
 
 class CheckoutController extends Controller
 {
@@ -49,7 +51,7 @@ class CheckoutController extends Controller
         }
 
         try {
-            $user = $this->userFromBearerToken($request);
+            $user = $request->user();
             $order = DB::transaction(function () use ($validated, $cartController, $user): Order {
                 $customerEmail = strtolower(trim($validated['customer']['email']));
                 $quote = $cartController->buildQuote(
@@ -149,6 +151,8 @@ class CheckoutController extends Controller
             return $this->error($exception->getMessage(), $exception->getStatusCode());
         }
 
+        $this->sendOrderConfirmation($order);
+
         return $this->success($order, 'Dat hang thanh cong.', status: 201);
     }
 
@@ -194,21 +198,15 @@ class CheckoutController extends Controller
         return $paymentUrl.'?'.http_build_query($params, '', '&', PHP_QUERY_RFC3986);
     }
 
-    private function userFromBearerToken(Request $request): ?User
+    private function sendOrderConfirmation(Order $order): void
     {
-        $bearerToken = $request->bearerToken();
-
-        if (! $bearerToken) {
-            return null;
+        try {
+            Mail::to($order->customer_email)->send(new OrderConfirmationMail($order->loadMissing(['items', 'payment'])));
+        } catch (Throwable $exception) {
+            Log::warning('Order confirmation email failed.', [
+                'order_id' => $order->id,
+                'message' => $exception->getMessage(),
+            ]);
         }
-
-        $accessToken = PersonalAccessToken::findToken($bearerToken);
-        $user = $accessToken?->tokenable;
-
-        if (! $user instanceof User || $user->isLocked()) {
-            return null;
-        }
-
-        return $user;
     }
 }

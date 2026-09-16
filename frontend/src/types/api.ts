@@ -60,6 +60,7 @@ export type Product = {
   related_products?: Product[];
   review_count?: number | null;
   average_rating?: number | null;
+  updated_at?: string;
   reviews?: {
     id: number;
     rating: number;
@@ -82,6 +83,7 @@ export type Post = {
   published_at?: string | null;
   seo_title?: string | null;
   seo_description?: string | null;
+  updated_at?: string;
 };
 
 export type PostCategory = {
@@ -100,6 +102,7 @@ export type Page = {
   status: "draft" | "published";
   seo_title?: string | null;
   seo_description?: string | null;
+  updated_at?: string;
 };
 
 export type Banner = {
@@ -247,8 +250,6 @@ export type User = {
 };
 
 export type AuthPayload = {
-  token: string;
-  token_type: "Bearer";
   user: User;
 };
 

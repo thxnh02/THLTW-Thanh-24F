@@ -58,6 +58,7 @@ Route::prefix('v1')->group(function (): void {
         Route::post('account/change-password', [AuthController::class, 'changePassword']);
         Route::apiResource('account/addresses', AccountAddressController::class)->except(['show']);
         Route::get('account/orders', [AccountOrderController::class, 'index']);
+        Route::get('account/orders/{code}/invoice', [AccountOrderController::class, 'invoice']);
         Route::get('account/orders/{code}', [AccountOrderController::class, 'show']);
         Route::post('account/orders/{code}/cancel', [AccountOrderController::class, 'cancel']);
         Route::get('wishlist', [WishlistController::class, 'index']);
@@ -78,6 +79,7 @@ Route::prefix('v1')->group(function (): void {
         Route::delete('uploads/images', [UploadController::class, 'destroy']);
         Route::apiResource('brands', BrandController::class);
         Route::apiResource('categories', CategoryController::class);
+        Route::get('products/export', [ProductController::class, 'export']);
         Route::apiResource('products', ProductController::class);
         Route::apiResource('promotions', PromotionController::class);
         Route::apiResource('users', UserController::class);
@@ -93,6 +95,8 @@ Route::prefix('v1')->group(function (): void {
         Route::post('stock', [StockController::class, 'store']);
         Route::get('stock/movements', [StockController::class, 'movements']);
         Route::get('orders', [OrderController::class, 'index']);
+        Route::get('orders/export', [OrderController::class, 'export']);
+        Route::get('orders/{order}/invoice', [OrderController::class, 'invoice']);
         Route::get('orders/{order}', [OrderController::class, 'show']);
         Route::patch('orders/{order}/status', [OrderController::class, 'updateStatus']);
     });

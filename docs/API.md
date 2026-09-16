@@ -45,6 +45,7 @@ Authenticated member:
 - `DELETE /cart/items/{id}`
 - `POST /cart/merge`
 - `GET /account/orders`
+- `GET /account/orders/{code}/invoice`
 - `GET /account/orders/{code}`
 - `POST /account/orders/{code}/cancel`
 
@@ -65,6 +66,7 @@ Admin foundation:
 - `PATCH /admin/brands/{id}`
 - `DELETE /admin/brands/{id}`
 - `GET /admin/products`
+- `GET /admin/products/export`
 - `POST /admin/products`
 - `GET /admin/products/{id}`
 - `PATCH /admin/products/{id}`
@@ -108,10 +110,12 @@ Admin foundation:
 - `POST /admin/stock`
 - `GET /admin/stock/movements`
 - `GET /admin/orders`
+- `GET /admin/orders/export`
+- `GET /admin/orders/{id}/invoice`
 - `GET /admin/orders/{id}`
 - `PATCH /admin/orders/{id}/status`
 
-Admin routes require `Authorization: Bearer <token>` and an admin account.
+Authenticated routes use Laravel Sanctum SPA session cookies. Browser clients should call `/sanctum/csrf-cookie`, then send API requests with `credentials: "include"` and the `X-XSRF-TOKEN` header. Admin routes also require an admin account.
 
 Response shape:
 

@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ProductController extends Controller
 {
@@ -44,6 +45,43 @@ class ProductController extends Controller
     public function show(Product $product): JsonResponse
     {
         return $this->success($product->load(['category', 'brand', 'variants', 'images']));
+    }
+
+    public function export(Request $request): StreamedResponse
+    {
+        $query = Product::query()->with(['category', 'brand', 'variants', 'primaryImage'])->latest();
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->string('status'));
+        }
+
+        return response()->streamDownload(function () use ($query): void {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, ['name', 'slug', 'category', 'brand', 'status', 'featured', 'sku', 'variant', 'price', 'sale_price', 'stock', 'image']);
+
+            $query->chunk(100, function ($products) use ($handle): void {
+                foreach ($products as $product) {
+                    foreach ($product->variants as $variant) {
+                        fputcsv($handle, [
+                            $product->name,
+                            $product->slug,
+                            $product->category?->name,
+                            $product->brand?->name,
+                            $product->status,
+                            $product->featured ? 'yes' : 'no',
+                            $variant->sku,
+                            $variant->name,
+                            $variant->price,
+                            $variant->sale_price,
+                            $variant->stock_quantity,
+                            $product->primaryImage?->path,
+                        ]);
+                    }
+                }
+            });
+
+            fclose($handle);
+        }, 'products.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 
     public function store(Request $request): JsonResponse

@@ -3,7 +3,7 @@
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import { ApiError, apiGet } from "@/lib/api";
+import { API_BASE_URL, ApiError, apiGet } from "@/lib/api";
 import { formatVnd } from "@/lib/format";
 import type { Order } from "@/types/api";
 
@@ -31,8 +31,15 @@ export default function AccountOrderDetailPage() {
       {!order && !message ? <p className="rounded-md bg-white p-4">Dang tai don hang...</p> : null}
       {order ? (
         <section className="rounded-md border border-slate-200 bg-white p-6 shadow-sm">
-          <h1 className="text-3xl font-bold text-slate-950">{order.code}</h1>
-          <p className="mt-2 text-sm text-slate-600">{order.status} - {order.payment_status}</p>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h1 className="text-3xl font-bold text-slate-950">{order.code}</h1>
+              <p className="mt-2 text-sm text-slate-600">{order.status} - {order.payment_status}</p>
+            </div>
+            <a href={`${API_BASE_URL}/account/orders/${order.code}/invoice`} target="_blank" rel="noreferrer" className="rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold">
+              Hoa don
+            </a>
+          </div>
           <div className="mt-6 overflow-hidden rounded-md border border-slate-200">
             <table className="w-full border-collapse text-left text-sm">
               <thead className="bg-slate-100 text-slate-700">

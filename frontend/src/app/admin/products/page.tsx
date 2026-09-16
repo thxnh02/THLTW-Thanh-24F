@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 
 import { AdminImageUpload } from "@/components/AdminImageUpload";
 import { useConfirm } from "@/contexts/ConfirmContext";
-import { ApiError, apiDelete, apiGet, apiPatch, apiPost } from "@/lib/api";
+import { API_BASE_URL, ApiError, apiDelete, apiGet, apiPatch, apiPost } from "@/lib/api";
 import { formatVnd } from "@/lib/format";
 import type { Brand, Category, Product } from "@/types/api";
 
@@ -143,6 +143,9 @@ export default function AdminProductsPage() {
         <Link href="/products" className="rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold">
           Xem shop
         </Link>
+        <a href={`${API_BASE_URL}/admin/products/export`} className="rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold">
+          Xuat CSV
+        </a>
       </div>
 
       <form onSubmit={submit} className="grid gap-4 rounded-md border border-slate-200 bg-white p-5 shadow-sm lg:grid-cols-4">
