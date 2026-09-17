@@ -3,6 +3,8 @@
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import Link from "next/link";
+
 import { API_BASE_URL, ApiError, apiGet } from "@/lib/api";
 import { formatVnd } from "@/lib/format";
 import type { Order } from "@/types/api";
@@ -36,9 +38,24 @@ export default function AccountOrderDetailPage() {
               <h1 className="text-3xl font-bold text-slate-950">{order.code}</h1>
               <p className="mt-2 text-sm text-slate-600">{order.status} - {order.payment_status}</p>
             </div>
-            <a href={`${API_BASE_URL}/account/orders/${order.code}/invoice`} target="_blank" rel="noreferrer" className="rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold">
-              Hoa don
-            </a>
+            <div className="flex flex-wrap gap-2">
+              <a href={`${API_BASE_URL}/account/orders/${order.code}/invoice`} target="_blank" rel="noreferrer" className="rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold">
+                Hoa don
+              </a>
+              <a href={`${API_BASE_URL}/account/orders/${order.code}/invoice.pdf`} className="rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold">
+                PDF
+              </a>
+              {order.status === "completed" ? (
+                <Link href={`/account/orders/${order.code}/return`} className="rounded-md bg-slate-950 px-4 py-2 text-sm font-semibold text-white">
+                  Yeu cau doi tra
+                </Link>
+              ) : null}
+            </div>
+          </div>
+          <div className="mt-4 rounded-md bg-slate-50 p-4 text-sm text-slate-700">
+            <p><strong>Van chuyen:</strong> {order.shipping_method_name ?? "Tieu chuan"}</p>
+            <p><strong>Don vi:</strong> {order.shipping_carrier ?? "Dang cap nhat"}</p>
+            <p><strong>Ma van don:</strong> {order.tracking_code ?? "Dang cap nhat"}</p>
           </div>
           <div className="mt-6 overflow-hidden rounded-md border border-slate-200">
             <table className="w-full border-collapse text-left text-sm">

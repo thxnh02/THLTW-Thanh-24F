@@ -72,3 +72,8 @@ VNP_URL=https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
 VNP_RETURN_URL=http://localhost:8000/api/v1/vnpay/return
 VNP_IPN_URL=http://localhost:8000/api/v1/vnpay/ipn
 ```
+# Feature Setup Notes
+
+- Run migrations and seeders after pulling this round so default shipping methods and return/invoice settings are available.
+- Product import uses plain CSV. A sample file is available at `docs/PRODUCT_IMPORT_SAMPLE.csv` and via `/api/v1/admin/products/import/template`.
+- PDF invoices are generated server-side without adding a new package; HTML invoices remain available for print-quality output.

@@ -4,7 +4,7 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { useConfirm } from "@/contexts/ConfirmContext";
-import { ApiError, apiDelete, apiGet, apiPatch, apiPost } from "@/lib/api";
+import { ApiError, apiDelete, apiGetList, apiPatch, apiPost } from "@/lib/api";
 import type { User } from "@/types/api";
 
 type UserForm = {
@@ -13,7 +13,7 @@ type UserForm = {
   email: string;
   phone: string;
   password: string;
-  role: "admin" | "member";
+  role: User["role"];
   status: "active" | "locked";
 };
 
@@ -36,8 +36,8 @@ export default function AdminUsersPage() {
 
   const load = useCallback(() => {
     const search = query ? `?q=${encodeURIComponent(query)}` : "";
-    apiGet<{ data: User[] }>(`/admin/users${search}`)
-      .then((payload) => setUsers(payload.data ?? []))
+    apiGetList<User>(`/admin/users${search}`)
+      .then(setUsers)
       .catch((reason: Error) => {
         if (reason instanceof ApiError && reason.status === 401) {
           router.push("/admin/login");
@@ -131,6 +131,8 @@ export default function AdminUsersPage() {
           Vai tro
           <select value={form.role} onChange={(event) => setForm({ ...form, role: event.target.value as UserForm["role"] })} className="mt-1 h-10 w-full rounded-md border border-slate-300 px-3 font-normal">
             <option value="member">Member</option>
+            <option value="staff">Staff</option>
+            <option value="manager">Manager</option>
             <option value="admin">Admin</option>
           </select>
         </label>

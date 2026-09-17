@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { useConfirm } from "@/contexts/ConfirmContext";
-import { ApiError, apiDelete, apiGet, apiPatch } from "@/lib/api";
+import { ApiError, apiDelete, apiGetList, apiPatch } from "@/lib/api";
 import type { Contact } from "@/types/api";
 
 export default function AdminContactsPage() {
@@ -14,8 +14,8 @@ export default function AdminContactsPage() {
   const [message, setMessage] = useState("");
 
   const load = useCallback(() => {
-    apiGet<{ data: Contact[] }>("/admin/contacts")
-      .then((payload) => setContacts(payload.data ?? []))
+    apiGetList<Contact>("/admin/contacts")
+      .then(setContacts)
       .catch((reason: Error) => {
         if (reason instanceof ApiError && reason.status === 401) {
           router.push("/admin/login");

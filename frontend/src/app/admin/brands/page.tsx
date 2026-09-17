@@ -4,7 +4,7 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { useConfirm } from "@/contexts/ConfirmContext";
-import { ApiError, apiDelete, apiGet, apiPost } from "@/lib/api";
+import { ApiError, apiDelete, apiGetList, apiPost } from "@/lib/api";
 
 type BrandRow = {
   id: number;
@@ -22,8 +22,8 @@ export default function AdminBrandsPage() {
   const [message, setMessage] = useState("");
 
   const load = useCallback(() => {
-    apiGet<{ data: BrandRow[] }>("/admin/brands")
-      .then((payload) => setBrands(payload.data ?? []))
+    apiGetList<BrandRow>("/admin/brands")
+      .then(setBrands)
       .catch((reason: Error) => {
         if (reason instanceof ApiError && reason.status === 401) {
           router.push("/admin/login");

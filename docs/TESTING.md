@@ -45,6 +45,15 @@ Current focused tests cover:
 - Admin stock import/export and negative stock prevention
 - Admin image upload/list/delete validation and public disk storage
 
+The current suite contains 58 tests with 261 assertions. The added completion tests cover shipping fee snapshots, return/refund stock safety, CSV import rollback, canceled-order report totals, manager/staff permissions, and notification privacy.
+
 CI:
 
 - `.github/workflows/ci.yml` runs Laravel tests and frontend lint/typecheck/build on push/PR.
+# Added Verification Areas
+
+- Shipping checkout: inactive/invalid methods rejected, free threshold applied, order snapshot preserved.
+- Returns: completed-order eligibility, quantity limits, duplicate active returns, stock restore once.
+- Import: valid CSV, duplicate SKU, unknown category/brand, sale price greater than price, update mode.
+- Reports: canceled orders excluded from valid revenue and date ranges applied.
+- Roles: member blocked from admin, manager/staff limited by backend permission checks.

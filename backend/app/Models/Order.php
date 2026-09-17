@@ -24,6 +24,8 @@ class Order extends Model
             'shipping_fee' => 'decimal:2',
             'grand_total' => 'decimal:2',
             'stock_restored_at' => 'datetime',
+            'shipped_at' => 'datetime',
+            'delivered_at' => 'datetime',
         ];
     }
 
@@ -45,5 +47,15 @@ class Order extends Model
     public function histories(): HasMany
     {
         return $this->hasMany(OrderStatusHistory::class);
+    }
+
+    public function shippingMethod(): BelongsTo
+    {
+        return $this->belongsTo(ShippingMethod::class);
+    }
+
+    public function returns(): HasMany
+    {
+        return $this->hasMany(ReturnRequest::class);
     }
 }

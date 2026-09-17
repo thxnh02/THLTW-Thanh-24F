@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 
 import { AdminImageUpload } from "@/components/AdminImageUpload";
 import { useConfirm } from "@/contexts/ConfirmContext";
-import { API_BASE_URL, ApiError, apiDelete, apiGet, apiPatch, apiPost } from "@/lib/api";
+import { API_BASE_URL, ApiError, apiDelete, apiGetList, apiPatch, apiPost } from "@/lib/api";
 import { formatVnd } from "@/lib/format";
 import type { Brand, Category, Product } from "@/types/api";
 
@@ -57,14 +57,14 @@ export default function AdminProductsPage() {
 
   const load = useCallback(() => {
     Promise.all([
-      apiGet<{ data: Product[] }>("/admin/products"),
-      apiGet<{ data: Category[] }>("/admin/categories"),
-      apiGet<{ data: Brand[] }>("/admin/brands"),
+      apiGetList<Product>("/admin/products"),
+      apiGetList<Category>("/admin/categories"),
+      apiGetList<Brand>("/admin/brands"),
     ])
       .then(([productPayload, categoryPayload, brandPayload]) => {
-        setProducts(productPayload.data ?? []);
-        setCategories(categoryPayload.data ?? []);
-        setBrands(brandPayload.data ?? []);
+        setProducts(productPayload);
+        setCategories(categoryPayload);
+        setBrands(brandPayload);
       })
       .catch((reason: Error) => {
         if (reason instanceof ApiError && reason.status === 401) {

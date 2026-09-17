@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 
-import { apiGet } from "@/lib/api";
+import { apiGetList } from "@/lib/api";
 import type { Post, PostCategory } from "@/types/api";
 
 export default function PostsPage() {
@@ -25,11 +25,11 @@ function PostsContent() {
 
   useEffect(() => {
     Promise.all([
-      apiGet<{ data: Post[] }>(`/posts${category ? `?category=${encodeURIComponent(category)}` : ""}`),
-      apiGet<PostCategory[]>("/post-categories"),
+      apiGetList<Post>(`/posts${category ? `?category=${encodeURIComponent(category)}` : ""}`),
+      apiGetList<PostCategory>("/post-categories"),
     ])
       .then(([postPayload, categoryPayload]) => {
-        setPosts(postPayload.data ?? []);
+        setPosts(postPayload);
         setCategories(categoryPayload);
       })
       .catch((reason: Error) => setError(reason.message));

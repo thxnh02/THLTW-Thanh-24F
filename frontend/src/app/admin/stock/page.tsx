@@ -3,7 +3,7 @@
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { ApiError, apiGet, apiPost } from "@/lib/api";
+import { ApiError, apiGetList, apiPost } from "@/lib/api";
 import { formatVnd } from "@/lib/format";
 import type { InventoryMovement, Product, StockDocument } from "@/types/api";
 
@@ -37,14 +37,14 @@ export default function AdminStockPage() {
 
   const load = useCallback(() => {
     Promise.all([
-      apiGet<{ data: Product[] }>("/admin/products?per_page=100"),
-      apiGet<{ data: StockDocument[] }>("/admin/stock"),
-      apiGet<{ data: InventoryMovement[] }>("/admin/stock/movements"),
+      apiGetList<Product>("/admin/products?per_page=100"),
+      apiGetList<StockDocument>("/admin/stock"),
+      apiGetList<InventoryMovement>("/admin/stock/movements"),
     ])
       .then(([productPayload, documentPayload, movementPayload]) => {
-        setProducts(productPayload.data ?? []);
-        setDocuments(documentPayload.data ?? []);
-        setMovements(movementPayload.data ?? []);
+        setProducts(productPayload);
+        setDocuments(documentPayload);
+        setMovements(movementPayload);
       })
       .catch((reason: Error) => {
         if (reason instanceof ApiError && reason.status === 401) {

@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 
 import { useCart } from "@/contexts/CartContext";
-import { apiPost } from "@/lib/api";
+import { apiGet, apiPost } from "@/lib/api";
 import { formatVnd } from "@/lib/format";
+import type { ShippingMethod } from "@/types/api";
 
 type CheckoutResponse = {
   code: string;
@@ -23,10 +24,23 @@ export default function CheckoutPage() {
     note: "",
     promotionCode: "",
     paymentMethod: "cod",
+    shippingMethodId: "",
   });
+  const [shippingMethods, setShippingMethods] = useState<ShippingMethod[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const subtotal = useMemo(() => items.reduce((sum, item) => sum + item.price * item.quantity, 0), [items]);
+  const selectedShipping = shippingMethods.find((method) => String(method.id) === form.shippingMethodId);
+
+  useEffect(() => {
+    apiGet<ShippingMethod[]>(`/shipping-methods?subtotal=${subtotal}`)
+      .then((methods) => {
+        setShippingMethods(methods);
+        setForm((current) => current.shippingMethodId || methods.length === 0 ? current : { ...current, shippingMethodId: String(methods[0].id) });
+      })
+      .catch((reason: Error) => setError(reason.message));
+  }, [subtotal]);
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSubmitting(true);
@@ -43,6 +57,7 @@ export default function CheckoutPage() {
         },
         note: form.note || undefined,
         payment_method: form.paymentMethod,
+        shipping_method_id: form.shippingMethodId ? Number(form.shippingMethodId) : undefined,
         promotion_code: form.promotionCode || undefined,
         idempotency_key: window.crypto.randomUUID(),
         items: items.map((item) => ({
@@ -86,6 +101,21 @@ export default function CheckoutPage() {
         <Input label="Dia chi giao hang" value={form.address} onChange={(value) => setForm({ ...form, address: value })} required />
         <Input label="Ma giam gia" value={form.promotionCode} onChange={(value) => setForm({ ...form, promotionCode: value.toUpperCase() })} />
         <label className="block text-sm font-semibold text-slate-700">
+          Phuong thuc van chuyen
+          <select value={form.shippingMethodId} onChange={(event) => setForm({ ...form, shippingMethodId: event.target.value })} className="mt-1 h-11 w-full rounded-md border border-slate-300 px-3 font-normal">
+            {shippingMethods.map((method) => (
+              <option key={method.id} value={method.id}>
+                {method.name} - {formatVnd(method.fee)}
+              </option>
+            ))}
+          </select>
+          {selectedShipping ? (
+            <span className="mt-1 block text-xs font-normal text-slate-500">
+              Du kien {selectedShipping.estimated_days_min ?? "?"}-{selectedShipping.estimated_days_max ?? "?"} ngay.
+            </span>
+          ) : null}
+        </label>
+        <label className="block text-sm font-semibold text-slate-700">
           Ghi chu
           <textarea
             value={form.note}
@@ -102,6 +132,10 @@ export default function CheckoutPage() {
         </label>
         {error ? <p className="rounded-md bg-red-50 p-3 text-sm text-red-700">{error}</p> : null}
         {message ? <p className="rounded-md bg-emerald-50 p-3 text-sm text-emerald-700">{message}</p> : null}
+        <div className="rounded-md bg-slate-50 p-3 text-sm text-slate-700">
+          <p>Tam tinh: <strong>{formatVnd(subtotal)}</strong></p>
+          <p>Phi van chuyen: <strong>{formatVnd(selectedShipping?.fee ?? 0)}</strong></p>
+        </div>
         <button
           disabled={submitting}
           className="rounded-md bg-teal-700 px-5 py-3 text-sm font-semibold text-white hover:bg-teal-800 disabled:bg-slate-300"

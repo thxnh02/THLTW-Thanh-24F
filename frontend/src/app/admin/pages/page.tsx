@@ -4,7 +4,7 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { useConfirm } from "@/contexts/ConfirmContext";
-import { ApiError, apiDelete, apiGet, apiPatch, apiPost } from "@/lib/api";
+import { ApiError, apiDelete, apiGetList, apiPatch, apiPost } from "@/lib/api";
 import type { Page } from "@/types/api";
 
 type PageForm = { id?: number; title: string; slug: string; content: string; status: Page["status"]; seo_title: string; seo_description: string };
@@ -19,8 +19,8 @@ export default function AdminPagesPage() {
   const [message, setMessage] = useState("");
 
   const load = useCallback(() => {
-    apiGet<{ data: Page[] }>("/admin/pages")
-      .then((payload) => setPages(payload.data ?? []))
+    apiGetList<Page>("/admin/pages")
+      .then(setPages)
       .catch((reason: Error) => {
         if (reason instanceof ApiError && reason.status === 401) {
           router.push("/admin/login");

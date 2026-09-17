@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { AdminImageUpload } from "@/components/AdminImageUpload";
 import { useConfirm } from "@/contexts/ConfirmContext";
-import { ApiError, apiDelete, apiGet, apiPatch, apiPost } from "@/lib/api";
+import { ApiError, apiDelete, apiGetList, apiPatch, apiPost } from "@/lib/api";
 import type { Banner } from "@/types/api";
 
 type BannerForm = { id?: number; title: string; image: string; link: string; sort_order: string; active: boolean };
@@ -19,8 +19,8 @@ export default function AdminBannersPage() {
   const [message, setMessage] = useState("");
 
   const load = useCallback(() => {
-    apiGet<{ data: Banner[] }>("/admin/banners")
-      .then((payload) => setBanners(payload.data ?? []))
+    apiGetList<Banner>("/admin/banners")
+      .then(setBanners)
       .catch((reason: Error) => {
         if (reason instanceof ApiError && reason.status === 401) {
           router.push("/admin/login");

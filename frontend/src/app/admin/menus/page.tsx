@@ -4,7 +4,7 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { useConfirm } from "@/contexts/ConfirmContext";
-import { ApiError, apiDelete, apiGet, apiPatch, apiPost } from "@/lib/api";
+import { ApiError, apiDelete, apiGetList, apiPatch, apiPost } from "@/lib/api";
 import type { Menu } from "@/types/api";
 
 type MenuForm = { id?: number; parent_id: string; label: string; url: string; type: Menu["type"]; sort_order: string; active: boolean };
@@ -18,8 +18,8 @@ export default function AdminMenusPage() {
   const [message, setMessage] = useState("");
 
   const load = useCallback(() => {
-    apiGet<{ data: Menu[] }>("/admin/menus")
-      .then((payload) => setMenus(payload.data ?? []))
+    apiGetList<Menu>("/admin/menus")
+      .then(setMenus)
       .catch((reason: Error) => {
         if (reason instanceof ApiError && reason.status === 401) {
           router.push("/admin/login");

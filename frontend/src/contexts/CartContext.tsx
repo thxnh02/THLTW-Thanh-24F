@@ -39,7 +39,7 @@ type CartContextValue = {
   updateQuantity: (variantId: number, quantity: number) => void;
   removeItem: (variantId: number) => void;
   clearCart: () => void;
-  quote: (promotionCode?: string) => Promise<CartQuote>;
+  quote: (promotionCode?: string, shippingMethodId?: number) => Promise<CartQuote>;
 };
 
 const CartContext = createContext<CartContextValue | null>(null);
@@ -139,9 +139,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const clearCart = useCallback(() => setItems([]), []);
 
   const quote = useCallback(
-    (promotionCode?: string) =>
+    (promotionCode?: string, shippingMethodId?: number) =>
       apiPost<CartQuote>("/cart/quote", {
         promotion_code: promotionCode || undefined,
+        shipping_method_id: shippingMethodId,
         items: items.map((item) => ({
           variant_id: item.variantId,
           quantity: item.quantity,

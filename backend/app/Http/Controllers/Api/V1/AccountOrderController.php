@@ -43,6 +43,16 @@ class AccountOrderController extends Controller
         ]);
     }
 
+    public function invoicePdf(Request $request, string $code): Response
+    {
+        $order = $this->orderForUser($request, $code);
+
+        return response($this->renderInvoicePdf($order), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="'.$order->code.'.pdf"',
+        ]);
+    }
+
     public function cancel(Request $request, string $code): JsonResponse
     {
         $order = $this->orderForUser($request, $code)->load('items');

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { API_BASE_URL, ApiError, apiGet, apiPatch } from "@/lib/api";
+import { API_BASE_URL, ApiError, apiGet, apiGetList, apiPatch } from "@/lib/api";
 import { formatVnd } from "@/lib/format";
 import type { Order } from "@/types/api";
 
@@ -21,6 +21,7 @@ export default function AdminOrdersPage() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("");
+  const [tracking, setTracking] = useState({ carrier: "", code: "" });
   const [message, setMessage] = useState("");
 
   const searchParams = useMemo(() => {
@@ -35,8 +36,8 @@ export default function AdminOrdersPage() {
   }, [query, status]);
 
   const loadOrders = useCallback(() => {
-    apiGet<{ data: Order[] }>(`/admin/orders?${searchParams}`)
-      .then((payload) => setOrders(payload.data ?? []))
+    apiGetList<Order>(`/admin/orders?${searchParams}`)
+      .then(setOrders)
       .catch((reason: Error) => {
         if (reason instanceof ApiError && reason.status === 401) {
           router.push("/admin/login");
@@ -51,13 +52,17 @@ export default function AdminOrdersPage() {
   }, [loadOrders]);
 
   async function loadDetail(id: number) {
-    setSelectedOrder(await apiGet<Order>(`/admin/orders/${id}`));
+    const detail = await apiGet<Order>(`/admin/orders/${id}`);
+    setSelectedOrder(detail);
+    setTracking({ carrier: detail.shipping_carrier ?? "", code: detail.tracking_code ?? "" });
   }
 
   async function updateStatus(order: Order, nextStatus: Order["status"]) {
     setMessage("");
     const updated = await apiPatch<Order>(`/admin/orders/${order.id}/status`, {
       status: nextStatus,
+      shipping_carrier: tracking.carrier || undefined,
+      tracking_code: tracking.code || undefined,
     });
     setMessage("Da cap nhat trang thai don hang.");
     setSelectedOrder(updated);
@@ -153,9 +158,18 @@ export default function AdminOrdersPage() {
                 <Row label="Email" value={selectedOrder.customer_email} />
                 <Row label="Dien thoai" value={selectedOrder.customer_phone} />
                 <Row label="Dia chi" value={selectedOrder.shipping_address} />
+                <Row label="Van chuyen" value={selectedOrder.shipping_method_name ?? "Tieu chuan"} />
+                <Row label="Don vi" value={selectedOrder.shipping_carrier ?? "Dang cap nhat"} />
+                <Row label="Ma van don" value={selectedOrder.tracking_code ?? "Dang cap nhat"} />
                 <Row label="Tong tien" value={formatVnd(selectedOrder.grand_total)} />
                 <Row label="Thanh toan" value={selectedOrder.payment_status} />
               </dl>
+              {selectedOrder.status === "confirmed" ? (
+                <div className="mt-4 grid gap-3 rounded-md bg-slate-50 p-3">
+                  <Input label="Don vi van chuyen" value={tracking.carrier} onChange={(value) => setTracking({ ...tracking, carrier: value })} />
+                  <Input label="Ma van don" value={tracking.code} onChange={(value) => setTracking({ ...tracking, code: value })} />
+                </div>
+              ) : null}
               <div className="mt-5 flex flex-wrap gap-2">
                 <a
                   href={`${API_BASE_URL}/admin/orders/${selectedOrder.id}/invoice`}
@@ -164,6 +178,12 @@ export default function AdminOrdersPage() {
                   className="rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold"
                 >
                   Hoa don
+                </a>
+                <a
+                  href={`${API_BASE_URL}/admin/orders/${selectedOrder.id}/invoice.pdf`}
+                  className="rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold"
+                >
+                  PDF
                 </a>
                 {nextStatuses[selectedOrder.status].map((nextStatus) => (
                   <button
@@ -213,6 +233,15 @@ function Row({ label, value }: { label: string; value: string }) {
       <dt className="text-slate-500">{label}</dt>
       <dd className="font-semibold text-slate-900">{value}</dd>
     </div>
+  );
+}
+
+function Input({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+  return (
+    <label className="block text-sm font-semibold text-slate-700">
+      {label}
+      <input value={value} onChange={(event) => onChange(event.target.value)} className="mt-1 h-10 w-full rounded-md border border-slate-300 px-3 font-normal outline-none focus:border-slate-950" />
+    </label>
   );
 }
 

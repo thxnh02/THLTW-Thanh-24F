@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api\V1\Admin;
 use App\Http\Controllers\Concerns\ApiResponses;
 use App\Http\Controllers\Concerns\RendersOrderInvoice;
 use App\Http\Controllers\Controller;
+use App\Mail\OrderStatusUpdatedMail;
+use App\Models\CustomerNotification;
 use App\Models\InventoryMovement;
 use App\Models\Order;
 use App\Models\OrderStatusHistory;
@@ -13,7 +15,10 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Throwable;
 
 class OrderController extends Controller
 {
@@ -104,11 +109,21 @@ class OrderController extends Controller
         ]);
     }
 
+    public function invoicePdf(Order $order): Response
+    {
+        return response($this->renderInvoicePdf($order), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="'.$order->code.'.pdf"',
+        ]);
+    }
+
     public function updateStatus(Request $request, Order $order): JsonResponse
     {
         $validated = $request->validate([
             'status' => ['required', 'in:pending,confirmed,shipping,completed,canceled'],
             'note' => ['nullable', 'string', 'max:1000'],
+            'shipping_carrier' => ['nullable', 'string', 'max:120'],
+            'tracking_code' => ['nullable', 'string', 'max:120'],
         ]);
 
         if ($order->status === $validated['status']) {
@@ -139,6 +154,16 @@ class OrderController extends Controller
                 $lockedOrder->payment?->update(['status' => 'paid']);
             }
 
+            if ($toStatus === 'shipping') {
+                $lockedOrder->shipping_carrier = $validated['shipping_carrier'] ?? $lockedOrder->shipping_carrier;
+                $lockedOrder->tracking_code = $validated['tracking_code'] ?? $lockedOrder->tracking_code;
+                $lockedOrder->shipped_at ??= now();
+            }
+
+            if ($toStatus === 'completed') {
+                $lockedOrder->delivered_at ??= now();
+            }
+
             $lockedOrder->save();
 
             OrderStatusHistory::create([
@@ -150,7 +175,10 @@ class OrderController extends Controller
             ]);
         });
 
-        return $this->success($order->refresh()->load(['items', 'payment', 'histories']), 'Da cap nhat trang thai don hang.');
+        $updatedOrder = $order->refresh()->load(['items', 'payment', 'histories']);
+        $this->notifyOrderStatus($updatedOrder);
+
+        return $this->success($updatedOrder, 'Da cap nhat trang thai don hang.');
     }
 
     private function restoreStockOnce(Order $order, int $adminId): void
@@ -185,5 +213,38 @@ class OrderController extends Controller
         }
 
         $order->stock_restored_at = now();
+    }
+
+    private function notifyOrderStatus(Order $order): void
+    {
+        $labels = [
+            'confirmed' => 'Da xac nhan',
+            'shipping' => 'Dang giao',
+            'completed' => 'Hoan thanh',
+            'canceled' => 'Da huy',
+        ];
+
+        if (! isset($labels[$order->status])) {
+            return;
+        }
+
+        if ($order->user_id) {
+            CustomerNotification::create([
+                'user_id' => $order->user_id,
+                'type' => 'order_status',
+                'title' => 'Don hang '.$order->code,
+                'message' => 'Trang thai moi: '.$labels[$order->status],
+                'action_url' => '/account/orders/'.$order->code,
+            ]);
+        }
+
+        try {
+            Mail::to($order->customer_email)->send(new OrderStatusUpdatedMail($order, $labels[$order->status]));
+        } catch (Throwable $exception) {
+            Log::warning('Order status email failed.', [
+                'order_id' => $order->id,
+                'message' => $exception->getMessage(),
+            ]);
+        }
     }
 }

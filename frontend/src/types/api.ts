@@ -219,6 +219,7 @@ export type CartQuote = {
   discount_total: number;
   shipping_fee: number;
   grand_total: number;
+  shipping_method?: ShippingMethod | null;
   promotion?: { id?: number; code: string; type: string } | null;
 };
 
@@ -226,9 +227,13 @@ export type Promotion = {
   id: number;
   code: string;
   type: "fixed" | "percent";
+  applies_to?: "all" | "products" | "categories" | "brands";
   value: string | number;
   min_order_amount: string | number;
   max_discount_amount?: string | number | null;
+  first_order_only?: boolean;
+  free_shipping?: boolean;
+  min_quantity?: number | null;
   start_at?: string | null;
   end_at?: string | null;
   active: boolean;
@@ -236,6 +241,9 @@ export type Promotion = {
   usage_limit_per_user?: number | null;
   used_count: number;
   usages_count?: number;
+  products?: Product[];
+  categories?: Category[];
+  brands?: Brand[];
 };
 
 export type User = {
@@ -243,7 +251,7 @@ export type User = {
   name: string;
   email: string;
   phone?: string | null;
-  role: "admin" | "member";
+  role: "admin" | "manager" | "staff" | "member";
   status: "active" | "locked";
   orders_count?: number;
   created_at?: string;
@@ -263,6 +271,12 @@ export type Order = {
   customer_email: string;
   customer_phone: string;
   shipping_address: string;
+  shipping_method_id?: number | null;
+  shipping_method_name?: string | null;
+  shipping_carrier?: string | null;
+  tracking_code?: string | null;
+  shipped_at?: string | null;
+  delivered_at?: string | null;
   grand_total: string | number;
   created_at: string;
   items_count?: number;
@@ -282,4 +296,47 @@ export type Order = {
     note?: string | null;
     created_at: string;
   }[];
+};
+
+export type ShippingMethod = {
+  id: number;
+  name: string;
+  code: string;
+  description?: string | null;
+  fee: string | number;
+  base_fee?: string | number;
+  free_shipping_threshold?: string | number | null;
+  estimated_days_min?: number | null;
+  estimated_days_max?: number | null;
+  active?: boolean;
+  sort_order?: number;
+};
+
+export type ReturnRequest = {
+  id: number;
+  code: string;
+  reason: string;
+  description?: string | null;
+  status: "requested" | "approved" | "rejected" | "received" | "completed" | "canceled";
+  refund_status: "none" | "pending" | "refunded" | "failed";
+  admin_note?: string | null;
+  order?: Order;
+  items?: {
+    id: number;
+    quantity: number;
+    reason?: string | null;
+    condition_note?: string | null;
+    order_item?: NonNullable<Order["items"]>[number];
+  }[];
+  created_at?: string;
+};
+
+export type CustomerNotification = {
+  id: number;
+  type: string;
+  title: string;
+  message: string;
+  action_url?: string | null;
+  read_at?: string | null;
+  created_at: string;
 };

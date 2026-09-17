@@ -7,23 +7,33 @@ import { type ReactNode, useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 
 const navItems = [
-  ["Dashboard", "/admin"],
-  ["Danh muc", "/admin/categories"],
-  ["Thuong hieu", "/admin/brands"],
-  ["San pham", "/admin/products"],
-  ["Don hang", "/admin/orders"],
-  ["Thanh vien", "/admin/users"],
-  ["Khuyen mai", "/admin/promotions"],
-  ["Bai viet", "/admin/posts"],
-  ["Chu de", "/admin/post-categories"],
-  ["Trang", "/admin/pages"],
-  ["Menu", "/admin/menus"],
-  ["Banner", "/admin/banners"],
-  ["Lien he", "/admin/contacts"],
-  ["Kho", "/admin/stock"],
-  ["Media", "/admin/media"],
-  ["Cau hinh", "/admin/settings"],
+  ["Dashboard", "/admin", "dashboard"],
+  ["Danh muc", "/admin/categories", "catalog"],
+  ["Thuong hieu", "/admin/brands", "catalog"],
+  ["San pham", "/admin/products", "catalog"],
+  ["Don hang", "/admin/orders", "orders"],
+  ["Doi tra", "/admin/returns", "returns"],
+  ["Thanh vien", "/admin/users", "users"],
+  ["Khuyen mai", "/admin/promotions", "promotions"],
+  ["Van chuyen", "/admin/shipping-methods", "shipping"],
+  ["Bao cao", "/admin/reports", "reports"],
+  ["Import CSV", "/admin/import/products", "catalog"],
+  ["Bai viet", "/admin/posts", "content"],
+  ["Chu de", "/admin/post-categories", "content"],
+  ["Trang", "/admin/pages", "content"],
+  ["Menu", "/admin/menus", "content"],
+  ["Banner", "/admin/banners", "content"],
+  ["Lien he", "/admin/contacts", "contacts"],
+  ["Kho", "/admin/stock", "stock"],
+  ["Media", "/admin/media", "content"],
+  ["Cau hinh", "/admin/settings", "settings"],
 ] as const;
+
+const rolePermissions: Record<string, string[]> = {
+  admin: ["*"],
+  manager: ["dashboard", "reports", "catalog", "promotions", "orders", "returns", "shipping", "stock", "content", "contacts"],
+  staff: ["orders", "returns", "stock", "contacts"],
+};
 
 export function AdminShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -49,7 +59,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
     return <main className="mx-auto max-w-7xl px-4 py-12 text-slate-700">Dang kiem tra quyen admin...</main>;
   }
 
-  if (user.role !== "admin") {
+  if (!["admin", "manager", "staff"].includes(user.role)) {
     return (
       <main className="mx-auto max-w-2xl px-4 py-12">
         <section className="rounded-md border border-slate-200 bg-white p-8 shadow-sm">
@@ -88,7 +98,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
       <div className="mx-auto grid max-w-[1500px] lg:grid-cols-[240px_1fr]">
         <aside className={`${open ? "block" : "hidden"} border-r border-slate-200 bg-white p-3 lg:block`}>
           <nav className="grid gap-1">
-            {navItems.map(([label, href]) => {
+            {navItems.filter(([, , permission]) => canSee(user.role, permission)).map(([label, href]) => {
               const active = href === "/admin" ? pathname === href : pathname.startsWith(href);
               return (
                 <Link
@@ -107,4 +117,10 @@ export function AdminShell({ children }: { children: ReactNode }) {
       </div>
     </div>
   );
+}
+
+function canSee(role: string, permission: string): boolean {
+  const permissions = rolePermissions[role] ?? [];
+
+  return permissions.includes("*") || permissions.includes(permission);
 }

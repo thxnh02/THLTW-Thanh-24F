@@ -4,7 +4,7 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { useConfirm } from "@/contexts/ConfirmContext";
-import { ApiError, apiDelete, apiGet, apiPatch, apiPost } from "@/lib/api";
+import { ApiError, apiDelete, apiGetList, apiPatch, apiPost } from "@/lib/api";
 import type { PostCategory } from "@/types/api";
 
 const emptyForm = { id: 0, name: "", slug: "", status: "active" as PostCategory["status"] };
@@ -17,8 +17,8 @@ export default function AdminPostCategoriesPage() {
   const [message, setMessage] = useState("");
 
   const load = useCallback(() => {
-    apiGet<{ data: PostCategory[] }>("/admin/post-categories")
-      .then((payload) => setItems(payload.data ?? []))
+    apiGetList<PostCategory>("/admin/post-categories")
+      .then(setItems)
       .catch((reason: Error) => {
         if (reason instanceof ApiError && reason.status === 401) {
           router.push("/admin/login");

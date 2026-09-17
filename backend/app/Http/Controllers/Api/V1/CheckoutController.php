@@ -35,6 +35,7 @@ class CheckoutController extends Controller
             'note' => ['nullable', 'string', 'max:1000'],
             'payment_method' => ['required', 'in:cod,vnpay'],
             'promotion_code' => ['nullable', 'string', 'max:80'],
+            'shipping_method_id' => ['nullable', 'integer', 'exists:shipping_methods,id'],
             'idempotency_key' => ['required', 'string', 'max:120'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.variant_id' => ['required', 'integer', 'exists:product_variants,id'],
@@ -59,7 +60,8 @@ class CheckoutController extends Controller
                     $validated['promotion_code'] ?? null,
                     $user?->id,
                     $customerEmail,
-                    true
+                    true,
+                    $validated['shipping_method_id'] ?? null
                 );
 
                 if (($validated['promotion_code'] ?? null) && ! $quote['promotion']) {
@@ -76,6 +78,8 @@ class CheckoutController extends Controller
                     'customer_email' => $customerEmail,
                     'customer_phone' => $validated['customer']['phone'],
                     'shipping_address' => $validated['customer']['address'],
+                    'shipping_method_id' => $quote['shipping_method']['id'] ?? null,
+                    'shipping_method_name' => $quote['shipping_method']['name'] ?? null,
                     'note' => $validated['note'] ?? null,
                     'subtotal' => $quote['subtotal'],
                     'discount_total' => $quote['discount_total'],

@@ -4,9 +4,9 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { useConfirm } from "@/contexts/ConfirmContext";
-import { ApiError, apiDelete, apiGet, apiPatch, apiPost } from "@/lib/api";
+import { ApiError, apiDelete, apiGetList, apiPatch, apiPost } from "@/lib/api";
 import { formatVnd } from "@/lib/format";
-import type { Promotion } from "@/types/api";
+import type { Brand, Category, Product, Promotion } from "@/types/api";
 
 type PromotionForm = {
   id?: number;
@@ -20,6 +20,13 @@ type PromotionForm = {
   active: boolean;
   usage_limit: string;
   usage_limit_per_user: string;
+  applies_to: "all" | "products" | "categories" | "brands";
+  first_order_only: boolean;
+  free_shipping: boolean;
+  min_quantity: string;
+  product_ids: number[];
+  category_ids: number[];
+  brand_ids: number[];
 };
 
 const emptyForm: PromotionForm = {
@@ -33,18 +40,38 @@ const emptyForm: PromotionForm = {
   active: true,
   usage_limit: "",
   usage_limit_per_user: "1",
+  applies_to: "all",
+  first_order_only: false,
+  free_shipping: false,
+  min_quantity: "",
+  product_ids: [],
+  category_ids: [],
+  brand_ids: [],
 };
 
 export default function AdminPromotionsPage() {
   const router = useRouter();
   const confirm = useConfirm();
   const [promotions, setPromotions] = useState<Promotion[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [brands, setBrands] = useState<Brand[]>([]);
   const [form, setForm] = useState<PromotionForm>(emptyForm);
   const [message, setMessage] = useState("");
 
   const load = useCallback(() => {
-    apiGet<{ data: Promotion[] }>("/admin/promotions")
-      .then((payload) => setPromotions(payload.data ?? []))
+    Promise.all([
+      apiGetList<Promotion>("/admin/promotions"),
+      apiGetList<Product>("/admin/products?per_page=100"),
+      apiGetList<Category>("/admin/categories?per_page=100"),
+      apiGetList<Brand>("/admin/brands?per_page=100"),
+    ])
+      .then(([promotionRows, productRows, categoryRows, brandRows]) => {
+        setPromotions(promotionRows);
+        setProducts(productRows);
+        setCategories(categoryRows);
+        setBrands(brandRows);
+      })
       .catch((reason: Error) => {
         if (reason instanceof ApiError && reason.status === 401) {
           router.push("/admin/login");
@@ -88,6 +115,13 @@ export default function AdminPromotionsPage() {
       active: promotion.active,
       usage_limit: promotion.usage_limit ? String(promotion.usage_limit) : "",
       usage_limit_per_user: promotion.usage_limit_per_user ? String(promotion.usage_limit_per_user) : "",
+      applies_to: promotion.applies_to ?? "all",
+      first_order_only: Boolean(promotion.first_order_only),
+      free_shipping: Boolean(promotion.free_shipping),
+      min_quantity: promotion.min_quantity ? String(promotion.min_quantity) : "",
+      product_ids: promotion.products?.map((product) => product.id) ?? [],
+      category_ids: promotion.categories?.map((category) => category.id) ?? [],
+      brand_ids: promotion.brands?.map((brand) => brand.id) ?? [],
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -133,6 +167,27 @@ export default function AdminPromotionsPage() {
         <Input label="Ket thuc" type="datetime-local" value={form.end_at} onChange={(value) => setForm({ ...form, end_at: value })} />
         <Input label="Tong luot" type="number" value={form.usage_limit} onChange={(value) => setForm({ ...form, usage_limit: value })} />
         <Input label="Luot moi khach" type="number" value={form.usage_limit_per_user} onChange={(value) => setForm({ ...form, usage_limit_per_user: value })} />
+        <label className="block text-sm font-semibold text-slate-700">
+          Ap dung cho
+          <select value={form.applies_to} onChange={(event) => setForm({ ...form, applies_to: event.target.value as PromotionForm["applies_to"] })} className="mt-1 h-10 w-full rounded-md border border-slate-300 px-3 font-normal">
+            <option value="all">Tat ca san pham</option>
+            <option value="products">San pham chon</option>
+            <option value="categories">Danh muc chon</option>
+            <option value="brands">Thuong hieu chon</option>
+          </select>
+        </label>
+        <Input label="So luong toi thieu" type="number" value={form.min_quantity} onChange={(value) => setForm({ ...form, min_quantity: value })} />
+        {form.applies_to === "products" ? <TargetSelect label="San pham" values={form.product_ids} options={products} onChange={(values) => setForm({ ...form, product_ids: values })} /> : null}
+        {form.applies_to === "categories" ? <TargetSelect label="Danh muc" values={form.category_ids} options={categories} onChange={(values) => setForm({ ...form, category_ids: values })} /> : null}
+        {form.applies_to === "brands" ? <TargetSelect label="Thuong hieu" values={form.brand_ids} options={brands} onChange={(values) => setForm({ ...form, brand_ids: values })} /> : null}
+        <label className="flex items-center gap-2 pt-7 text-sm font-semibold text-slate-700">
+          <input type="checkbox" checked={form.first_order_only} onChange={(event) => setForm({ ...form, first_order_only: event.target.checked })} />
+          Chi don dau tien
+        </label>
+        <label className="flex items-center gap-2 pt-7 text-sm font-semibold text-slate-700">
+          <input type="checkbox" checked={form.free_shipping} onChange={(event) => setForm({ ...form, free_shipping: event.target.checked })} />
+          Mien phi van chuyen
+        </label>
         <label className="flex items-center gap-2 pt-7 text-sm font-semibold text-slate-700">
           <input type="checkbox" checked={form.active} onChange={(event) => setForm({ ...form, active: event.target.checked })} />
           Dang kich hoat
@@ -237,7 +292,40 @@ function toPayload(form: PromotionForm) {
     active: form.active,
     usage_limit: form.usage_limit ? Number(form.usage_limit) : undefined,
     usage_limit_per_user: form.usage_limit_per_user ? Number(form.usage_limit_per_user) : undefined,
+    applies_to: form.applies_to,
+    first_order_only: form.first_order_only,
+    free_shipping: form.free_shipping,
+    min_quantity: form.min_quantity ? Number(form.min_quantity) : undefined,
+    product_ids: form.product_ids,
+    category_ids: form.category_ids,
+    brand_ids: form.brand_ids,
   };
+}
+
+function TargetSelect({
+  label,
+  values,
+  options,
+  onChange,
+}: {
+  label: string;
+  values: number[];
+  options: { id: number; name: string }[];
+  onChange: (values: number[]) => void;
+}) {
+  return (
+    <label className="block text-sm font-semibold text-slate-700">
+      {label}
+      <select
+        multiple
+        value={values.map(String)}
+        onChange={(event) => onChange(Array.from(event.target.selectedOptions, (option) => Number(option.value)))}
+        className="mt-1 min-h-24 w-full rounded-md border border-slate-300 px-3 py-2 font-normal"
+      >
+        {options.map((option) => <option key={option.id} value={option.id}>{option.name}</option>)}
+      </select>
+    </label>
+  );
 }
 
 function toDatetimeLocal(value?: string | null) {

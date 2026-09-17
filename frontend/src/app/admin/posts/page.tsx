@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { AdminImageUpload } from "@/components/AdminImageUpload";
 import { useConfirm } from "@/contexts/ConfirmContext";
-import { ApiError, apiDelete, apiGet, apiPatch, apiPost } from "@/lib/api";
+import { ApiError, apiDelete, apiGetList, apiPatch, apiPost } from "@/lib/api";
 import type { Post, PostCategory } from "@/types/api";
 
 type PostForm = {
@@ -40,10 +40,10 @@ export default function AdminPostsPage() {
   const [message, setMessage] = useState("");
 
   const load = useCallback(() => {
-    Promise.all([apiGet<{ data: Post[] }>("/admin/posts"), apiGet<{ data: PostCategory[] }>("/admin/post-categories")])
+    Promise.all([apiGetList<Post>("/admin/posts"), apiGetList<PostCategory>("/admin/post-categories")])
       .then(([postPayload, categoryPayload]) => {
-        setPosts(postPayload.data ?? []);
-        setCategories(categoryPayload.data ?? []);
+        setPosts(postPayload);
+        setCategories(categoryPayload);
       })
       .catch((reason: Error) => {
         if (reason instanceof ApiError && reason.status === 401) {

@@ -127,3 +127,28 @@ Response shape:
   "meta": {}
 }
 ```
+# Added API Endpoints
+
+Public:
+- `GET /api/v1/shipping-methods?subtotal=...`
+
+Member:
+- `GET /api/v1/account/orders/{code}/invoice.pdf`
+- `GET /api/v1/account/returns`
+- `POST /api/v1/account/returns`
+- `GET /api/v1/account/returns/{code}`
+- `GET /api/v1/account/notifications`
+- `POST /api/v1/account/notifications/{id}/read`
+- `POST /api/v1/account/notifications/read-all`
+
+Admin:
+- `CRUD /api/v1/admin/shipping-methods`
+- `GET /api/v1/admin/returns`
+- `GET /api/v1/admin/returns/{id}`
+- `PATCH /api/v1/admin/returns/{id}/status`
+- `GET /api/v1/admin/products/import/template`
+- `POST /api/v1/admin/products/import/preview`
+- `POST /api/v1/admin/products/import`
+- `GET /api/v1/admin/reports/overview`
+- `GET /api/v1/admin/reports/export`
+- `GET /api/v1/admin/orders/{id}/invoice.pdf`

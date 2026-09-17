@@ -38,6 +38,24 @@ class User extends Authenticatable
         return $this->role === 'admin';
     }
 
+    public function canAccessAdmin(): bool
+    {
+        return in_array($this->role, ['admin', 'manager', 'staff'], true);
+    }
+
+    public function hasAdminPermission(string $permission): bool
+    {
+        $permissions = [
+            'admin' => ['*'],
+            'manager' => ['dashboard', 'reports', 'catalog', 'promotions', 'orders', 'returns', 'shipping', 'stock', 'content', 'contacts'],
+            'staff' => ['orders', 'returns', 'stock', 'contacts'],
+        ];
+
+        $allowed = $permissions[$this->role] ?? [];
+
+        return in_array('*', $allowed, true) || in_array($permission, $allowed, true);
+    }
+
     public function isLocked(): bool
     {
         return $this->status === 'locked';
@@ -56,5 +74,10 @@ class User extends Authenticatable
     public function wishlists(): HasMany
     {
         return $this->hasMany(Wishlist::class);
+    }
+
+    public function notifications(): HasMany
+    {
+        return $this->hasMany(CustomerNotification::class);
     }
 }

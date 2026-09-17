@@ -17,6 +17,7 @@ use App\Models\Product;
 use App\Models\ProductImage;
 use App\Models\ProductVariant;
 use App\Models\Promotion;
+use App\Models\ShippingMethod;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -231,14 +232,45 @@ class DatabaseSeeder extends Seeder
             ['code' => 'WELCOME10'],
             [
                 'type' => 'percent',
+                'applies_to' => 'all',
                 'value' => 10,
                 'min_order_amount' => 1000000,
                 'max_discount_amount' => 500000,
+                'first_order_only' => false,
+                'free_shipping' => false,
                 'start_at' => now()->subDay(),
                 'end_at' => now()->addMonth(),
                 'active' => true,
                 'usage_limit' => 200,
                 'usage_limit_per_user' => 1,
+            ],
+        );
+
+        ShippingMethod::query()->updateOrCreate(
+            ['code' => 'standard'],
+            [
+                'name' => 'Giao hang tieu chuan',
+                'description' => 'Giao hang noi dia du kien 3-5 ngay.',
+                'fee' => 30000,
+                'free_shipping_threshold' => 10000000,
+                'estimated_days_min' => 3,
+                'estimated_days_max' => 5,
+                'active' => true,
+                'sort_order' => 1,
+            ],
+        );
+
+        ShippingMethod::query()->updateOrCreate(
+            ['code' => 'express'],
+            [
+                'name' => 'Giao hang nhanh',
+                'description' => 'Uu tien xu ly va giao trong 1-2 ngay.',
+                'fee' => 60000,
+                'free_shipping_threshold' => 15000000,
+                'estimated_days_min' => 1,
+                'estimated_days_max' => 2,
+                'active' => true,
+                'sort_order' => 2,
             ],
         );
 
@@ -250,6 +282,11 @@ class DatabaseSeeder extends Seeder
             'shipping_fee' => '30000',
             'free_shipping_threshold' => '10000000',
             'low_stock_threshold' => '5',
+            'return_window_days' => '7',
+            'invoice_company_name' => 'THLTW Shop',
+            'invoice_company_address' => 'TP. Ho Chi Minh',
+            'invoice_company_phone' => '0900000000',
+            'invoice_company_email' => 'support@example.com',
         ] as $key => $value) {
             DB::table('settings')->updateOrInsert(
                 ['key' => $key],

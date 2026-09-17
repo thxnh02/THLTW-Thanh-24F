@@ -8,6 +8,7 @@ use App\Models\Order;
 use App\Models\Promotion;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 
 class PromotionController extends Controller
@@ -16,6 +17,8 @@ class PromotionController extends Controller
 
     public function index(Request $request): JsonResponse
     {
+        abort_unless($request->user()->hasAdminPermission('promotions'), 403);
+
         $query = Promotion::query()->withCount('usages')->latest('id');
 
         if ($request->filled('q')) {
@@ -37,20 +40,24 @@ class PromotionController extends Controller
     {
         $validated = $this->validatedPromotion($request);
 
-        return $this->success(Promotion::create($validated), 'Da tao ma khuyen mai.', status: 201);
+        $promotion = Promotion::create(Arr::except($validated, ['product_ids', 'category_ids', 'brand_ids']));
+        $this->syncTargets($promotion, $validated);
+
+        return $this->success($promotion->load(['products:id,name', 'categories:id,name', 'brands:id,name']), 'Da tao ma khuyen mai.', status: 201);
     }
 
     public function show(Promotion $promotion): JsonResponse
     {
-        return $this->success($promotion->loadCount('usages'));
+        return $this->success($promotion->load(['products:id,name', 'categories:id,name', 'brands:id,name'])->loadCount('usages'));
     }
 
     public function update(Request $request, Promotion $promotion): JsonResponse
     {
         $validated = $this->validatedPromotion($request, $promotion);
-        $promotion->update($validated);
+        $promotion->update(Arr::except($validated, ['product_ids', 'category_ids', 'brand_ids']));
+        $this->syncTargets($promotion, $validated);
 
-        return $this->success($promotion->refresh()->loadCount('usages'), 'Da cap nhat ma khuyen mai.');
+        return $this->success($promotion->refresh()->load(['products:id,name', 'categories:id,name', 'brands:id,name'])->loadCount('usages'), 'Da cap nhat ma khuyen mai.');
     }
 
     public function destroy(Promotion $promotion): JsonResponse
@@ -79,22 +86,45 @@ class PromotionController extends Controller
         $validated = $request->validate([
             'code' => ['required', 'string', 'max:80', Rule::unique('promotions', 'code')->ignore($promotion?->id)],
             'type' => ['required', 'in:fixed,percent'],
+            'applies_to' => ['nullable', 'in:all,products,categories,brands'],
             'value' => ['required', 'numeric', 'gt:0'],
             'min_order_amount' => ['nullable', 'numeric', 'min:0'],
             'max_discount_amount' => ['nullable', 'numeric', 'min:0'],
+            'first_order_only' => ['nullable', 'boolean'],
+            'free_shipping' => ['nullable', 'boolean'],
+            'min_quantity' => ['nullable', 'integer', 'min:1'],
             'start_at' => ['nullable', 'date'],
             'end_at' => ['nullable', 'date', 'after_or_equal:start_at'],
             'active' => ['required', 'boolean'],
             'usage_limit' => ['nullable', 'integer', 'min:1'],
             'usage_limit_per_user' => ['nullable', 'integer', 'min:1'],
+            'product_ids' => ['nullable', 'array'],
+            'product_ids.*' => ['integer', 'exists:products,id'],
+            'category_ids' => ['nullable', 'array'],
+            'category_ids.*' => ['integer', 'exists:categories,id'],
+            'brand_ids' => ['nullable', 'array'],
+            'brand_ids.*' => ['integer', 'exists:brands,id'],
         ]);
         $validated['code'] = strtoupper(trim($validated['code']));
         $validated['min_order_amount'] ??= 0;
+        $validated['applies_to'] ??= 'all';
+        $validated['first_order_only'] ??= false;
+        $validated['free_shipping'] ??= false;
 
         if ($validated['type'] === 'percent' && (float) $validated['value'] > 100) {
             abort(422, 'Gia tri giam theo phan tram khong duoc vuot qua 100.');
         }
 
         return $validated;
+    }
+
+    /**
+     * @param  array<string, mixed>  $validated
+     */
+    private function syncTargets(Promotion $promotion, array $validated): void
+    {
+        $promotion->products()->sync($validated['applies_to'] === 'products' ? ($validated['product_ids'] ?? []) : []);
+        $promotion->categories()->sync($validated['applies_to'] === 'categories' ? ($validated['category_ids'] ?? []) : []);
+        $promotion->brands()->sync($validated['applies_to'] === 'brands' ? ($validated['brand_ids'] ?? []) : []);
     }
 }

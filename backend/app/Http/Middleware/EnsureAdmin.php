@@ -15,7 +15,9 @@ class EnsureAdmin
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (! $request->user()?->isAdmin()) {
+        $user = $request->user();
+
+        if (! $user?->canAccessAdmin()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Ban khong co quyen truy cap khu vuc quan tri.',
@@ -23,6 +25,37 @@ class EnsureAdmin
             ], 403);
         }
 
+        $permission = $this->permissionForPath($request->path());
+
+        if ($permission && ! $user->hasAdminPermission($permission)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tai khoan khong co quyen thuc hien thao tac nay.',
+                'errors' => (object) [],
+            ], 403);
+        }
+
         return $next($request);
+    }
+
+    private function permissionForPath(string $path): ?string
+    {
+        $adminPath = str($path)->after('api/v1/admin/')->before('/')->toString();
+
+        return match ($adminPath) {
+            'dashboard' => 'dashboard',
+            'reports' => 'reports',
+            'orders' => 'orders',
+            'returns' => 'returns',
+            'shipping-methods' => 'shipping',
+            'stock' => 'stock',
+            'contacts' => 'contacts',
+            'products', 'categories', 'brands' => 'catalog',
+            'promotions' => 'promotions',
+            'posts', 'post-categories', 'pages', 'menus', 'banners', 'media', 'uploads' => 'content',
+            'settings' => 'settings',
+            'users' => 'users',
+            default => null,
+        };
     }
 }

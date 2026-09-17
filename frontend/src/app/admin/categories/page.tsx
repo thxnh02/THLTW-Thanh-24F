@@ -4,7 +4,7 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { useConfirm } from "@/contexts/ConfirmContext";
-import { ApiError, apiDelete, apiGet, apiPatch, apiPost } from "@/lib/api";
+import { ApiError, apiDelete, apiGetList, apiPatch, apiPost } from "@/lib/api";
 
 type CategoryRow = {
   id: number;
@@ -25,8 +25,8 @@ export default function AdminCategoriesPage() {
   const [message, setMessage] = useState("");
 
   const load = useCallback(() => {
-    apiGet<{ data: CategoryRow[] }>("/admin/categories")
-      .then((payload) => setCategories(payload.data ?? []))
+    apiGetList<CategoryRow>("/admin/categories")
+      .then(setCategories)
       .catch((reason: Error) => {
         if (reason instanceof ApiError && reason.status === 401) {
           router.push("/admin/login");

@@ -23,6 +23,12 @@ export async function apiGet<T>(path: string): Promise<T> {
   return parseResponse<T>(response);
 }
 
+export async function apiGetList<T>(path: string): Promise<T[]> {
+  const payload = await apiGet<T[] | { data: T[] }>(path);
+
+  return Array.isArray(payload) ? payload : payload.data;
+}
+
 export async function apiPost<T>(
   path: string,
   payload: unknown,
@@ -106,6 +112,22 @@ export async function apiUploadImage(file: File, directory?: string): Promise<{
   });
 
   return parseResponse(response);
+}
+
+export async function apiUploadForm<T>(
+  path: string,
+  formData: FormData,
+): Promise<T> {
+  await ensureCsrfCookie();
+
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method: "POST",
+    headers: authHeaders(),
+    body: formData,
+    credentials: "include",
+  });
+
+  return parseResponse<T>(response);
 }
 
 async function parseResponse<T>(response: Response): Promise<T> {

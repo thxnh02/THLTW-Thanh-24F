@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-import { ApiError, apiGet, apiPost } from "@/lib/api";
+import { ApiError, apiGetList, apiPost } from "@/lib/api";
 import { formatVnd } from "@/lib/format";
 import type { Order } from "@/types/api";
 
@@ -14,8 +14,8 @@ export default function AccountOrdersPage() {
   const [message, setMessage] = useState("");
 
   const loadOrders = useCallback(() => {
-    apiGet<{ data: Order[] }>("/account/orders")
-      .then((payload) => setOrders(payload.data ?? []))
+    apiGetList<Order>("/account/orders")
+      .then(setOrders)
       .catch((reason: Error) => {
         if (reason instanceof ApiError && reason.status === 401) {
           router.push("/login");

@@ -35,3 +35,13 @@ Implemented in this slice:
 - SEO foundation with metadata, robots.txt and sitemap.xml
 - GitHub Actions CI for backend tests and frontend lint/type/build
 - Demo seed data
+# Feature Completion Notes
+
+- Shipping methods: public checkout methods, admin CRUD, server-side fee calculation, order-level method/fee snapshot, carrier/tracking fields, shipped/delivered timestamps.
+- Returns/refunds: member return requests for completed orders, admin approve/reject/receive/complete flow, refund status tracking, stock restore once on received returns.
+- Product CSV import: admin template download, preview, create/update/upsert modes, SKU/category/brand/price/stock validation.
+- Invoices: existing HTML invoice retained; authenticated `.pdf` endpoints added for member/admin downloads.
+- Reports: admin overview metrics and CSV export; canceled orders are excluded from valid revenue.
+- Roles: `admin`, `manager`, `staff`, `member`; backend admin access is centralized with permission checks for sensitive sections.
+- Promotions: targeting by all/products/categories/brands, first-order-only, free shipping, min quantity, existing usage limits.
+- Notifications: order status email plus member notification center for status updates.
