@@ -20,7 +20,7 @@ class EnsureAdmin
         if (! $user?->canAccessAdmin()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Ban khong co quyen truy cap khu vuc quan tri.',
+                'message' => 'Bạn không có quyền truy cập khu vực quản trị.',
                 'errors' => (object) [],
             ], 403);
         }
@@ -30,7 +30,7 @@ class EnsureAdmin
         if ($permission && ! $user->hasAdminPermission($permission)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Tai khoan khong co quyen thuc hien thao tac nay.',
+                'message' => 'Tài khoản không có quyền thực hiện thao tác này.',
                 'errors' => (object) [],
             ], 403);
         }

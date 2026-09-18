@@ -21,7 +21,7 @@ class ProductImportController extends Controller
         return response()->streamDownload(function (): void {
             $handle = fopen('php://output', 'w');
             fputcsv($handle, ['product_name', 'slug', 'category', 'brand', 'status', 'featured', 'sku', 'variant_name', 'price', 'sale_price', 'stock', 'short_description', 'description', 'image']);
-            fputcsv($handle, ['San pham mau', 'san-pham-mau', 'Dien thoai', 'Apple', 'active', 'yes', 'SKU-DEMO-001', 'Tieu chuan', '1000000', '900000', '10', 'Mo ta ngan', 'Mo ta day du', '/product-placeholder.svg']);
+            fputcsv($handle, ['Tên sản phẩm', 'slug-san-pham', 'Điện thoại', 'Apple', 'active', 'yes', 'SKU-0001', 'Tiêu chuẩn', '1000000', '900000', '10', 'Mô tả ngắn', 'Mô tả đầy đủ', '/product-placeholder.svg']);
             fclose($handle);
         }, 'product-import-template.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
@@ -41,7 +41,7 @@ class ProductImportController extends Controller
 
         $validated = $this->validated($request);
 
-        return $this->success($importService->import($validated['file'], $validated['mode']), 'Da xu ly file CSV.');
+        return $this->success($importService->import($validated['file'], $validated['mode']), 'Đã xử lý file CSV.');
     }
 
     /**

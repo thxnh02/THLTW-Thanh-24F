@@ -43,7 +43,7 @@ export default function AdminBrandsPage() {
       ...form,
       slug: form.slug || undefined,
     });
-    setMessage("Da tao thuong hieu.");
+    setMessage("Đã tạo thương hiệu.");
     setForm({ name: "", slug: "", status: "active" });
     load();
   }
@@ -51,9 +51,9 @@ export default function AdminBrandsPage() {
   async function remove(brand: BrandRow) {
     setMessage("");
     const accepted = await confirm({
-      title: "Xoa thuong hieu?",
-      message: `Ban chac chan muon xoa thuong hieu "${brand.name}"?`,
-      confirmLabel: "Xoa",
+      title: "Xóa thương hiệu?",
+      message: `Bạn có chắc muốn xóa thương hiệu "${brand.name}"?`,
+      confirmLabel: "Xóa",
     });
 
     if (!accepted) {
@@ -62,20 +62,20 @@ export default function AdminBrandsPage() {
 
     try {
       await apiDelete(`/admin/brands/${brand.id}`);
-      setMessage("Da xoa thuong hieu.");
+      setMessage("Đã xóa thương hiệu.");
       load();
     } catch (reason) {
-      setMessage(reason instanceof Error ? reason.message : "Khong the xoa thuong hieu.");
+      setMessage(reason instanceof Error ? reason.message : "Không thể xóa thương hiệu.");
     }
   }
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-8">
-      <h1 className="text-3xl font-bold text-slate-950">Quan ly thuong hieu</h1>
+      <h1 className="text-3xl font-bold text-slate-950">Quản lý thương hiệu</h1>
       <form onSubmit={submit} className="mt-6 grid gap-3 rounded-md border border-slate-200 bg-white p-4 shadow-sm md:grid-cols-4">
         <input
           required
-          placeholder="Ten thuong hieu"
+          placeholder="Tên thương hiệu"
           value={form.name}
           onChange={(event) => setForm({ ...form, name: event.target.value })}
           className="h-10 rounded-md border border-slate-300 px-3"
@@ -91,21 +91,21 @@ export default function AdminBrandsPage() {
           onChange={(event) => setForm({ ...form, status: event.target.value })}
           className="h-10 rounded-md border border-slate-300 px-3"
         >
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
+          <option value="active">Đang hoạt động</option>
+          <option value="inactive">Đã tắt</option>
         </select>
-        <button className="rounded-md bg-slate-950 px-4 text-sm font-semibold text-white">Tao</button>
+        <button className="rounded-md bg-slate-950 px-4 text-sm font-semibold text-white">Tạo</button>
       </form>
       {message ? <p className="mt-3 text-sm text-teal-700">{message}</p> : null}
       <div className="mt-6 overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
         <table className="w-full border-collapse text-left text-sm">
           <thead className="bg-slate-100 text-slate-700">
             <tr>
-              <th className="p-3">Ten</th>
+              <th className="p-3">Tên</th>
               <th className="p-3">Slug</th>
-              <th className="p-3">Status</th>
-              <th className="p-3">San pham</th>
-              <th className="p-3">Thao tac</th>
+              <th className="p-3">Trạng thái</th>
+              <th className="p-3">Sản phẩm</th>
+              <th className="p-3">Thao tác</th>
             </tr>
           </thead>
           <tbody>
@@ -113,7 +113,7 @@ export default function AdminBrandsPage() {
               <tr key={brand.id} className="border-t border-slate-200">
                 <td className="p-3 font-semibold">{brand.name}</td>
                 <td className="p-3">{brand.slug}</td>
-                <td className="p-3">{brand.status}</td>
+                <td className="p-3">{brand.status === "active" ? "Đang hoạt động" : "Đã tắt"}</td>
                 <td className="p-3">{brand.products_count ?? 0}</td>
                 <td className="p-3">
                   <button
@@ -122,7 +122,7 @@ export default function AdminBrandsPage() {
                     onClick={() => remove(brand)}
                     className="rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    Xoa
+                    Xóa
                   </button>
                 </td>
               </tr>

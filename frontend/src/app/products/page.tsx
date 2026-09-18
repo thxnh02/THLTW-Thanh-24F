@@ -1,38 +1,18 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import type { ReactNode } from "react";
 
 import { ProductCard } from "@/components/ProductCard";
-import { apiGet } from "@/lib/api";
+import { Button, EmptyState, ErrorState, Input, Select, Skeleton } from "@/components/ui";
+import { apiGetList, apiGetResponse } from "@/lib/api";
 import type { Brand, Category, PaginatedMeta, Product } from "@/types/api";
 
-type ProductsResponse = Product[];
+type FilterState = { q: string; category: string; brand: string; min_price: string; max_price: string; sort: string; page: string };
 
-function getInitialQuery() {
-  if (typeof window === "undefined") {
-    return {
-      q: "",
-      category: "",
-      brand: "",
-      min_price: "",
-      max_price: "",
-      sort: "newest",
-      page: "1",
-    };
-  }
-
+function initialQuery(): FilterState {
+  if (typeof window === "undefined") return { q: "", category: "", brand: "", min_price: "", max_price: "", sort: "newest", page: "1" };
   const params = new URLSearchParams(window.location.search);
-
-  return {
-    q: params.get("q") ?? "",
-    category: params.get("category") ?? "",
-    brand: params.get("brand") ?? "",
-    min_price: params.get("min_price") ?? "",
-    max_price: params.get("max_price") ?? "",
-    sort: params.get("sort") ?? "newest",
-    page: params.get("page") ?? "1",
-  };
+  return { q: params.get("q") || "", category: params.get("category") || "", brand: params.get("brand") || "", min_price: params.get("min_price") || "", max_price: params.get("max_price") || "", sort: params.get("sort") || "newest", page: params.get("page") || "1" };
 }
 
 export default function ProductsPage() {
@@ -40,171 +20,19 @@ export default function ProductsPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
   const [meta, setMeta] = useState<PaginatedMeta>({});
+  const [query, setQuery] = useState<FilterState>(initialQuery);
   const [loading, setLoading] = useState(true);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [error, setError] = useState("");
-  const [query, setQuery] = useState(getInitialQuery);
+  const [reload, setReload] = useState(0);
+  const queryString = useMemo(() => { const params = new URLSearchParams(); Object.entries(query).forEach(([key, value]) => value && params.set(key, value)); return params.toString(); }, [query]);
 
-  useEffect(() => {
-    Promise.all([apiGet<Category[]>("/categories"), apiGet<Brand[]>("/brands")])
-      .then(([categoryData, brandData]) => {
-        setCategories(categoryData);
-        setBrands(brandData);
-      })
-      .catch((reason: Error) => setError(reason.message));
-  }, []);
+  useEffect(() => { Promise.all([apiGetList<Category>("/categories"), apiGetList<Brand>("/brands")]).then(([categoryData, brandData]) => { setCategories(categoryData); setBrands(brandData); }).catch(() => setError("Không thể tải bộ lọc sản phẩm.")); }, []);
+  useEffect(() => { let active = true; window.history.replaceState(null, "", queryString ? `/products?${queryString}` : "/products"); apiGetResponse<Product[]>(`/products?${queryString}`).then(({ data, meta: responseMeta }) => { if (!active) return; setProducts(data); setMeta(responseMeta as PaginatedMeta); }).catch(() => active && setError("Không thể tải danh sách sản phẩm. Vui lòng thử lại.")).finally(() => active && setLoading(false)); return () => { active = false; }; }, [queryString, reload]);
 
-  const queryString = useMemo(() => {
-    const params = new URLSearchParams();
-    Object.entries(query).forEach(([key, value]) => {
-      if (value) {
-        params.set(key, value);
-      }
-    });
-    return params.toString();
-  }, [query]);
+  const updateFilter = (key: keyof FilterState, value: string) => { setLoading(true); setError(""); setQuery((current) => ({ ...current, [key]: value, page: key === "page" ? value : "1" })); };
+  const clearFilters = () => { setLoading(true); setError(""); setQuery({ q: "", category: "", brand: "", min_price: "", max_price: "", sort: "newest", page: "1" }); };
+  const activeFilters = [["q", query.q], ["category", categories.find((item) => item.slug === query.category)?.name], ["brand", brands.find((item) => item.slug === query.brand)?.name], ["min_price", query.min_price ? `Từ ${query.min_price}` : ""], ["max_price", query.max_price ? `Đến ${query.max_price}` : ""]] as const;
 
-  useEffect(() => {
-    window.history.replaceState(null, "", queryString ? `/products?${queryString}` : "/products");
-    apiGet<ProductsResponse>(`/products?${queryString}`)
-      .then((data) => {
-        setProducts(data);
-        return fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1"}/products?${queryString}`);
-      })
-      .then((response) => response.json())
-      .then((json) => setMeta(json.meta ?? {}))
-      .catch((reason: Error) => setError(reason.message))
-      .finally(() => setLoading(false));
-  }, [queryString]);
-
-  function updateFilter(key: keyof typeof query, value: string) {
-    setLoading(true);
-    setError("");
-    setQuery((current) => ({ ...current, [key]: value, page: key === "page" ? value : "1" }));
-  }
-
-  return (
-    <main className="mx-auto max-w-7xl px-4 py-8">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-slate-950">San pham</h1>
-        <p className="mt-2 text-slate-600">Loc theo danh muc, thuong hieu, gia va sap xep bang query URL.</p>
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
-        <aside className="h-fit rounded-md border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="space-y-4">
-            <label className="block text-sm font-semibold text-slate-700">
-              Tu khoa
-              <input
-                value={query.q}
-                onChange={(event) => updateFilter("q", event.target.value)}
-                className="mt-1 h-10 w-full rounded-md border border-slate-300 px-3 font-normal outline-none focus:border-slate-950"
-                placeholder="iPhone, SKU..."
-              />
-            </label>
-            <label className="block text-sm font-semibold text-slate-700">
-              Danh muc
-              <select
-                value={query.category}
-                onChange={(event) => updateFilter("category", event.target.value)}
-                className="mt-1 h-10 w-full rounded-md border border-slate-300 px-3 font-normal outline-none focus:border-slate-950"
-              >
-                <option value="">Tat ca</option>
-                {categories.map((category) => (
-                  <option key={category.id} value={category.slug}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="block text-sm font-semibold text-slate-700">
-              Thuong hieu
-              <select
-                value={query.brand}
-                onChange={(event) => updateFilter("brand", event.target.value)}
-                className="mt-1 h-10 w-full rounded-md border border-slate-300 px-3 font-normal outline-none focus:border-slate-950"
-              >
-                <option value="">Tat ca</option>
-                {brands.map((brand) => (
-                  <option key={brand.id} value={brand.slug}>
-                    {brand.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <div className="grid grid-cols-2 gap-3">
-              <label className="block text-sm font-semibold text-slate-700">
-                Gia tu
-                <input
-                  type="number"
-                  value={query.min_price}
-                  onChange={(event) => updateFilter("min_price", event.target.value)}
-                  className="mt-1 h-10 w-full rounded-md border border-slate-300 px-3 font-normal outline-none focus:border-slate-950"
-                />
-              </label>
-              <label className="block text-sm font-semibold text-slate-700">
-                Den
-                <input
-                  type="number"
-                  value={query.max_price}
-                  onChange={(event) => updateFilter("max_price", event.target.value)}
-                  className="mt-1 h-10 w-full rounded-md border border-slate-300 px-3 font-normal outline-none focus:border-slate-950"
-                />
-              </label>
-            </div>
-            <label className="block text-sm font-semibold text-slate-700">
-              Sap xep
-              <select
-                value={query.sort}
-                onChange={(event) => updateFilter("sort", event.target.value)}
-                className="mt-1 h-10 w-full rounded-md border border-slate-300 px-3 font-normal outline-none focus:border-slate-950"
-              >
-                <option value="newest">Moi nhat</option>
-                <option value="price_asc">Gia tang dan</option>
-                <option value="price_desc">Gia giam dan</option>
-                <option value="best_selling">Ban chay</option>
-              </select>
-            </label>
-          </div>
-        </aside>
-
-        <section>
-          {loading ? <Panel>Dang tai san pham...</Panel> : null}
-          {error ? <Panel>{error}</Panel> : null}
-          {!loading && !error && products.length === 0 ? <Panel>Khong co san pham phu hop.</Panel> : null}
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {products.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
-          <div className="mt-6 flex items-center justify-between rounded-md border border-slate-200 bg-white p-3 text-sm">
-            <span>
-              Trang {meta.current_page ?? query.page} / {meta.last_page ?? 1}
-            </span>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                disabled={Number(query.page) <= 1}
-                onClick={() => updateFilter("page", String(Number(query.page) - 1))}
-                className="rounded-md border border-slate-300 px-3 py-2 disabled:opacity-50"
-              >
-                Truoc
-              </button>
-              <button
-                type="button"
-                disabled={Number(query.page) >= Number(meta.last_page ?? 1)}
-                onClick={() => updateFilter("page", String(Number(query.page) + 1))}
-                className="rounded-md border border-slate-300 px-3 py-2 disabled:opacity-50"
-              >
-                Sau
-              </button>
-            </div>
-          </div>
-        </section>
-      </div>
-    </main>
-  );
-}
-
-function Panel({ children }: { children: ReactNode }) {
-  return <div className="mb-4 rounded-md border border-slate-200 bg-white p-4 text-slate-700">{children}</div>;
+  return <main className="mx-auto max-w-7xl px-4 py-8"><div className="mb-7"><p className="text-sm font-bold uppercase tracking-wider text-teal-700">Cửa hàng</p><h1 className="mt-1 text-3xl font-bold text-slate-950">Sản phẩm</h1><p className="mt-2 text-slate-600">Tìm sản phẩm phù hợp theo danh mục, thương hiệu và mức giá.</p></div><div className="mb-5 flex flex-wrap items-center justify-between gap-3"><p className="text-sm text-slate-600">{loading ? "Đang cập nhật..." : `${meta.total ?? products.length} sản phẩm`}</p><Button variant="secondary" className="lg:hidden" onClick={() => setFiltersOpen(true)}>☷ &nbsp; Bộ lọc</Button></div><div className="flex flex-wrap gap-2 pb-5">{activeFilters.filter(([, value]) => value).map(([key, value]) => <button key={key} type="button" onClick={() => updateFilter(key as keyof FilterState, "")} className="rounded-full bg-teal-50 px-3 py-1.5 text-xs font-semibold text-teal-800 hover:bg-teal-100">{value} ×</button>)}{activeFilters.some(([, value]) => value) ? <button type="button" onClick={clearFilters} className="px-2 py-1 text-xs font-semibold text-slate-600 underline">Xóa bộ lọc</button> : null}</div><div className="grid gap-6 lg:grid-cols-[280px_1fr]"><aside className={`${filtersOpen ? "fixed inset-0 z-50 block bg-black/30" : "hidden"} lg:static lg:block lg:bg-transparent`}><div className={`${filtersOpen ? "absolute bottom-0 left-0 right-0 max-h-[90vh] overflow-auto rounded-t-lg" : ""} h-fit bg-white p-5 shadow-lg lg:rounded-lg lg:border lg:border-slate-200 lg:shadow-sm`}><div className="mb-5 flex items-center justify-between"><h2 className="font-bold text-slate-950">Bộ lọc</h2><button type="button" className="text-2xl lg:hidden" onClick={() => setFiltersOpen(false)} aria-label="Đóng bộ lọc">×</button></div><div className="space-y-4"><label className="block text-sm font-semibold text-slate-700">Từ khóa<Input value={query.q} onChange={(event) => updateFilter("q", event.target.value)} className="mt-1" placeholder="Tên hoặc mã sản phẩm" /></label><label className="block text-sm font-semibold text-slate-700">Danh mục<Select value={query.category} onChange={(event) => updateFilter("category", event.target.value)} className="mt-1"><option value="">Tất cả danh mục</option>{categories.map((item) => <option key={item.id} value={item.slug}>{item.name}</option>)}</Select></label><label className="block text-sm font-semibold text-slate-700">Thương hiệu<Select value={query.brand} onChange={(event) => updateFilter("brand", event.target.value)} className="mt-1"><option value="">Tất cả thương hiệu</option>{brands.map((item) => <option key={item.id} value={item.slug}>{item.name}</option>)}</Select></label><div className="grid grid-cols-2 gap-3"><label className="block text-sm font-semibold text-slate-700">Giá từ<Input type="number" min="0" value={query.min_price} onChange={(event) => updateFilter("min_price", event.target.value)} className="mt-1" /></label><label className="block text-sm font-semibold text-slate-700">Giá đến<Input type="number" min="0" value={query.max_price} onChange={(event) => updateFilter("max_price", event.target.value)} className="mt-1" /></label></div><label className="block text-sm font-semibold text-slate-700">Sắp xếp<Select value={query.sort} onChange={(event) => updateFilter("sort", event.target.value)} className="mt-1"><option value="newest">Mới nhất</option><option value="price_asc">Giá tăng dần</option><option value="price_desc">Giá giảm dần</option><option value="best_selling">Bán chạy</option></Select></label><Button variant="secondary" className="w-full lg:hidden" onClick={() => setFiltersOpen(false)}>Xem kết quả</Button></div></div></aside><section aria-live="polite">{error ? <ErrorState message={error} onRetry={() => { setLoading(true); setError(""); setReload((value) => value + 1); }} /> : loading ? <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{[1, 2, 3, 4, 5, 6].map((item) => <Skeleton key={item} className="h-96" />)}</div> : products.length === 0 ? <EmptyState title="Không tìm thấy sản phẩm" message="Hãy thử thay đổi từ khóa hoặc bộ lọc của bạn." action={<Button variant="secondary" onClick={clearFilters}>Xóa bộ lọc</Button>} /> : <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{products.map((product) => <ProductCard key={product.id} product={product} />)}</div>}<div className="mt-6 flex items-center justify-between gap-4 rounded-lg border border-slate-200 bg-white p-3 text-sm"><span>Trang {meta.current_page ?? query.page} / {meta.last_page ?? 1}</span><div className="flex gap-2"><Button variant="secondary" className="min-h-10 px-3" disabled={Number(query.page) <= 1 || loading} onClick={() => updateFilter("page", String(Number(query.page) - 1))}>Trước</Button><Button variant="secondary" className="min-h-10 px-3" disabled={Number(query.page) >= Number(meta.last_page ?? 1) || loading} onClick={() => updateFilter("page", String(Number(query.page) + 1))}>Sau</Button></div></div></section></div></main>;
 }

@@ -86,10 +86,10 @@ export default function AdminProductsPage() {
 
     if (form.id) {
       await apiPatch(`/admin/products/${form.id}`, payload);
-      setMessage("Da cap nhat san pham.");
+    setMessage("Đã cập nhật sản phẩm.");
     } else {
       await apiPost("/admin/products", payload);
-      setMessage("Da tao san pham.");
+    setMessage("Đã tạo sản phẩm.");
     }
 
     setForm(emptyForm);
@@ -122,9 +122,9 @@ export default function AdminProductsPage() {
   async function remove(product: Product) {
     setMessage("");
     const accepted = await confirm({
-      title: "Xoa san pham?",
-      message: `Ban chac chan muon xoa hoac an san pham "${product.name}"?`,
-      confirmLabel: "Xoa",
+      title: "Xóa sản phẩm?",
+      message: `Bạn chắc chắn muốn xóa hoặc ẩn sản phẩm "${product.name}"?`,
+      confirmLabel: "Xóa",
     });
 
     if (!accepted) {
@@ -132,14 +132,14 @@ export default function AdminProductsPage() {
     }
 
     await apiDelete(`/admin/products/${product.id}`);
-    setMessage("Da xoa hoac an san pham.");
+    setMessage("Đã xóa hoặc ẩn sản phẩm.");
     load();
   }
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-8">
       <div className="mb-6 flex items-center justify-between gap-3">
-        <h1 className="text-3xl font-bold text-slate-950">Quan ly san pham</h1>
+        <h1 className="text-3xl font-bold text-slate-950">Quản lý sản phẩm</h1>
         <Link href="/products" className="rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold">
           Xem shop
         </Link>
@@ -149,12 +149,12 @@ export default function AdminProductsPage() {
       </div>
 
       <form onSubmit={submit} className="grid gap-4 rounded-md border border-slate-200 bg-white p-5 shadow-sm lg:grid-cols-4">
-        <Input label="Ten san pham" value={form.name} onChange={(value) => setForm({ ...form, name: value })} required />
+        <Input label="Tên sản phẩm" value={form.name} onChange={(value) => setForm({ ...form, name: value })} required />
         <Input label="Slug" value={form.slug} onChange={(value) => setForm({ ...form, slug: value })} />
         <label className="block text-sm font-semibold text-slate-700">
-          Danh muc
+                Danh mục
           <select required value={form.category_id} onChange={(event) => setForm({ ...form, category_id: event.target.value })} className="mt-1 h-10 w-full rounded-md border border-slate-300 px-3 font-normal">
-            <option value="">Chon danh muc</option>
+            <option value="">Chọn danh mục</option>
             {categories.map((category) => (
               <option key={category.id} value={category.id}>
                 {category.name}
@@ -163,9 +163,9 @@ export default function AdminProductsPage() {
           </select>
         </label>
         <label className="block text-sm font-semibold text-slate-700">
-          Thuong hieu
+                Thương hiệu
           <select value={form.brand_id} onChange={(event) => setForm({ ...form, brand_id: event.target.value })} className="mt-1 h-10 w-full rounded-md border border-slate-300 px-3 font-normal">
-            <option value="">Khong co</option>
+            <option value="">Không có</option>
             {brands.map((brand) => (
               <option key={brand.id} value={brand.id}>
                 {brand.name}
@@ -176,10 +176,10 @@ export default function AdminProductsPage() {
         <Input label="SKU" value={form.sku} onChange={(value) => setForm({ ...form, sku: value })} required />
         <Input label="Ten variant" value={form.variant_name} onChange={(value) => setForm({ ...form, variant_name: value })} required />
         <Input label="Gia" type="number" value={form.price} onChange={(value) => setForm({ ...form, price: value })} required />
-        <Input label="Gia sale" type="number" value={form.sale_price} onChange={(value) => setForm({ ...form, sale_price: value })} />
-        <Input label="Ton kho" type="number" value={form.stock_quantity} onChange={(value) => setForm({ ...form, stock_quantity: value })} required />
+        <Input label="Giá khuyến mãi" type="number" value={form.sale_price} onChange={(value) => setForm({ ...form, sale_price: value })} />
+        <Input label="Tồn kho" type="number" value={form.stock_quantity} onChange={(value) => setForm({ ...form, stock_quantity: value })} required />
         <label className="block text-sm font-semibold text-slate-700 lg:col-span-2">
-          Anh san pham
+          Ảnh sản phẩm
           <input value={form.images[0] ?? ""} onChange={(event) => setForm({ ...form, images: [event.target.value, ...form.images.slice(1)] })} required className="mt-1 h-10 w-full rounded-md border border-slate-300 px-3 font-normal outline-none focus:border-slate-950" />
           <div className="mt-2">
             <AdminImageUpload value={form.images[0] ?? ""} directory="products" onChange={(value) => setForm({ ...form, images: [value, ...form.images.filter((image) => image !== value)] })} />
@@ -189,42 +189,42 @@ export default function AdminProductsPage() {
               <div key={`${image}-${index}`} className="flex gap-2">
                 <input value={image} onChange={(event) => setForm({ ...form, images: form.images.map((item, itemIndex) => itemIndex === index ? event.target.value : item) })} className="h-9 min-w-0 flex-1 rounded-md border border-slate-300 px-3 text-xs font-normal" />
                 <button type="button" onClick={() => setForm({ ...form, images: form.images.filter((_, itemIndex) => itemIndex !== index) })} className="rounded-md border border-slate-300 px-3 text-xs font-semibold">
-                  Xoa
+                  Xóa
                 </button>
               </div>
             ))}
             <button type="button" onClick={() => setForm({ ...form, images: [...form.images, ""] })} className="rounded-md border border-slate-300 px-3 py-2 text-xs font-semibold">
-              Them anh
+              Thêm ảnh
             </button>
           </div>
         </label>
         <label className="block text-sm font-semibold text-slate-700">
           Status
           <select value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value as ProductForm["status"] })} className="mt-1 h-10 w-full rounded-md border border-slate-300 px-3 font-normal">
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-            <option value="draft">Draft</option>
+            <option value="active">Đang bán</option>
+            <option value="inactive">Đã tắt</option>
+            <option value="draft">Bản nháp</option>
           </select>
         </label>
         <label className="flex items-center gap-2 pt-7 text-sm font-semibold text-slate-700">
           <input type="checkbox" checked={form.featured} onChange={(event) => setForm({ ...form, featured: event.target.checked })} />
-          Noi bat
+          Nổi bật
         </label>
         <label className="block text-sm font-semibold text-slate-700 lg:col-span-2">
-          Mo ta ngan
+          Mô tả ngắn
           <textarea value={form.short_description} onChange={(event) => setForm({ ...form, short_description: event.target.value })} className="mt-1 min-h-20 w-full rounded-md border border-slate-300 px-3 py-2 font-normal" />
         </label>
         <label className="block text-sm font-semibold text-slate-700 lg:col-span-2">
-          Mo ta day du
+          Mô tả đầy đủ
           <textarea value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} className="mt-1 min-h-20 w-full rounded-md border border-slate-300 px-3 py-2 font-normal" />
         </label>
         <div className="flex gap-2 lg:col-span-4">
           <button className="rounded-md bg-slate-950 px-5 py-3 text-sm font-semibold text-white">
-            {form.id ? "Cap nhat" : "Tao san pham"}
+            {form.id ? "Cập nhật" : "Tạo sản phẩm"}
           </button>
           {form.id ? (
             <button type="button" onClick={() => setForm(emptyForm)} className="rounded-md border border-slate-300 px-5 py-3 text-sm font-semibold">
-              Huy sua
+              Hủy sửa
             </button>
           ) : null}
         </div>
@@ -235,12 +235,7 @@ export default function AdminProductsPage() {
         <table className="w-full border-collapse text-left text-sm">
           <thead className="bg-slate-100 text-slate-700">
             <tr>
-              <th className="p-3">San pham</th>
-              <th className="p-3">Danh muc</th>
-              <th className="p-3">Gia</th>
-              <th className="p-3">Ton kho</th>
-              <th className="p-3">Status</th>
-              <th className="p-3">Thao tac</th>
+              <th className="p-3">Sản phẩm</th><th className="p-3">Danh mục</th><th className="p-3">Giá</th><th className="p-3">Tồn kho</th><th className="p-3">Trạng thái</th><th className="p-3">Thao tác</th>
             </tr>
           </thead>
           <tbody>
@@ -250,7 +245,7 @@ export default function AdminProductsPage() {
                 <td className="p-3">{product.category?.name}</td>
                 <td className="p-3">{formatVnd(product.default_variant?.sale_price ?? product.default_variant?.price)}</td>
                 <td className="p-3">{product.default_variant?.stock_quantity ?? 0}</td>
-                <td className="p-3">{product.status ?? "active"}</td>
+                <td className="p-3">{product.status === "inactive" ? "Đã tắt" : product.status === "draft" ? "Bản nháp" : "Đang bán"}</td>
                 <td className="flex gap-2 p-3">
                   <button type="button" onClick={() => edit(product)} className="rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold">
                     Sua

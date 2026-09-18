@@ -51,13 +51,13 @@ class ContactController extends Controller
         ]);
         $contact->update($validated);
 
-        return $this->success($contact->refresh(), 'Da cap nhat lien he.');
+        return $this->success($contact->refresh(), 'Đã cập nhật liên hệ.');
     }
 
     public function destroy(Contact $contact): JsonResponse
     {
         $contact->delete();
 
-        return $this->success(null, 'Da xoa lien he.');
+        return $this->success(null, 'Đã xóa liên hệ.');
     }
 }

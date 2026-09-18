@@ -85,7 +85,7 @@ class ProductImportService
         $handle = fopen($file->getRealPath(), 'r');
 
         if (! $handle) {
-            abort(422, 'Khong the doc file CSV.');
+            abort(422, 'Không thể đọc file CSV.');
         }
 
         $headers = array_map(fn (string $header): string => Str::snake(trim($header)), fgetcsv($handle) ?: []);
@@ -118,7 +118,7 @@ class ProductImportService
 
         foreach (['product_name', 'category', 'sku', 'variant_name', 'price', 'stock'] as $field) {
             if (trim((string) ($row[$field] ?? '')) === '') {
-                $errors[] = $field.' la bat buoc.';
+                $errors[] = $field.' là bắt buộc.';
             }
         }
 
@@ -129,19 +129,19 @@ class ProductImportService
         $existingVariant = $sku === '' ? null : ProductVariant::query()->where('sku', $sku)->first();
 
         if ($mode === 'create' && $existingVariant) {
-            $errors[] = 'SKU da ton tai trong he thong.';
+            $errors[] = 'SKU đã tồn tại trong hệ thống.';
         }
 
         if ($mode === 'update' && ! $existingVariant) {
-            $errors[] = 'SKU khong ton tai de cap nhat.';
+            $errors[] = 'SKU không tồn tại để cập nhật.';
         }
 
         if ($price < 0) {
-            $errors[] = 'Gia phai >= 0.';
+            $errors[] = 'Giá phải >= 0.';
         }
 
         if ($salePrice !== null && $salePrice > $price) {
-            $errors[] = 'Gia sale khong duoc lon hon gia goc.';
+            $errors[] = 'Giá khuyến mãi không được lớn hơn giá gốc.';
         }
 
         if ($stock < 0) {
@@ -149,11 +149,11 @@ class ProductImportService
         }
 
         if (! $this->findCategory($row['category'] ?? null)) {
-            $errors[] = 'Danh muc khong ton tai.';
+            $errors[] = 'Danh mục không tồn tại.';
         }
 
         if (trim((string) ($row['brand'] ?? '')) !== '' && ! $this->findBrand($row['brand'])) {
-            $errors[] = 'Thuong hieu khong ton tai.';
+            $errors[] = 'Thương hiệu không tồn tại.';
         }
 
         return $errors;

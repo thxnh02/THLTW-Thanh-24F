@@ -6,11 +6,13 @@ import { useRouter } from "next/navigation";
 import { AdminImageUpload } from "@/components/AdminImageUpload";
 import { ApiError, apiGet, apiPut } from "@/lib/api";
 import type { Setting } from "@/types/api";
+import { Button, Input, Select } from "@/components/ui";
 
 export default function AdminSettingsPage() {
   const router = useRouter();
   const [settings, setSettings] = useState<Setting[]>([]);
   const [message, setMessage] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const load = useCallback(() => {
     apiGet<Setting[]>("/admin/settings")
@@ -29,9 +31,16 @@ export default function AdminSettingsPage() {
   }, [load]);
 
   async function save() {
-    await apiPut("/admin/settings", { settings });
-    setMessage("Da luu cau hinh.");
-    load();
+    setSaving(true);
+    try {
+      await apiPut("/admin/settings", { settings });
+      setMessage("Đã lưu cấu hình.");
+      load();
+    } catch (reason) {
+      setMessage(reason instanceof Error ? reason.message : "Không thể lưu cấu hình.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   function addSetting() {
@@ -41,16 +50,16 @@ export default function AdminSettingsPage() {
   return (
     <main className="mx-auto max-w-5xl px-4 py-8">
       <div className="flex items-center justify-between gap-3">
-        <h1 className="text-3xl font-bold text-slate-950">Cau hinh website</h1>
-        <button type="button" onClick={addSetting} className="rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold">Them key</button>
+        <h1 className="text-3xl font-bold text-slate-950">Cấu hình cửa hàng</h1>
+        <Button type="button" variant="secondary" onClick={addSetting}>Thêm trường</Button>
       </div>
       {message ? <p className="mt-3 text-sm text-teal-700">{message}</p> : null}
       <div className="mt-6 grid gap-3 rounded-md border border-slate-200 bg-white p-5 shadow-sm">
         {settings.map((setting, index) => (
           <div key={`${setting.id}-${index}`} className="grid gap-3 rounded-md border border-slate-100 p-3 md:grid-cols-[1fr_2fr_160px]">
-            <input value={setting.key} onChange={(event) => setSettings((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, key: event.target.value } : item))} placeholder="key" className="h-10 rounded-md border border-slate-300 px-3" />
+            <Input value={setting.key} onChange={(event) => setSettings((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, key: event.target.value } : item))} placeholder="Khóa cấu hình" />
             <div className="grid gap-2">
-              <input value={setting.value ?? ""} onChange={(event) => setSettings((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, value: event.target.value } : item))} placeholder="value" className="h-10 rounded-md border border-slate-300 px-3" />
+              <Input value={setting.value ?? ""} onChange={(event) => setSettings((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, value: event.target.value } : item))} placeholder="Giá trị" />
               {isImageSetting(setting.key) ? (
                 <AdminImageUpload
                   value={setting.value ?? ""}
@@ -59,17 +68,12 @@ export default function AdminSettingsPage() {
                 />
               ) : null}
             </div>
-            <select value={setting.type} onChange={(event) => setSettings((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, type: event.target.value as Setting["type"] } : item))} className="h-10 rounded-md border border-slate-300 px-3">
-              <option value="string">String</option>
-              <option value="number">Number</option>
-              <option value="boolean">Boolean</option>
-              <option value="json">JSON</option>
-            </select>
+            <Select value={setting.type} onChange={(event) => setSettings((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, type: event.target.value as Setting["type"] } : item))} className="h-10">
+              <option value="string">Văn bản</option><option value="number">Số</option><option value="boolean">Đúng/Sai</option><option value="json">JSON</option>
+            </Select>
           </div>
         ))}
-        <button type="button" onClick={save} className="rounded-md bg-slate-950 px-5 py-3 text-sm font-semibold text-white">
-          Luu cau hinh
-        </button>
+        <Button type="button" onClick={() => void save()} disabled={saving}>{saving ? "Đang lưu..." : "Lưu cấu hình"}</Button>
       </div>
     </main>
   );

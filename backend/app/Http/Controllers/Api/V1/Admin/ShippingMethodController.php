@@ -26,7 +26,7 @@ class ShippingMethodController extends Controller
 
         $method = ShippingMethod::create($this->validated($request));
 
-        return $this->success($method, 'Da tao phuong thuc van chuyen.', status: 201);
+        return $this->success($method, 'Đã tạo phương thức vận chuyển.', status: 201);
     }
 
     public function show(Request $request, ShippingMethod $shippingMethod): JsonResponse
@@ -42,7 +42,7 @@ class ShippingMethodController extends Controller
 
         $shippingMethod->update($this->validated($request, $shippingMethod));
 
-        return $this->success($shippingMethod->refresh(), 'Da cap nhat phuong thuc van chuyen.');
+        return $this->success($shippingMethod->refresh(), 'Đã cập nhật phương thức vận chuyển.');
     }
 
     public function destroy(Request $request, ShippingMethod $shippingMethod): JsonResponse
@@ -52,12 +52,12 @@ class ShippingMethodController extends Controller
         if ($shippingMethod->orders()->exists()) {
             $shippingMethod->update(['active' => false]);
 
-            return $this->success($shippingMethod->refresh(), 'Phuong thuc da co don hang nen duoc chuyen ve ngung su dung.');
+            return $this->success($shippingMethod->refresh(), 'Phương thức đã có đơn hàng nên được chuyển về ngừng sử dụng.');
         }
 
         $shippingMethod->delete();
 
-        return $this->success(null, 'Da xoa phuong thuc van chuyen.');
+        return $this->success(null, 'Đã xóa phương thức vận chuyển.');
     }
 
     /**

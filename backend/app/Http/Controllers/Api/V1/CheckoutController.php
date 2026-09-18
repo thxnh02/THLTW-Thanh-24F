@@ -48,7 +48,7 @@ class CheckoutController extends Controller
             ->first();
 
         if ($existingOrder) {
-            return $this->success($existingOrder, 'Don hang da ton tai.');
+            return $this->success($existingOrder, 'Đơn hàng đã tồn tại.');
         }
 
         try {
@@ -65,7 +65,7 @@ class CheckoutController extends Controller
                 );
 
                 if (($validated['promotion_code'] ?? null) && ! $quote['promotion']) {
-                    abort(409, 'Ma khuyen mai khong hop le hoac da het luot su dung.');
+                    abort(409, 'Mã khuyến mãi không hợp lệ hoặc đã hết lượt sử dụng.');
                 }
 
                 $order = Order::create([
@@ -93,7 +93,7 @@ class CheckoutController extends Controller
                     $variant = ProductVariant::query()->with('product')->lockForUpdate()->findOrFail($line['variant_id']);
 
                     if (! $variant->active || $variant->stock_quantity < $line['quantity']) {
-                        abort(409, 'San pham '.$variant->sku.' khong du ton kho.');
+                        abort(409, 'Sản phẩm '.$variant->sku.' không đủ tồn kho.');
                     }
 
                     $variant->decrement('stock_quantity', $line['quantity']);
@@ -157,7 +157,7 @@ class CheckoutController extends Controller
 
         $this->sendOrderConfirmation($order);
 
-        return $this->success($order, 'Dat hang thanh cong.', status: 201);
+        return $this->success($order, 'Đặt hàng thành công.', status: 201);
     }
 
     private function generateOrderCode(): string
@@ -186,7 +186,7 @@ class CheckoutController extends Controller
             'vnp_Amount' => (int) round((float) $order->grand_total * 100),
             'vnp_CurrCode' => 'VND',
             'vnp_TxnRef' => $order->code,
-            'vnp_OrderInfo' => 'Thanh toan don hang '.$order->code,
+            'vnp_OrderInfo' => 'Thanh toán đơn hàng '.$order->code,
             'vnp_OrderType' => 'other',
             'vnp_Locale' => 'vn',
             'vnp_ReturnUrl' => config('services.vnpay.return_url'),

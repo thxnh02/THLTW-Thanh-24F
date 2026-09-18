@@ -36,7 +36,7 @@ class AccountNotificationController extends Controller
 
         $notification->update(['read_at' => now()]);
 
-        return $this->success($notification->refresh(), 'Da danh dau da doc.');
+        return $this->success($notification->refresh(), 'Đã đánh dấu đã đọc.');
     }
 
     public function markAllRead(Request $request): JsonResponse
@@ -46,6 +46,6 @@ class AccountNotificationController extends Controller
             ->whereNull('read_at')
             ->update(['read_at' => now()]);
 
-        return $this->success(null, 'Da danh dau tat ca thong bao.');
+        return $this->success(null, 'Đã đánh dấu tất cả thông báo.');
     }
 }

@@ -38,10 +38,10 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
             <p className="mt-2 text-sm leading-6 text-slate-600">{pending.message}</p>
             <div className="mt-6 flex justify-end gap-2">
               <button type="button" onClick={() => close(false)} className="rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold">
-                Huy
+                Hủy
               </button>
               <button type="button" onClick={() => close(true)} className="rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white">
-                {pending.confirmLabel ?? "Xac nhan"}
+                {pending.confirmLabel ?? "Xác nhận"}
               </button>
             </div>
           </section>

@@ -3,6 +3,7 @@
 import { FormEvent, useState } from "react";
 
 import { apiPost } from "@/lib/api";
+import { Button, Input } from "@/components/ui";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -12,22 +13,22 @@ export default function ForgotPasswordPage() {
     event.preventDefault();
     try {
       await apiPost("/auth/forgot-password", { email });
-      setMessage("Neu email ton tai, lien ket dat lai mat khau da duoc gui.");
+      setMessage("Nếu email tồn tại, liên kết đặt lại mật khẩu đã được gửi.");
     } catch (reason) {
-      setMessage(reason instanceof Error ? reason.message : "Khong the gui yeu cau.");
+      setMessage(reason instanceof Error ? reason.message : "Không thể gửi yêu cầu.");
     }
   }
 
   return (
     <main className="mx-auto max-w-md px-4 py-12">
-      <h1 className="text-3xl font-bold text-slate-950">Quen mat khau</h1>
+      <h1 className="text-3xl font-bold text-slate-950">Quên mật khẩu</h1>
       <form onSubmit={submit} className="mt-6 grid gap-4 rounded-md border border-slate-200 bg-white p-6 shadow-sm">
         <label className="block text-sm font-semibold text-slate-700">
           Email
-          <input type="email" required value={email} onChange={(event) => setEmail(event.target.value)} className="mt-1 h-11 w-full rounded-md border border-slate-300 px-3 font-normal" />
+          <Input type="email" required value={email} onChange={(event) => setEmail(event.target.value)} className="mt-1 font-normal" />
         </label>
         {message ? <p className="rounded-md bg-slate-100 p-3 text-sm text-slate-700">{message}</p> : null}
-        <button className="rounded-md bg-slate-950 px-5 py-3 text-sm font-semibold text-white">Gui lien ket</button>
+        <Button>Gửi liên kết</Button>
       </form>
     </main>
   );

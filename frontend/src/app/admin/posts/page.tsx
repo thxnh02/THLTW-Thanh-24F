@@ -72,10 +72,10 @@ export default function AdminPostsPage() {
     };
     if (form.id) {
       await apiPatch(`/admin/posts/${form.id}`, payload);
-      setMessage("Da cap nhat bai viet.");
+      setMessage("Đã cập nhật bài viết.");
     } else {
       await apiPost("/admin/posts", payload);
-      setMessage("Da tao bai viet.");
+      setMessage("Đã tạo bài viết.");
     }
     setForm(emptyForm);
     load();
@@ -83,8 +83,8 @@ export default function AdminPostsPage() {
 
   async function remove(post: Post) {
     const accepted = await confirm({
-      title: "Xoa bai viet?",
-      message: `Ban chac chan muon xoa bai viet "${post.title}"?`,
+      title: "Xóa bài viết?",
+      message: `Bạn chắc chắn muốn xóa bài viết "${post.title}"?`,
       confirmLabel: "Xoa",
     });
 
@@ -93,7 +93,7 @@ export default function AdminPostsPage() {
     }
 
     await apiDelete(`/admin/posts/${post.id}`);
-    setMessage("Da xoa bai viet.");
+      setMessage("Đã xóa bài viết.");
     load();
   }
 
@@ -114,14 +114,14 @@ export default function AdminPostsPage() {
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-8">
-      <h1 className="text-3xl font-bold text-slate-950">Quan ly bai viet</h1>
+      <h1 className="text-3xl font-bold text-slate-950">Quản lý bài viết</h1>
       <form onSubmit={submit} className="mt-6 grid gap-4 rounded-md border border-slate-200 bg-white p-5 shadow-sm lg:grid-cols-3">
-        <Input label="Tieu de" value={form.title} onChange={(value) => setForm({ ...form, title: value })} required />
+        <Input label="Tiêu đề" value={form.title} onChange={(value) => setForm({ ...form, title: value })} required />
         <Input label="Slug" value={form.slug} onChange={(value) => setForm({ ...form, slug: value })} />
         <label className="block text-sm font-semibold text-slate-700">
           Chu de
           <select value={form.post_category_id} onChange={(event) => setForm({ ...form, post_category_id: event.target.value })} className="mt-1 h-10 w-full rounded-md border border-slate-300 px-3 font-normal">
-            <option value="">Khong co</option>
+            <option value="">Không có</option>
             {categories.map((category) => (
               <option key={category.id} value={category.id}>
                 {category.name}
@@ -140,8 +140,8 @@ export default function AdminPostsPage() {
         <label className="block text-sm font-semibold text-slate-700">
           Status
           <select value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value as PostForm["status"] })} className="mt-1 h-10 w-full rounded-md border border-slate-300 px-3 font-normal">
-            <option value="draft">Draft</option>
-            <option value="published">Published</option>
+            <option value="draft">Bản nháp</option>
+            <option value="published">Đã xuất bản</option>
           </select>
         </label>
         <label className="block text-sm font-semibold text-slate-700 lg:col-span-3">
@@ -149,20 +149,20 @@ export default function AdminPostsPage() {
           <textarea value={form.excerpt} onChange={(event) => setForm({ ...form, excerpt: event.target.value })} className="mt-1 min-h-20 w-full rounded-md border border-slate-300 px-3 py-2 font-normal" />
         </label>
         <label className="block text-sm font-semibold text-slate-700 lg:col-span-3">
-          Noi dung
+          Nội dung
           <textarea required value={form.content} onChange={(event) => setForm({ ...form, content: event.target.value })} className="mt-1 min-h-28 w-full rounded-md border border-slate-300 px-3 py-2 font-normal" />
         </label>
-        <button className="rounded-md bg-slate-950 px-5 py-3 text-sm font-semibold text-white lg:col-span-3">{form.id ? "Cap nhat" : "Tao bai viet"}</button>
+        <button className="rounded-md bg-slate-950 px-5 py-3 text-sm font-semibold text-white lg:col-span-3">{form.id ? "Cập nhật" : "Tạo bài viết"}</button>
       </form>
       {message ? <p className="mt-3 text-sm text-teal-700">{message}</p> : null}
       <div className="mt-6 overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
         <table className="w-full border-collapse text-left text-sm">
           <thead className="bg-slate-100 text-slate-700">
             <tr>
-              <th className="p-3">Bai viet</th>
-              <th className="p-3">Chu de</th>
-              <th className="p-3">Status</th>
-              <th className="p-3">Thao tac</th>
+              <th className="p-3">Bài viết</th>
+              <th className="p-3">Chủ đề</th>
+              <th className="p-3">Trạng thái</th>
+              <th className="p-3">Thao tác</th>
             </tr>
           </thead>
           <tbody>
@@ -170,7 +170,7 @@ export default function AdminPostsPage() {
               <tr key={post.id} className="border-t border-slate-200">
                 <td className="p-3 font-semibold">{post.title}</td>
                 <td className="p-3">{post.category?.name ?? "-"}</td>
-                <td className="p-3">{post.status}</td>
+                <td className="p-3">{post.status === "published" ? "Đã xuất bản" : "Bản nháp"}</td>
                 <td className="flex gap-2 p-3">
                   <button type="button" onClick={() => edit(post)} className="rounded-md border border-slate-300 px-3 py-2 font-semibold">
                     Sua

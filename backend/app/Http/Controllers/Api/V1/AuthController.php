@@ -39,7 +39,7 @@ class AuthController extends Controller
 
         $this->loginSession($request, $user);
 
-        return $this->success(['user' => $user], 'Dang ky thanh cong.', status: 201);
+        return $this->success(['user' => $user], 'Đăng ký thành công.', status: 201);
     }
 
     public function login(Request $request): JsonResponse
@@ -53,7 +53,7 @@ class AuthController extends Controller
 
         if (RateLimiter::tooManyAttempts($limiterKey, 5)) {
             throw ValidationException::withMessages([
-                'email' => ['Dang nhap qua nhieu lan. Vui long thu lai sau.'],
+                'email' => ['Đăng nhập quá nhiều lần. Vui lòng thử lại sau.'],
             ]);
         }
 
@@ -63,19 +63,19 @@ class AuthController extends Controller
             RateLimiter::hit($limiterKey, 60);
 
             throw ValidationException::withMessages([
-                'email' => ['Thong tin dang nhap khong dung.'],
+                'email' => ['Thông tin đăng nhập không đúng.'],
             ]);
         }
 
         RateLimiter::clear($limiterKey);
 
         if ($user->isLocked()) {
-            return $this->error('Tai khoan da bi khoa.', 403);
+            return $this->error('Tài khoản đã bị khóa.', 403);
         }
 
         $this->loginSession($request, $user);
 
-        return $this->success(['user' => $user], 'Dang nhap thanh cong.');
+        return $this->success(['user' => $user], 'Đăng nhập thành công.');
     }
 
     public function me(Request $request): JsonResponse
@@ -97,7 +97,7 @@ class AuthController extends Controller
             $request->session()->regenerateToken();
         }
 
-        return $this->success(null, 'Da dang xuat.');
+        return $this->success(null, 'Đã đăng xuất.');
     }
 
     public function updateProfile(Request $request): JsonResponse
@@ -109,7 +109,7 @@ class AuthController extends Controller
 
         $request->user()->update($validated);
 
-        return $this->success($request->user()->refresh(), 'Da cap nhat ho so.');
+        return $this->success($request->user()->refresh(), 'Đã cập nhật hồ sơ.');
     }
 
     public function changePassword(Request $request): JsonResponse
@@ -121,14 +121,14 @@ class AuthController extends Controller
 
         if (! Hash::check($validated['current_password'], $request->user()->password)) {
             throw ValidationException::withMessages([
-                'current_password' => ['Mat khau hien tai khong dung.'],
+                'current_password' => ['Mật khẩu hiện tại không đúng.'],
             ]);
         }
 
         $request->user()->update(['password' => $validated['password']]);
         $request->user()->tokens()->delete();
 
-        return $this->success(null, 'Da doi mat khau. Vui long dang nhap lai.');
+        return $this->success(null, 'Đã đổi mật khẩu. Vui lòng đăng nhập lại.');
     }
 
     public function forgotPassword(Request $request): JsonResponse
@@ -143,7 +143,7 @@ class AuthController extends Controller
             return $this->error(__($status), 422);
         }
 
-        return $this->success(null, 'Neu email ton tai, lien ket dat lai mat khau da duoc gui.');
+        return $this->success(null, 'Nếu email tồn tại, liên kết đặt lại mật khẩu đã được gửi.');
     }
 
     public function resetPassword(Request $request): JsonResponse
@@ -170,7 +170,7 @@ class AuthController extends Controller
             return $this->error(__($status), 422);
         }
 
-        return $this->success(null, 'Da dat lai mat khau.');
+        return $this->success(null, 'Đã đặt lại mật khẩu.');
     }
 
     private function loginSession(Request $request, User $user): void

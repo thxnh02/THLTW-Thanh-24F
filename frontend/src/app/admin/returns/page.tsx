@@ -54,7 +54,7 @@ export default function AdminReturnsPage() {
     try {
       setSelected(await apiGet<ReturnRequest>(`/admin/returns/${id}`));
     } catch (reason) {
-      setMessage(reason instanceof Error ? reason.message : "Khong the tai chi tiet.");
+      setMessage(reason instanceof Error ? reason.message : "Không thể tải chi tiết.");
     }
   }
 
@@ -66,10 +66,10 @@ export default function AdminReturnsPage() {
     try {
       const updated = await apiPatch<ReturnRequest>(`/admin/returns/${selected.id}/status`, { status });
       setSelected(updated);
-      setMessage("Da cap nhat yeu cau doi tra.");
+      setMessage("Đã cập nhật yêu cầu đổi trả.");
       load();
     } catch (reason) {
-      setMessage(reason instanceof Error ? reason.message : "Khong the cap nhat.");
+      setMessage(reason instanceof Error ? reason.message : "Không thể cập nhật.");
     } finally {
       setProcessing(false);
     }
@@ -77,17 +77,17 @@ export default function AdminReturnsPage() {
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-8">
-      <h1 className="text-3xl font-bold text-slate-950">Doi tra / hoan tien</h1>
+      <h1 className="text-3xl font-bold text-slate-950">Đổi trả / hoàn tiền</h1>
       {message ? <p className="mt-4 rounded-md bg-white p-3 text-sm text-slate-700">{message}</p> : null}
       <div className="mt-4 grid gap-3 rounded-md border border-slate-200 bg-white p-4 shadow-sm md:grid-cols-[1fr_220px]">
         <label className="block text-sm font-semibold text-slate-700">
-          Tim kiem
-          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Ma doi tra, ma don, khach hang" className="mt-1 h-10 w-full rounded-md border border-slate-300 px-3 font-normal" />
+          Tìm kiếm
+          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Mã đổi trả, mã đơn, khách hàng" className="mt-1 h-10 w-full rounded-md border border-slate-300 px-3 font-normal" />
         </label>
         <label className="block text-sm font-semibold text-slate-700">
-          Trang thai
+          Trạng thái
           <select value={status} onChange={(event) => setStatus(event.target.value)} className="mt-1 h-10 w-full rounded-md border border-slate-300 px-3 font-normal">
-            <option value="">Tat ca</option>
+            <option value="">Tất cả</option>
             {Object.keys(nextStatuses).map((value) => <option key={value} value={value}>{value}</option>)}
           </select>
         </label>
@@ -96,18 +96,18 @@ export default function AdminReturnsPage() {
         <div className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
           <table className="w-full border-collapse text-left text-sm">
             <thead className="bg-slate-100 text-slate-700">
-              <tr><th className="p-3">Ma</th><th className="p-3">Don hang</th><th className="p-3">Trang thai</th><th className="p-3">Hoan tien</th><th className="p-3">Thao tac</th></tr>
+              <tr><th className="p-3">Mã yêu cầu</th><th className="p-3">Đơn hàng</th><th className="p-3">Trạng thái</th><th className="p-3">Hoàn tiền</th><th className="p-3">Thao tác</th></tr>
             </thead>
             <tbody>
-              {loading ? <tr><td colSpan={5} className="p-4 text-slate-600">Dang tai yeu cau...</td></tr> : null}
-              {!loading && returns.length === 0 ? <tr><td colSpan={5} className="p-4 text-slate-600">Khong co yeu cau phu hop.</td></tr> : null}
+              {loading ? <tr><td colSpan={5} className="p-4 text-slate-600">Đang tải yêu cầu...</td></tr> : null}
+              {!loading && returns.length === 0 ? <tr><td colSpan={5} className="p-4 text-slate-600">Không có yêu cầu phù hợp.</td></tr> : null}
               {!loading && returns.map((item) => (
                 <tr key={item.id} className="border-t border-slate-200">
                   <td className="p-3 font-semibold">{item.code}</td>
                   <td className="p-3">{item.order?.code}</td>
                   <td className="p-3">{item.status}</td>
                   <td className="p-3">{item.refund_status}</td>
-                  <td className="p-3"><button type="button" onClick={() => loadDetail(item.id)} className="rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold">Chi tiet</button></td>
+                  <td className="p-3"><button type="button" onClick={() => loadDetail(item.id)} className="rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold">Chi tiết</button></td>
                 </tr>
               ))}
             </tbody>
@@ -118,25 +118,25 @@ export default function AdminReturnsPage() {
             <div>
               <h2 className="text-lg font-bold text-slate-950">{selected.code}</h2>
               <p className="mt-1 text-sm text-slate-600">{selected.reason}</p>
-              <p className="mt-3 text-sm"><strong>Trang thai:</strong> {selected.status} / {selected.refund_status}</p>
+              <p className="mt-3 text-sm"><strong>Trạng thái:</strong> {selected.status} / {selected.refund_status}</p>
               <div className="mt-4 space-y-2">
                 {selected.items?.map((item) => (
                   <div key={item.id} className="rounded-md bg-slate-50 p-3 text-sm">
                     <p className="font-semibold">{item.order_item?.product_name}</p>
-                    <p className="text-slate-600">SL doi tra: {item.quantity}</p>
+                    <p className="text-slate-600">Số lượng đổi trả: {item.quantity}</p>
                   </div>
                 ))}
               </div>
               <div className="mt-5 flex flex-wrap gap-2">
                 {nextStatuses[selected.status].map((status) => (
                   <button key={status} type="button" onClick={() => updateStatus(status)} className="rounded-md bg-slate-950 px-3 py-2 text-sm font-semibold text-white">
-                    {processing ? "Dang xu ly..." : status}
+                    {processing ? "Đang xử lý..." : status}
                   </button>
                 ))}
               </div>
             </div>
           ) : (
-            <p className="text-sm text-slate-600">Chon mot yeu cau de xem chi tiet.</p>
+            <p className="text-sm text-slate-600">Chọn một yêu cầu để xem chi tiết.</p>
           )}
         </aside>
       </div>

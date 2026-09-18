@@ -33,7 +33,7 @@ class PostCategoryController extends Controller
     {
         $validated = $this->validatedPostCategory($request);
 
-        return $this->success(PostCategory::create($validated), 'Da tao chu de bai viet.', status: 201);
+        return $this->success(PostCategory::create($validated), 'Đã tạo chủ đề bài viết.', status: 201);
     }
 
     public function show(PostCategory $postCategory): JsonResponse
@@ -46,18 +46,18 @@ class PostCategoryController extends Controller
         $validated = $this->validatedPostCategory($request, $postCategory);
         $postCategory->update($validated);
 
-        return $this->success($postCategory->refresh()->loadCount('posts'), 'Da cap nhat chu de bai viet.');
+        return $this->success($postCategory->refresh()->loadCount('posts'), 'Đã cập nhật chủ đề bài viết.');
     }
 
     public function destroy(PostCategory $postCategory): JsonResponse
     {
         if ($postCategory->posts()->exists()) {
-            return $this->error('Chu de dang co bai viet, khong the xoa.', 409);
+            return $this->error('Chủ đề đang có bài viết, không thể xóa.', 409);
         }
 
         $postCategory->delete();
 
-        return $this->success(null, 'Da xoa chu de bai viet.');
+        return $this->success(null, 'Đã xóa chủ đề bài viết.');
     }
 
     /**

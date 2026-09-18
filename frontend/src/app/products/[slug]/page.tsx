@@ -5,6 +5,7 @@ import Image from "next/image";
 import { use, useEffect, useMemo, useState } from "react";
 
 import { ProductCard } from "@/components/ProductCard";
+import { Badge, Button, ErrorState, Input, Select, Skeleton } from "@/components/ui";
 import { useCart } from "@/contexts/CartContext";
 import { apiGet, apiPost } from "@/lib/api";
 import { formatVnd } from "@/lib/format";
@@ -20,12 +21,14 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
   const [message, setMessage] = useState("");
   const [review, setReview] = useState({ rating: "5", content: "" });
   const [recentlyViewed, setRecentlyViewed] = useState<Product[]>([]);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   useEffect(() => {
     apiGet<Product>(`/products/${slug}`)
       .then((data) => {
         setProduct(data);
         setSelectedVariantId(data.default_variant?.id ?? data.variants?.[0]?.id ?? null);
+        setSelectedImage(data.primary_image ?? data.images?.[0]?.path ?? null);
         updateRecentlyViewed(data, setRecentlyViewed);
       })
       .catch((reason: Error) => setError(reason.message));
@@ -44,9 +47,9 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
     }
     try {
       await apiPost("/wishlist", { product_id: product.id });
-      setMessage("Da them vao wishlist.");
+      setMessage("Đã thêm vào danh sách yêu thích.");
     } catch (reason) {
-      setMessage(reason instanceof Error ? reason.message : "Vui long dang nhap de them wishlist.");
+      setMessage(reason instanceof Error ? reason.message : "Vui lòng đăng nhập để thêm vào danh sách yêu thích.");
     }
   }
 
@@ -62,38 +65,39 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
       const refreshed = await apiGet<Product>(`/products/${slug}`);
       setProduct(refreshed);
       setReview({ rating: "5", content: "" });
-      setMessage("Da gui danh gia.");
+      setMessage("Đã gửi đánh giá.");
     } catch (reason) {
-      setMessage(reason instanceof Error ? reason.message : "Khong the gui danh gia.");
+      setMessage(reason instanceof Error ? reason.message : "Không thể gửi đánh giá.");
     }
   }
 
   if (error) {
-    return <Panel>{error}</Panel>;
+    return <Panel><ErrorState title="Không thể tải sản phẩm" message="Sản phẩm không tồn tại hoặc đang gặp lỗi. Vui lòng thử lại sau." /></Panel>;
   }
 
   if (!product) {
-    return <Panel>Dang tai chi tiet san pham...</Panel>;
+    return <Panel><Skeleton className="h-[420px] w-full" /></Panel>;
   }
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-8">
       <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
-        <div className="rounded-md border border-slate-200 bg-white p-3 shadow-sm">
+        <div>
           <Image
-            src={product.primary_image || "/product-placeholder.svg"}
+            src={selectedImage || product.primary_image || "/product-placeholder.svg"}
             alt={product.name}
             width={960}
             height={720}
-            className="aspect-[4/3] w-full rounded-md bg-slate-100 object-cover"
+            className="aspect-[4/3] w-full rounded-lg border border-slate-200 bg-slate-100 object-cover"
           />
+          <div className="mt-3 flex gap-2 overflow-x-auto">{(product.images?.length ? product.images : [{ id: 0, path: product.primary_image || "/product-placeholder.svg" }]).map((image) => <button key={image.id} type="button" onClick={() => setSelectedImage(image.path)} className={`shrink-0 rounded-md border-2 p-0.5 ${selectedImage === image.path ? "border-teal-700" : "border-transparent"}`} aria-label={`Xem ảnh ${image.id}`}><Image src={image.path} alt="" width={72} height={54} className="size-16 rounded object-cover" /></button>)}</div>
         </div>
         <section className="rounded-md border border-slate-200 bg-white p-6 shadow-sm">
           <p className="text-sm font-semibold text-teal-700">
-            {product.category?.name} {product.brand ? `- ${product.brand.name}` : ""}
+            {product.category?.name} {product.brand ? ` · ${product.brand.name}` : ""}
           </p>
           <h1 className="mt-2 text-3xl font-bold text-slate-950">{product.name}</h1>
-          <p className="mt-3 text-slate-600">{product.short_description}</p>
+          <p className="mt-3 text-slate-600">{product.short_description || "Thông tin sản phẩm đang được cập nhật."}</p>
           <div className="mt-5 flex items-end gap-3">
             <p className="text-3xl font-bold text-slate-950">
               {formatVnd(selectedVariant?.sale_price ?? selectedVariant?.price)}
@@ -103,90 +107,88 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
             ) : null}
           </div>
           <p className="mt-2 text-sm text-slate-600">
-            SKU: <span className="font-semibold">{selectedVariant?.sku}</span> - Ton kho:{" "}
+            SKU: <span className="font-semibold">{selectedVariant?.sku}</span> · Tồn kho:{" "}
             <span className="font-semibold">{selectedVariant?.stock_quantity ?? 0}</span>
           </p>
 
           <div className="mt-6 grid gap-4 sm:grid-cols-2">
             <label className="block text-sm font-semibold text-slate-700">
-              Phien ban
-              <select
+              Phiên bản
+              <Select
                 value={selectedVariantId ?? ""}
                 onChange={(event) => setSelectedVariantId(Number(event.target.value))}
-                className="mt-1 h-11 w-full rounded-md border border-slate-300 px-3 font-normal outline-none focus:border-slate-950"
+                className="mt-1 font-normal"
               >
                 {product.variants?.map((variant) => (
                   <option key={variant.id} value={variant.id}>
                     {variant.name} - {variant.sku}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
             <label className="block text-sm font-semibold text-slate-700">
-              So luong
-              <input
+              Số lượng
+              <Input
                 type="number"
                 min={1}
                 max={selectedVariant?.stock_quantity ?? 1}
                 value={quantity}
                 onChange={(event) => setQuantity(Math.max(1, Number(event.target.value)))}
-                className="mt-1 h-11 w-full rounded-md border border-slate-300 px-3 font-normal outline-none focus:border-slate-950"
+                className="mt-1 font-normal"
               />
             </label>
           </div>
 
           <div className="mt-6 flex flex-wrap gap-3">
-            <button
+            <Button
               type="button"
               onClick={() => addItem(product, selectedVariant, quantity)}
               disabled={!selectedVariant || selectedVariant.stock_quantity <= 0}
-              className="rounded-md bg-teal-700 px-5 py-3 text-sm font-semibold text-white hover:bg-teal-800 disabled:bg-slate-300"
+              className="bg-teal-700 hover:bg-teal-800"
             >
-              Them vao gio
-            </button>
-            <Link href="/cart" className="rounded-md border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-950">
-              Xem gio hang
+              Thêm vào giỏ
+            </Button>
+            <Link href="/cart" className="inline-flex min-h-11 items-center rounded-md border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-950">
+              Xem giỏ hàng
             </Link>
-            <button type="button" onClick={addWishlist} className="rounded-md border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-950">
-              Them wishlist
-            </button>
+            <Button type="button" variant="secondary" onClick={addWishlist}>♡ Yêu thích</Button>
           </div>
           {message ? <p className="mt-3 rounded-md bg-slate-100 p-3 text-sm text-slate-700">{message}</p> : null}
 
           <div className="mt-8 border-t border-slate-200 pt-6">
-            <h2 className="font-bold text-slate-950">Mo ta</h2>
-            <p className="mt-2 leading-7 text-slate-600">{product.description}</p>
+            <h2 className="font-bold text-slate-950">Mô tả</h2>
+            <p className="mt-2 whitespace-pre-line leading-7 text-slate-600">{product.description || "Mô tả sản phẩm đang được cập nhật."}</p>
           </div>
           <div className="mt-8 border-t border-slate-200 pt-6">
-            <h2 className="font-bold text-slate-950">Danh gia ({product.review_count ?? 0})</h2>
-            <p className="mt-1 text-sm text-slate-600">Diem trung binh: {product.average_rating ?? 0}/5</p>
+            <h2 className="font-bold text-slate-950">Đánh giá ({product.review_count ?? 0})</h2>
+            <p className="mt-1 text-sm text-slate-600">Điểm trung bình: <Badge tone="brand">★ {Number(product.average_rating ?? 0).toFixed(1)}/5</Badge></p>
             <div className="mt-4 grid gap-3">
               {product.reviews?.map((item) => (
                 <div key={item.id} className="rounded-md bg-slate-50 p-3 text-sm">
-                  <p className="font-semibold">{item.user_name ?? "Thanh vien"} - {item.rating}/5</p>
+                  <p className="font-semibold">{item.user_name ?? "Thành viên"} · ★ {item.rating}/5</p>
                   <p className="mt-1 text-slate-600">{item.content}</p>
                 </div>
               ))}
             </div>
             <div className="mt-4 grid gap-3 sm:grid-cols-[120px_1fr_auto]">
-              <select value={review.rating} onChange={(event) => setReview({ ...review, rating: event.target.value })} className="h-10 rounded-md border border-slate-300 px-3">
+              <Select value={review.rating} onChange={(event) => setReview({ ...review, rating: event.target.value })} className="h-10">
                 {[5, 4, 3, 2, 1].map((rating) => <option key={rating} value={rating}>{rating} sao</option>)}
-              </select>
-              <input value={review.content} onChange={(event) => setReview({ ...review, content: event.target.value })} placeholder="Noi dung danh gia" className="h-10 rounded-md border border-slate-300 px-3" />
-              <button type="button" onClick={submitReview} className="rounded-md bg-slate-950 px-4 text-sm font-semibold text-white">Gui</button>
+              </Select>
+              <Input value={review.content} onChange={(event) => setReview({ ...review, content: event.target.value })} placeholder="Nội dung đánh giá" className="h-10" />
+              <Button type="button" onClick={submitReview} className="min-h-10 px-4">Gửi</Button>
             </div>
           </div>
         </section>
       </div>
 
       <section className="mt-10">
-        <h2 className="mb-4 text-2xl font-bold text-slate-950">San pham lien quan</h2>
+        <h2 className="mb-4 text-2xl font-bold text-slate-950">Sản phẩm liên quan</h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {product.related_products?.map((related) => <ProductCard key={related.id} product={related} />)}
         </div>
       </section>
       <section className="mt-10">
-        <h2 className="mb-4 text-2xl font-bold text-slate-950">San pham da xem gan day</h2>
+        <h2 className="mb-4 text-2xl font-bold text-slate-950">Sản phẩm đã xem gần đây</h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {recentlyViewed.map((item) => <ProductCard key={item.id} product={item} />)}
         </div>

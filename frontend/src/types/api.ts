@@ -142,6 +142,21 @@ export type Setting = {
   type: "string" | "number" | "boolean" | "json";
 };
 
+export type StoreSettings = {
+  store_name?: string | null;
+  logo?: string | null;
+  favicon?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  address?: string | null;
+  social_facebook?: string | null;
+  social_instagram?: string | null;
+  social_tiktok?: string | null;
+  seo_title?: string | null;
+  seo_description?: string | null;
+  vnpay_enabled?: boolean;
+};
+
 export type StockDocument = {
   id: number;
   type: "import" | "export";
@@ -278,6 +293,9 @@ export type Order = {
   shipped_at?: string | null;
   delivered_at?: string | null;
   grand_total: string | number;
+  subtotal?: string | number;
+  discount_total?: string | number;
+  shipping_fee?: string | number;
   created_at: string;
   items_count?: number;
   items?: {

@@ -38,7 +38,7 @@ class BrandController extends Controller
         ]);
         $validated['slug'] = $validated['slug'] ?? Str::slug($validated['name']);
 
-        return $this->success(Brand::create($validated), 'Da tao thuong hieu.', status: 201);
+        return $this->success(Brand::create($validated), 'Đã tạo thương hiệu.', status: 201);
     }
 
     public function show(Brand $brand): JsonResponse
@@ -57,17 +57,17 @@ class BrandController extends Controller
         $validated['slug'] = $validated['slug'] ?? Str::slug($validated['name']);
         $brand->update($validated);
 
-        return $this->success($brand->refresh(), 'Da cap nhat thuong hieu.');
+        return $this->success($brand->refresh(), 'Đã cập nhật thương hiệu.');
     }
 
     public function destroy(Brand $brand): JsonResponse
     {
         if ($brand->products()->exists()) {
-            return $this->error('Thuong hieu dang co san pham, khong the xoa.', 409);
+            return $this->error('Thương hiệu đang có sản phẩm, không thể xóa.', 409);
         }
 
         $brand->delete();
 
-        return $this->success(null, 'Da xoa thuong hieu.');
+        return $this->success(null, 'Đã xóa thương hiệu.');
     }
 }

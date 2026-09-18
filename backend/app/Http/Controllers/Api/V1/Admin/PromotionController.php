@@ -43,7 +43,7 @@ class PromotionController extends Controller
         $promotion = Promotion::create(Arr::except($validated, ['product_ids', 'category_ids', 'brand_ids']));
         $this->syncTargets($promotion, $validated);
 
-        return $this->success($promotion->load(['products:id,name', 'categories:id,name', 'brands:id,name']), 'Da tao ma khuyen mai.', status: 201);
+        return $this->success($promotion->load(['products:id,name', 'categories:id,name', 'brands:id,name']), 'Đã tạo mã khuyến mãi.', status: 201);
     }
 
     public function show(Promotion $promotion): JsonResponse
@@ -57,7 +57,7 @@ class PromotionController extends Controller
         $promotion->update(Arr::except($validated, ['product_ids', 'category_ids', 'brand_ids']));
         $this->syncTargets($promotion, $validated);
 
-        return $this->success($promotion->refresh()->load(['products:id,name', 'categories:id,name', 'brands:id,name'])->loadCount('usages'), 'Da cap nhat ma khuyen mai.');
+        return $this->success($promotion->refresh()->load(['products:id,name', 'categories:id,name', 'brands:id,name'])->loadCount('usages'), 'Đã cập nhật mã khuyến mãi.');
     }
 
     public function destroy(Promotion $promotion): JsonResponse
@@ -66,12 +66,12 @@ class PromotionController extends Controller
             $promotion->usages()->exists()
             || Order::query()->where('promotion_code', $promotion->code)->exists()
         ) {
-            return $this->error('Ma khuyen mai da phat sinh giao dich, khong the xoa.', 409);
+            return $this->error('Mã khuyến mãi đã phát sinh giao dịch, không thể xóa.', 409);
         }
 
         $promotion->delete();
 
-        return $this->success(null, 'Da xoa ma khuyen mai.');
+        return $this->success(null, 'Đã xóa mã khuyến mãi.');
     }
 
     /**
@@ -112,7 +112,7 @@ class PromotionController extends Controller
         $validated['free_shipping'] ??= false;
 
         if ($validated['type'] === 'percent' && (float) $validated['value'] > 100) {
-            abort(422, 'Gia tri giam theo phan tram khong duoc vuot qua 100.');
+            abort(422, 'Giá trị giảm theo phần trăm không được vượt quá 100.');
         }
 
         return $validated;

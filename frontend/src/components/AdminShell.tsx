@@ -5,28 +5,29 @@ import { usePathname, useRouter } from "next/navigation";
 import { type ReactNode, useEffect, useState } from "react";
 
 import { useAuth } from "@/contexts/AuthContext";
+import { useStoreSettings } from "@/contexts/StoreSettingsContext";
 
 const navItems = [
-  ["Dashboard", "/admin", "dashboard"],
-  ["Danh muc", "/admin/categories", "catalog"],
-  ["Thuong hieu", "/admin/brands", "catalog"],
-  ["San pham", "/admin/products", "catalog"],
-  ["Don hang", "/admin/orders", "orders"],
-  ["Doi tra", "/admin/returns", "returns"],
-  ["Thanh vien", "/admin/users", "users"],
-  ["Khuyen mai", "/admin/promotions", "promotions"],
-  ["Van chuyen", "/admin/shipping-methods", "shipping"],
-  ["Bao cao", "/admin/reports", "reports"],
-  ["Import CSV", "/admin/import/products", "catalog"],
-  ["Bai viet", "/admin/posts", "content"],
-  ["Chu de", "/admin/post-categories", "content"],
+  ["Tổng quan", "/admin", "dashboard"],
+  ["Danh mục", "/admin/categories", "catalog"],
+  ["Thương hiệu", "/admin/brands", "catalog"],
+  ["Sản phẩm", "/admin/products", "catalog"],
+  ["Đơn hàng", "/admin/orders", "orders"],
+  ["Đổi trả", "/admin/returns", "returns"],
+  ["Thành viên", "/admin/users", "users"],
+  ["Khuyến mãi", "/admin/promotions", "promotions"],
+  ["Vận chuyển", "/admin/shipping-methods", "shipping"],
+  ["Báo cáo", "/admin/reports", "reports"],
+  ["Nhập CSV", "/admin/import/products", "catalog"],
+  ["Bài viết", "/admin/posts", "content"],
+  ["Chủ đề", "/admin/post-categories", "content"],
   ["Trang", "/admin/pages", "content"],
   ["Menu", "/admin/menus", "content"],
   ["Banner", "/admin/banners", "content"],
-  ["Lien he", "/admin/contacts", "contacts"],
+  ["Liên hệ", "/admin/contacts", "contacts"],
   ["Kho", "/admin/stock", "stock"],
-  ["Media", "/admin/media", "content"],
-  ["Cau hinh", "/admin/settings", "settings"],
+  ["Thư viện ảnh", "/admin/media", "content"],
+  ["Cấu hình", "/admin/settings", "settings"],
 ] as const;
 
 const rolePermissions: Record<string, string[]> = {
@@ -39,6 +40,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, ready, logout } = useAuth();
+  const settings = useStoreSettings();
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -56,17 +58,17 @@ export function AdminShell({ children }: { children: ReactNode }) {
   }
 
   if (!ready || !user) {
-    return <main className="mx-auto max-w-7xl px-4 py-12 text-slate-700">Dang kiem tra quyen admin...</main>;
+    return <main className="mx-auto max-w-7xl px-4 py-12 text-slate-700">Đang kiểm tra quyền truy cập...</main>;
   }
 
   if (!["admin", "manager", "staff"].includes(user.role)) {
     return (
       <main className="mx-auto max-w-2xl px-4 py-12">
-        <section className="rounded-md border border-slate-200 bg-white p-8 shadow-sm">
+        <section className="rounded-lg border border-slate-200 bg-white p-8 shadow-sm">
           <h1 className="text-2xl font-bold text-slate-950">403</h1>
-          <p className="mt-2 text-slate-600">Tai khoan hien tai khong co quyen truy cap admin.</p>
+          <p className="mt-2 text-slate-600">Tài khoản hiện tại không có quyền truy cập khu vực quản trị.</p>
           <Link href="/" className="mt-5 inline-block rounded-md bg-slate-950 px-5 py-3 text-sm font-semibold text-white">
-            Ve trang chu
+            Về trang chủ
           </Link>
         </section>
       </main>
@@ -79,18 +81,19 @@ export function AdminShell({ children }: { children: ReactNode }) {
         <div className="flex h-14 items-center justify-between gap-3 px-4">
           <div className="flex items-center gap-3">
             <button type="button" onClick={() => setOpen((value) => !value)} className="rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold lg:hidden">
-              Menu
+              ☰
             </button>
             <Link href="/admin" className="font-bold text-slate-950">
-              THLTW Admin
+              {settings.store_name || "Công Nghệ Việt"} · Quản trị
             </Link>
           </div>
           <div className="flex items-center gap-2 text-sm">
+            <span className="hidden text-right sm:block"><strong className="block text-slate-950">{user.name}</strong><span className="text-xs text-slate-500">{roleLabel(user.role)}</span></span>
             <Link href="/" className="rounded-md border border-slate-300 px-3 py-2 font-semibold">
-              Xem shop
+              Xem cửa hàng
             </Link>
             <button type="button" onClick={() => logout()} className="rounded-md bg-slate-950 px-3 py-2 font-semibold text-white">
-              Dang xuat
+              Đăng xuất
             </button>
           </div>
         </div>
@@ -123,4 +126,8 @@ function canSee(role: string, permission: string): boolean {
   const permissions = rolePermissions[role] ?? [];
 
   return permissions.includes("*") || permissions.includes(permission);
+}
+
+export function roleLabel(role: string): string {
+  return { admin: "Quản trị viên", manager: "Quản lý", staff: "Nhân viên", member: "Thành viên" }[role] ?? role;
 }

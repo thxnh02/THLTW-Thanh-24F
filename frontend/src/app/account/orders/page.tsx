@@ -7,11 +7,14 @@ import { useRouter } from "next/navigation";
 import { ApiError, apiGetList, apiPost } from "@/lib/api";
 import { formatVnd } from "@/lib/format";
 import type { Order } from "@/types/api";
+import { Badge, Button } from "@/components/ui";
+import { useConfirm } from "@/contexts/ConfirmContext";
 
 export default function AccountOrdersPage() {
   const router = useRouter();
   const [orders, setOrders] = useState<Order[]>([]);
   const [message, setMessage] = useState("");
+  const confirm = useConfirm();
 
   const loadOrders = useCallback(() => {
     apiGetList<Order>("/account/orders")
@@ -32,24 +35,25 @@ export default function AccountOrdersPage() {
 
   async function cancelOrder(code: string) {
     setMessage("");
+    if (!await confirm({ title: "Hủy đơn hàng?", message: "Bạn chỉ nên hủy khi chưa muốn tiếp tục đơn hàng này.", confirmLabel: "Hủy đơn" })) return;
     await apiPost(`/account/orders/${code}/cancel`, {});
-    setMessage("Da huy don hang.");
+    setMessage("Đã hủy đơn hàng.");
     loadOrders();
   }
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-8">
-      <h1 className="text-3xl font-bold text-slate-950">Don hang cua toi</h1>
+      <h1 className="text-2xl font-bold text-slate-950">Đơn hàng của tôi</h1>
       {message ? <p className="mt-4 rounded-md bg-slate-100 p-3 text-sm text-slate-700">{message}</p> : null}
-      <div className="mt-6 overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
+      <div className="mt-6 overflow-x-auto rounded-md border border-slate-200 bg-white shadow-sm">
         <table className="w-full border-collapse text-left text-sm">
           <thead className="bg-slate-100 text-slate-700">
             <tr>
-              <th className="p-3">Ma don</th>
-              <th className="p-3">Trang thai</th>
-              <th className="p-3">Thanh toan</th>
-              <th className="p-3">Tong tien</th>
-              <th className="p-3">Thao tac</th>
+              <th className="p-3">Mã đơn</th>
+              <th className="p-3">Trạng thái</th>
+              <th className="p-3">Thanh toán</th>
+              <th className="p-3">Tổng tiền</th>
+              <th className="p-3">Thao tác</th>
             </tr>
           </thead>
           <tbody>
@@ -60,25 +64,26 @@ export default function AccountOrdersPage() {
                     {order.code}
                   </Link>
                 </td>
-                <td className="p-3">{statusLabel(order.status)}</td>
+                <td className="p-3"><Badge tone={order.status === "completed" ? "success" : order.status === "canceled" ? "danger" : "brand"}>{statusLabel(order.status)}</Badge></td>
                 <td className="p-3">{order.payment_status}</td>
                 <td className="p-3">{formatVnd(order.grand_total)}</td>
                 <td className="p-3">
-                  <button
+                  <Button
+                    variant="secondary"
                     type="button"
                     disabled={order.status !== "pending"}
                     onClick={() => cancelOrder(order.code)}
-                    className="rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50"
+                    className="min-h-10 px-3 disabled:cursor-not-allowed"
                   >
-                    Huy don
-                  </button>
+                    Hủy đơn
+                  </Button>
                 </td>
               </tr>
             ))}
             {orders.length === 0 ? (
               <tr>
                 <td className="p-4 text-slate-600" colSpan={5}>
-                  Chua co don hang.
+                  Chưa có đơn hàng.
                 </td>
               </tr>
             ) : null}
@@ -91,10 +96,10 @@ export default function AccountOrdersPage() {
 
 function statusLabel(status: Order["status"]): string {
   return {
-    pending: "Cho xac nhan",
-    confirmed: "Da xac nhan",
-    shipping: "Dang giao",
-    completed: "Hoan thanh",
-    canceled: "Da huy",
+    pending: "Chờ xác nhận",
+    confirmed: "Đã xác nhận",
+    shipping: "Đang giao",
+    completed: "Hoàn thành",
+    canceled: "Đã hủy",
   }[status];
 }

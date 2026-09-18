@@ -127,11 +127,11 @@ class OrderController extends Controller
         ]);
 
         if ($order->status === $validated['status']) {
-            return $this->success($order->load(['items', 'payment', 'histories']), 'Trang thai khong thay doi.');
+            return $this->success($order->load(['items', 'payment', 'histories']), 'Trạng thái không thay đổi.');
         }
 
         if (! in_array($validated['status'], $this->allowedTransitions[$order->status] ?? [], true)) {
-            return $this->error('Trang thai don hang khong hop le.', 409);
+            return $this->error('Trạng thái đơn hàng không hợp lệ.', 409);
         }
 
         DB::transaction(function () use ($order, $request, $validated): void {
@@ -140,7 +140,7 @@ class OrderController extends Controller
             $toStatus = $validated['status'];
 
             if (! in_array($toStatus, $this->allowedTransitions[$fromStatus] ?? [], true)) {
-                abort(409, 'Trang thai don hang khong hop le.');
+                abort(409, 'Trạng thái đơn hàng không hợp lệ.');
             }
 
             if ($toStatus === 'canceled') {
@@ -178,7 +178,7 @@ class OrderController extends Controller
         $updatedOrder = $order->refresh()->load(['items', 'payment', 'histories']);
         $this->notifyOrderStatus($updatedOrder);
 
-        return $this->success($updatedOrder, 'Da cap nhat trang thai don hang.');
+        return $this->success($updatedOrder, 'Đã cập nhật trạng thái đơn hàng.');
     }
 
     private function restoreStockOnce(Order $order, int $adminId): void
@@ -218,10 +218,10 @@ class OrderController extends Controller
     private function notifyOrderStatus(Order $order): void
     {
         $labels = [
-            'confirmed' => 'Da xac nhan',
-            'shipping' => 'Dang giao',
+            'confirmed' => 'Đã xác nhận',
+            'shipping' => 'Đang giao',
             'completed' => 'Hoan thanh',
-            'canceled' => 'Da huy',
+            'canceled' => 'Đã hủy',
         ];
 
         if (! isset($labels[$order->status])) {
@@ -232,8 +232,8 @@ class OrderController extends Controller
             CustomerNotification::create([
                 'user_id' => $order->user_id,
                 'type' => 'order_status',
-                'title' => 'Don hang '.$order->code,
-                'message' => 'Trang thai moi: '.$labels[$order->status],
+                'title' => 'Đơn hàng '.$order->code,
+                'message' => 'Trạng thái mới: '.$labels[$order->status],
                 'action_url' => '/account/orders/'.$order->code,
             ]);
         }

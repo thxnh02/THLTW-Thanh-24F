@@ -20,7 +20,7 @@ class EnsureAccountActive
 
             return response()->json([
                 'success' => false,
-                'message' => 'Tai khoan da bi khoa.',
+                'message' => 'Tài khoản đã bị khóa.',
                 'errors' => (object) [],
             ], 403);
         }

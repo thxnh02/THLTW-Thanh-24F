@@ -40,7 +40,7 @@ class CategoryController extends Controller
 
         $validated['slug'] = $validated['slug'] ?? Str::slug($validated['name']);
 
-        return $this->success(Category::create($validated), 'Da tao danh muc.', status: 201);
+        return $this->success(Category::create($validated), 'Đã tạo danh mục.', status: 201);
     }
 
     public function show(Category $category): JsonResponse
@@ -60,17 +60,17 @@ class CategoryController extends Controller
         $validated['slug'] = $validated['slug'] ?? Str::slug($validated['name']);
         $category->update($validated);
 
-        return $this->success($category->refresh(), 'Da cap nhat danh muc.');
+        return $this->success($category->refresh(), 'Đã cập nhật danh mục.');
     }
 
     public function destroy(Category $category): JsonResponse
     {
         if ($category->products()->exists()) {
-            return $this->error('Danh muc dang co san pham, khong the xoa.', 409);
+            return $this->error('Danh mục đang có sản phẩm, không thể xóa.', 409);
         }
 
         $category->delete();
 
-        return $this->success(null, 'Da xoa danh muc.');
+        return $this->success(null, 'Đã xóa danh mục.');
     }
 }

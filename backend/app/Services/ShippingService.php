@@ -29,7 +29,7 @@ class ShippingService
             : $this->activeMethods()->first();
 
         if ($shippingMethodId && ! $method) {
-            abort(422, 'Phuong thuc van chuyen khong hop le hoac da ngung su dung.');
+            abort(422, 'Phương thức vận chuyển không hợp lệ hoặc đã ngừng sử dụng.');
         }
 
         if (! $method) {

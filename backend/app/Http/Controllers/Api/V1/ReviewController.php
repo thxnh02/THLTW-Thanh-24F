@@ -29,7 +29,7 @@ class ReviewController extends Controller
             ->exists();
 
         if (! $hasCompletedOrder) {
-            return $this->error('Chi thanh vien da mua san pham trong don hoan thanh moi duoc danh gia.', 409);
+            return $this->error('Chỉ thành viên đã mua sản phẩm trong đơn hoàn thành mới được đánh giá.', 409);
         }
 
         $review = Review::query()->updateOrCreate(
@@ -44,6 +44,6 @@ class ReviewController extends Controller
             ],
         );
 
-        return $this->success($review->load('user'), 'Da gui danh gia.', status: 201);
+        return $this->success($review->load('user'), 'Đã gửi đánh giá.', status: 201);
     }
 }

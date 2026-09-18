@@ -29,7 +29,7 @@ class AccountAddressController extends Controller
             return $request->user()->addresses()->create($validated);
         });
 
-        return $this->success($address, 'Da tao dia chi.', status: 201);
+        return $this->success($address, 'Đã tạo địa chỉ.', status: 201);
     }
 
     public function show(string $id): JsonResponse
@@ -49,7 +49,7 @@ class AccountAddressController extends Controller
             $address->update($validated);
         });
 
-        return $this->success($address->refresh(), 'Da cap nhat dia chi.');
+        return $this->success($address->refresh(), 'Đã cập nhật địa chỉ.');
     }
 
     public function destroy(Request $request, Address $address): JsonResponse
@@ -57,7 +57,7 @@ class AccountAddressController extends Controller
         abort_if($address->user_id !== $request->user()->id, 404);
         $address->delete();
 
-        return $this->success(null, 'Da xoa dia chi.');
+        return $this->success(null, 'Đã xóa địa chỉ.');
     }
 
     /**

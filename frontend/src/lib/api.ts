@@ -23,6 +23,16 @@ export async function apiGet<T>(path: string): Promise<T> {
   return parseResponse<T>(response);
 }
 
+export async function apiGetResponse<T>(path: string): Promise<{ data: T; meta: Record<string, unknown> }> {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    headers: authHeaders(),
+    cache: "no-store",
+    credentials: "include",
+  });
+  const json = await parseEnvelope<T>(response);
+  return { data: json.data, meta: json.meta ?? {} };
+}
+
 export async function apiGetList<T>(path: string): Promise<T[]> {
   const payload = await apiGet<T[] | { data: T[] }>(path);
 
@@ -131,15 +141,21 @@ export async function apiUploadForm<T>(
 }
 
 async function parseResponse<T>(response: Response): Promise<T> {
+  const json = await parseEnvelope<T>(response);
+
+  return json.data;
+}
+
+async function parseEnvelope<T>(response: Response): Promise<ApiResponse<T> & { errors?: Record<string, string[]> }> {
   const json = (await response.json()) as ApiResponse<T> & {
     errors?: Record<string, string[]>;
   };
 
   if (!response.ok || !json.success) {
-    throw new ApiError(json.message || "Khong the tai du lieu.", response.status);
+    throw new ApiError(json.message || "Không thể tải dữ liệu.", response.status);
   }
 
-  return json.data;
+  return json;
 }
 
 function authHeaders(extra: Record<string, string> = {}): HeadersInit {
@@ -165,7 +181,7 @@ async function ensureCsrfCookie(): Promise<void> {
       headers: { Accept: "application/json" },
     }).then((response) => {
       if (!response.ok) {
-        throw new ApiError("Khong the khoi tao CSRF cookie.", response.status);
+        throw new ApiError("Không thể khởi tạo phiên bảo mật.", response.status);
       }
     }).catch((error) => {
       csrfPromise = null;

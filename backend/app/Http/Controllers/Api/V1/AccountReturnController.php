@@ -37,7 +37,7 @@ class AccountReturnController extends Controller
             'items.*.condition_note' => ['nullable', 'string', 'max:1000'],
         ]);
 
-        return $this->success($returnService->createForUser($request->user(), $validated), 'Da gui yeu cau doi tra.', status: 201);
+        return $this->success($returnService->createForUser($request->user(), $validated), 'Đã gửi yêu cầu đổi trả.', status: 201);
     }
 
     public function show(Request $request, string $code): JsonResponse

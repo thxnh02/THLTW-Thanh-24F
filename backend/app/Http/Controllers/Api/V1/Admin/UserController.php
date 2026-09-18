@@ -53,7 +53,7 @@ class UserController extends Controller
             'status' => ['required', 'in:active,locked'],
         ]);
 
-        return $this->success(User::create($validated), 'Da tao tai khoan.', status: 201);
+        return $this->success(User::create($validated), 'Đã tạo tài khoản.', status: 201);
     }
 
     public function show(User $user): JsonResponse
@@ -78,7 +78,7 @@ class UserController extends Controller
             $user->is($request->user())
             && ($validated['role'] !== 'admin' || $validated['status'] !== 'active')
         ) {
-            return $this->error('Khong the tu ha quyen hoac khoa tai khoan admin dang dang nhap.', 409);
+            return $this->error('Không thể tự hạ quyền hoặc khóa tài khoản quản trị đang đăng nhập.', 409);
         }
 
         if ($user->role === 'admin' && ($validated['role'] !== 'admin' || $validated['status'] !== 'active')) {
@@ -89,7 +89,7 @@ class UserController extends Controller
                 ->count();
 
             if ($activeAdminCount === 0) {
-                return $this->error('Khong the khoa hoac ha quyen admin cuoi cung.', 409);
+                return $this->error('Không thể khóa hoặc hạ quyền quản trị viên cuối cùng.', 409);
             }
         }
 
@@ -99,7 +99,7 @@ class UserController extends Controller
 
         $user->update($validated);
 
-        return $this->success($user->refresh()->loadCount('orders'), 'Da cap nhat tai khoan.');
+        return $this->success($user->refresh()->loadCount('orders'), 'Đã cập nhật tài khoản.');
     }
 
     public function destroy(Request $request, User $user): JsonResponse
@@ -107,16 +107,16 @@ class UserController extends Controller
         abort_unless($request->user()->isAdmin(), 403);
 
         if ($user->is($request->user())) {
-            return $this->error('Khong the xoa tai khoan dang dang nhap.', 409);
+            return $this->error('Không thể xóa tài khoản đang đăng nhập.', 409);
         }
 
         if ($user->role === 'admin' && User::query()->where('role', 'admin')->where('status', 'active')->whereKeyNot($user->id)->count() === 0) {
-            return $this->error('Khong the xoa admin cuoi cung.', 409);
+            return $this->error('Không thể xóa quản trị viên cuối cùng.', 409);
         }
 
         $user->tokens()->delete();
         $user->delete();
 
-        return $this->success(null, 'Da xoa tai khoan.');
+        return $this->success(null, 'Đã xóa tài khoản.');
     }
 }

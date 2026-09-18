@@ -5,13 +5,14 @@ import { useParams, useRouter } from "next/navigation";
 
 import { ApiError, apiGet, apiPost } from "@/lib/api";
 import type { Order, ReturnRequest } from "@/types/api";
+import { Button, Input, Skeleton, Textarea } from "@/components/ui";
 
 export default function AccountOrderReturnPage() {
   const params = useParams<{ code: string }>();
   const router = useRouter();
   const [order, setOrder] = useState<Order | null>(null);
   const [quantities, setQuantities] = useState<Record<number, number>>({});
-  const [reason, setReason] = useState("Khong phu hop");
+  const [reason, setReason] = useState("Sản phẩm không phù hợp");
   const [description, setDescription] = useState("");
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -41,7 +42,7 @@ export default function AccountOrderReturnPage() {
       .filter((item) => item.quantity > 0);
 
     if (items.length === 0) {
-      setMessage("Chon it nhat mot san pham.");
+      setMessage("Chọn ít nhất một sản phẩm.");
       return;
     }
 
@@ -54,9 +55,9 @@ export default function AccountOrderReturnPage() {
         description: description || undefined,
         items,
       });
-      setMessage(`Da gui yeu cau doi tra ${result.code}.`);
+      setMessage(`Đã gửi yêu cầu đổi trả ${result.code}.`);
     } catch (reason) {
-      setMessage(reason instanceof Error ? reason.message : "Khong the gui yeu cau.");
+      setMessage(reason instanceof Error ? reason.message : "Không thể gửi yêu cầu.");
     } finally {
       setSubmitting(false);
     }
@@ -64,31 +65,29 @@ export default function AccountOrderReturnPage() {
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-8">
-      <h1 className="text-3xl font-bold text-slate-950">Yeu cau doi tra</h1>
-      {!order && !message ? <p className="mt-6 rounded-md bg-white p-4">Dang tai don hang...</p> : null}
+      <h1 className="text-3xl font-bold text-slate-950">Yêu cầu đổi trả</h1>
+      {!order && !message ? <Skeleton className="mt-6 h-80 w-full" /> : null}
       {message ? <p className="mt-4 rounded-md bg-white p-3 text-sm text-slate-700">{message}</p> : null}
       {order ? (
         <form onSubmit={submit} className="mt-6 grid gap-4 rounded-md border border-slate-200 bg-white p-5 shadow-sm">
           <p className="font-semibold">{order.code}</p>
           <label className="block text-sm font-semibold text-slate-700">
-            Ly do
-            <input value={reason} onChange={(event) => setReason(event.target.value)} required className="mt-1 h-10 w-full rounded-md border border-slate-300 px-3 font-normal" />
+            Lý do
+            <Input value={reason} onChange={(event) => setReason(event.target.value)} required className="mt-1 font-normal" />
           </label>
           <label className="block text-sm font-semibold text-slate-700">
-            Mo ta
-            <textarea value={description} onChange={(event) => setDescription(event.target.value)} className="mt-1 min-h-24 w-full rounded-md border border-slate-300 px-3 py-2 font-normal" />
+            Mô tả
+            <Textarea value={description} onChange={(event) => setDescription(event.target.value)} className="mt-1 font-normal" />
           </label>
           <div className="space-y-3">
             {order.items?.map((item) => (
               <label key={item.id} className="grid gap-2 rounded-md bg-slate-50 p-3 text-sm md:grid-cols-[1fr_120px]">
-                <span><strong>{item.product_name}</strong><br />{item.variant_name} - {item.sku} | Da mua: {item.quantity}</span>
-                <input type="number" min={0} max={item.quantity} value={quantities[item.id] ?? 0} onChange={(event) => setQuantities({ ...quantities, [item.id]: Number(event.target.value) })} className="h-10 rounded-md border border-slate-300 px-3" />
+                <span><strong>{item.product_name}</strong><br />{item.variant_name} · {item.sku} · Đã mua: {item.quantity}</span>
+                <Input type="number" min={0} max={item.quantity} value={quantities[item.id] ?? 0} onChange={(event) => setQuantities({ ...quantities, [item.id]: Number(event.target.value) })} className="h-10" />
               </label>
             ))}
           </div>
-          <button disabled={submitting} className="rounded-md bg-slate-950 px-5 py-3 text-sm font-semibold text-white disabled:bg-slate-300">
-            {submitting ? "Dang gui..." : "Gui yeu cau"}
-          </button>
+          <Button disabled={submitting}>{submitting ? "Đang gửi..." : "Gửi yêu cầu"}</Button>
         </form>
       ) : null}
     </main>

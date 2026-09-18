@@ -74,15 +74,15 @@ export default function AdminShippingMethodsPage() {
     try {
       if (form.id) {
         await apiPatch(`/admin/shipping-methods/${form.id}`, payload);
-        setMessage("Da cap nhat phuong thuc van chuyen.");
+        setMessage("Đã cập nhật phương thức vận chuyển.");
       } else {
         await apiPost("/admin/shipping-methods", payload);
-        setMessage("Da tao phuong thuc van chuyen.");
+        setMessage("Đã tạo phương thức vận chuyển.");
       }
       setForm(emptyForm);
       load();
     } catch (reason) {
-      setMessage(reason instanceof Error ? reason.message : "Khong the luu.");
+      setMessage(reason instanceof Error ? reason.message : "Không thể lưu.");
     } finally {
       setSaving(false);
     }
@@ -90,49 +90,49 @@ export default function AdminShippingMethodsPage() {
 
   async function remove(method: ShippingMethod) {
     await apiDelete(`/admin/shipping-methods/${method.id}`);
-    setMessage("Da xoa hoac ngung su dung phuong thuc.");
+    setMessage("Đã xóa hoặc ngừng sử dụng phương thức.");
     load();
   }
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-8">
-      <h1 className="text-3xl font-bold text-slate-950">Phuong thuc van chuyen</h1>
+      <h1 className="text-3xl font-bold text-slate-950">Phương thức vận chuyển</h1>
       <form onSubmit={submit} className="mt-6 grid gap-4 rounded-md border border-slate-200 bg-white p-5 shadow-sm lg:grid-cols-4">
-        <Input label="Ten" value={form.name} onChange={(value) => setForm({ ...form, name: value })} required />
-        <Input label="Code" value={form.code} onChange={(value) => setForm({ ...form, code: value })} required />
-        <Input label="Phi" type="number" value={form.fee} onChange={(value) => setForm({ ...form, fee: value })} required />
-        <Input label="Mien phi tu" type="number" value={form.free_shipping_threshold} onChange={(value) => setForm({ ...form, free_shipping_threshold: value })} />
-        <Input label="Ngay toi thieu" type="number" value={form.estimated_days_min} onChange={(value) => setForm({ ...form, estimated_days_min: value })} />
-        <Input label="Ngay toi da" type="number" value={form.estimated_days_max} onChange={(value) => setForm({ ...form, estimated_days_max: value })} />
-        <Input label="Thu tu" type="number" value={form.sort_order} onChange={(value) => setForm({ ...form, sort_order: value })} />
+        <Input label="Tên" value={form.name} onChange={(value) => setForm({ ...form, name: value })} required />
+        <Input label="Mã" value={form.code} onChange={(value) => setForm({ ...form, code: value })} required />
+        <Input label="Phí" type="number" value={form.fee} onChange={(value) => setForm({ ...form, fee: value })} required />
+        <Input label="Miễn phí từ" type="number" value={form.free_shipping_threshold} onChange={(value) => setForm({ ...form, free_shipping_threshold: value })} />
+        <Input label="Số ngày tối thiểu" type="number" value={form.estimated_days_min} onChange={(value) => setForm({ ...form, estimated_days_min: value })} />
+        <Input label="Số ngày tối đa" type="number" value={form.estimated_days_max} onChange={(value) => setForm({ ...form, estimated_days_max: value })} />
+        <Input label="Thứ tự" type="number" value={form.sort_order} onChange={(value) => setForm({ ...form, sort_order: value })} />
         <label className="flex items-center gap-2 pt-7 text-sm font-semibold text-slate-700">
           <input type="checkbox" checked={form.active} onChange={(event) => setForm({ ...form, active: event.target.checked })} />
-          Dang bat
+          Đang hoạt động
         </label>
         <label className="block text-sm font-semibold text-slate-700 lg:col-span-4">
-          Mo ta
+          Mô tả
           <textarea value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} className="mt-1 min-h-20 w-full rounded-md border border-slate-300 px-3 py-2 font-normal" />
         </label>
         <div className="flex gap-2 lg:col-span-4">
           <button disabled={saving} className="rounded-md bg-slate-950 px-5 py-3 text-sm font-semibold text-white disabled:bg-slate-300">
-            {saving ? "Dang luu..." : form.id ? "Cap nhat" : "Tao moi"}
+            {saving ? "Đang lưu..." : form.id ? "Cập nhật" : "Tạo mới"}
           </button>
-          {form.id ? <button type="button" onClick={() => setForm(emptyForm)} className="rounded-md border border-slate-300 px-5 py-3 text-sm font-semibold">Huy</button> : null}
+          {form.id ? <button type="button" onClick={() => setForm(emptyForm)} className="rounded-md border border-slate-300 px-5 py-3 text-sm font-semibold">Hủy</button> : null}
         </div>
       </form>
       {message ? <p className="mt-3 rounded-md bg-white p-3 text-sm text-slate-700">{message}</p> : null}
       <div className="mt-6 overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
         <table className="w-full border-collapse text-left text-sm">
           <thead className="bg-slate-100 text-slate-700">
-            <tr><th className="p-3">Ten</th><th className="p-3">Phi</th><th className="p-3">Du kien</th><th className="p-3">Status</th><th className="p-3">Thao tac</th></tr>
+            <tr><th className="p-3">Tên</th><th className="p-3">Phí</th><th className="p-3">Dự kiến</th><th className="p-3">Trạng thái</th><th className="p-3">Thao tác</th></tr>
           </thead>
           <tbody>
             {methods.map((method) => (
               <tr key={method.id} className="border-t border-slate-200">
                 <td className="p-3 font-semibold">{method.name}<p className="text-xs text-slate-500">{method.code}</p></td>
                 <td className="p-3">{formatVnd(method.fee)}</td>
-                <td className="p-3">{method.estimated_days_min ?? "?"}-{method.estimated_days_max ?? "?"} ngay</td>
-                <td className="p-3">{method.active ? "Bat" : "Tat"}</td>
+                <td className="p-3">{method.estimated_days_min ?? "?"}-{method.estimated_days_max ?? "?"} ngày</td>
+                <td className="p-3">{method.active ? "Đang hoạt động" : "Đã tắt"}</td>
                 <td className="flex gap-2 p-3">
                   <button type="button" onClick={() => setForm({
                     id: method.id,
@@ -145,8 +145,8 @@ export default function AdminShippingMethodsPage() {
                     estimated_days_max: String(method.estimated_days_max ?? ""),
                     active: Boolean(method.active),
                     sort_order: String(method.sort_order ?? 0),
-                  })} className="rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold">Sua</button>
-                  <button type="button" onClick={() => remove(method)} className="rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold">Xoa</button>
+                  })} className="rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold">Sửa</button>
+                  <button type="button" onClick={() => remove(method)} className="rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold">Xóa</button>
                 </td>
               </tr>
             ))}

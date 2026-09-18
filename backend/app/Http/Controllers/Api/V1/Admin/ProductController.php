@@ -108,7 +108,7 @@ class ProductController extends Controller
             return $product->load(['category', 'brand', 'variants', 'images']);
         });
 
-        return $this->success($product, 'Da tao san pham.', status: 201);
+        return $this->success($product, 'Đã tạo sản phẩm.', status: 201);
     }
 
     public function update(Request $request, Product $product): JsonResponse
@@ -135,7 +135,7 @@ class ProductController extends Controller
             return $product->refresh()->load(['category', 'brand', 'variants', 'images']);
         });
 
-        return $this->success($product, 'Da cap nhat san pham.');
+        return $this->success($product, 'Đã cập nhật sản phẩm.');
     }
 
     public function destroy(Product $product): JsonResponse
@@ -144,12 +144,12 @@ class ProductController extends Controller
             $product->update(['status' => 'inactive']);
             $product->delete();
 
-            return $this->success(null, 'San pham da co giao dich nen da duoc an bang soft delete.');
+            return $this->success(null, 'Sản phẩm đã có giao dịch nên đã được ẩn khỏi cửa hàng.');
         }
 
         $product->delete();
 
-        return $this->success(null, 'Da xoa san pham.');
+        return $this->success(null, 'Đã xóa sản phẩm.');
     }
 
     /**
@@ -202,7 +202,7 @@ class ProductController extends Controller
             }
 
             if ($skuQuery->exists()) {
-                abort(422, 'SKU da ton tai: '.$variantData['sku']);
+                abort(422, 'SKU đã tồn tại: '.$variantData['sku']);
             }
 
             $variant = ProductVariant::query()->updateOrCreate(

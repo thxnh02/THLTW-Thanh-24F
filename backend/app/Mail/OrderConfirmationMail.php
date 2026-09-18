@@ -21,7 +21,7 @@ class OrderConfirmationMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Xac nhan don hang '.$this->order->code,
+            subject: 'Xác nhận đơn hàng '.$this->order->code,
         );
     }
 

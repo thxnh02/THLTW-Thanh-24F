@@ -45,7 +45,7 @@ class ReturnService
                 $orderItem = $order->items->firstWhere('id', (int) $itemData['order_item_id']);
 
                 if (! $orderItem) {
-                    abort(422, 'San pham hoan tra khong thuoc don hang.');
+                    abort(422, 'Sản phẩm hoàn trả không thuộc đơn hàng.');
                 }
 
                 $quantity = (int) $itemData['quantity'];
@@ -55,7 +55,7 @@ class ReturnService
                     ->sum('quantity');
 
                 if ($quantity < 1 || ($activeQuantity + $quantity) > $orderItem->quantity) {
-                    abort(422, 'So luong hoan tra vuot qua so luong da mua.');
+                    abort(422, 'Số lượng hoàn trả vượt quá số lượng đã mua.');
                 }
 
                 ReturnRequestItem::create([
@@ -104,13 +104,13 @@ class ReturnService
     private function assertOrderEligible(Order $order): void
     {
         if ($order->status !== 'completed') {
-            abort(409, 'Chi don hang hoan thanh moi duoc yeu cau doi tra.');
+            abort(409, 'Chỉ đơn hàng hoàn thành mới được yêu cầu đổi trả.');
         }
 
         $windowDays = (int) (Setting::query()->where('key', 'return_window_days')->value('value') ?? 7);
 
         if ($order->created_at?->lt(now()->subDays($windowDays))) {
-            abort(409, 'Don hang da qua thoi han doi tra.');
+            abort(409, 'Đơn hàng đã quá thời hạn đổi trả.');
         }
     }
 
@@ -126,7 +126,7 @@ class ReturnService
         ];
 
         if (! in_array($status, $allowed[$returnRequest->status] ?? [], true)) {
-            abort(409, 'Trang thai doi tra khong hop le.');
+            abort(409, 'Trạng thái đổi trả không hợp lệ.');
         }
 
         $returnRequest->status = $status;
@@ -134,11 +134,11 @@ class ReturnService
         if ($status === 'approved') {
             $returnRequest->approved_at = now();
             $returnRequest->refund_status = 'pending';
-            $this->notifyCustomer($returnRequest, 'return_status', 'Yeu cau doi tra da duoc chap thuan.', 'Yeu cau '.$returnRequest->code.' da duoc chap thuan.');
+            $this->notifyCustomer($returnRequest, 'return_status', 'Yêu cầu đổi trả đã được chấp thuận.', 'Yêu cầu '.$returnRequest->code.' đã được chấp thuận.');
         } elseif ($status === 'rejected') {
             $returnRequest->rejected_at = now();
             $returnRequest->refund_status = 'none';
-            $this->notifyCustomer($returnRequest, 'return_status', 'Yeu cau doi tra da bi tu choi.', 'Yeu cau '.$returnRequest->code.' da bi tu choi.');
+            $this->notifyCustomer($returnRequest, 'return_status', 'Yêu cầu đổi trả đã bị từ chối.', 'Yêu cầu '.$returnRequest->code.' đã bị từ chối.');
         } elseif ($status === 'received') {
             $returnRequest->received_at = now();
             $this->restoreStockOnce($returnRequest, $admin);
@@ -146,7 +146,7 @@ class ReturnService
             $returnRequest->completed_at = now();
             $returnRequest->refund_status = 'refunded';
             $returnRequest->refunded_at ??= now();
-            $this->notifyCustomer($returnRequest, 'refund_status', 'Hoan tien da hoan tat.', 'Yeu cau '.$returnRequest->code.' da duoc hoan tien.');
+            $this->notifyCustomer($returnRequest, 'refund_status', 'Hoàn tiền đã hoàn tất.', 'Yêu cầu '.$returnRequest->code.' đã được hoàn tiền.');
         }
     }
 
@@ -160,14 +160,14 @@ class ReturnService
         ];
 
         if (! in_array($refundStatus, $allowed[$returnRequest->refund_status] ?? [], true)) {
-            abort(409, 'Trang thai hoan tien khong hop le.');
+            abort(409, 'Trạng thái hoàn tiền không hợp lệ.');
         }
 
         $returnRequest->refund_status = $refundStatus;
 
         if ($refundStatus === 'refunded') {
             $returnRequest->refunded_at = now();
-            $this->notifyCustomer($returnRequest, 'refund_status', 'Hoan tien da hoan tat.', 'Yeu cau '.$returnRequest->code.' da duoc hoan tien.');
+            $this->notifyCustomer($returnRequest, 'refund_status', 'Hoàn tiền đã hoàn tất.', 'Yêu cầu '.$returnRequest->code.' đã được hoàn tiền.');
         }
     }
 

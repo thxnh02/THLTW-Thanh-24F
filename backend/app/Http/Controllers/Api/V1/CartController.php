@@ -35,7 +35,7 @@ class CartController extends Controller
         $variant = ProductVariant::query()->findOrFail($validated['variant_id']);
 
         if (! $variant->active || $variant->stock_quantity <= 0) {
-            return $this->error('San pham hien khong the them vao gio.', 409);
+            return $this->error('Sản phẩm hiện không thể thêm vào giỏ.', 409);
         }
 
         $item = CartItem::query()->firstOrNew([
@@ -45,7 +45,7 @@ class CartController extends Controller
         $item->quantity = min($variant->stock_quantity, ($item->exists ? $item->quantity : 0) + (int) $validated['quantity']);
         $item->save();
 
-        return $this->success($this->cartPayload($cart->refresh()), 'Da them vao gio hang.', status: 201);
+        return $this->success($this->cartPayload($cart->refresh()), 'Đã thêm vào giỏ hàng.', status: 201);
     }
 
     public function updateItem(Request $request, CartItem $item): JsonResponse
@@ -59,12 +59,12 @@ class CartController extends Controller
         $item->load('variant');
 
         if ((int) $validated['quantity'] > $item->variant->stock_quantity) {
-            return $this->error('So luong vuot qua ton kho.', 409);
+            return $this->error('Số lượng vượt quá tồn kho.', 409);
         }
 
         $item->update(['quantity' => (int) $validated['quantity']]);
 
-        return $this->success($this->cartPayload($cart->refresh()), 'Da cap nhat gio hang.');
+        return $this->success($this->cartPayload($cart->refresh()), 'Đã cập nhật giỏ hàng.');
     }
 
     public function deleteItem(Request $request, CartItem $item): JsonResponse
@@ -73,7 +73,7 @@ class CartController extends Controller
         abort_if($item->cart_id !== $cart->id, 404);
         $item->delete();
 
-        return $this->success($this->cartPayload($cart->refresh()), 'Da xoa san pham khoi gio hang.');
+        return $this->success($this->cartPayload($cart->refresh()), 'Đã xóa sản phẩm khỏi giỏ hàng.');
     }
 
     public function merge(Request $request): JsonResponse
@@ -100,7 +100,7 @@ class CartController extends Controller
             $item->save();
         }
 
-        return $this->success($this->cartPayload($cart->refresh()), 'Da merge gio hang.');
+        return $this->success($this->cartPayload($cart->refresh()), 'Đã đồng bộ giỏ hàng.');
     }
 
     public function quote(Request $request): JsonResponse
@@ -131,7 +131,7 @@ class CartController extends Controller
         );
 
         if (! $promotion) {
-            return $this->error('Ma khuyen mai khong hop le.', 409);
+            return $this->error('Mã khuyến mãi không hợp lệ.', 409);
         }
 
         return $this->success([

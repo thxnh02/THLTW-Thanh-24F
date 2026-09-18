@@ -61,7 +61,7 @@ class StockController extends Controller
                 $change = $validated['type'] === 'import' ? $quantity : -$quantity;
 
                 if ($change < 0 && $variant->stock_quantity < $quantity) {
-                    abort(409, 'Ton kho SKU '.$variant->sku.' khong du de xuat.');
+                    abort(409, 'Tồn kho SKU '.$variant->sku.' không đủ để xuất.');
                 }
 
                 $variant->increment('stock_quantity', $change);
@@ -88,7 +88,7 @@ class StockController extends Controller
             return $document->load(['items.variant.product', 'creator']);
         });
 
-        return $this->success($document, 'Da ghi nhan phieu kho.', status: 201);
+        return $this->success($document, 'Đã ghi nhận phiếu kho.', status: 201);
     }
 
     public function movements(Request $request): JsonResponse

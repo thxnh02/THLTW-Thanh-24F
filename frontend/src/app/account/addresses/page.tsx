@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 
 import { ApiError, apiDelete, apiGet, apiPatch, apiPost } from "@/lib/api";
 import type { Address } from "@/types/api";
+import { Button, Input as TextInput } from "@/components/ui";
+import { useConfirm } from "@/contexts/ConfirmContext";
 
 type AddressForm = Omit<Address, "id"> & { id?: number };
 
@@ -23,6 +25,7 @@ export default function AccountAddressesPage() {
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [form, setForm] = useState<AddressForm>(emptyForm);
   const [message, setMessage] = useState("");
+  const confirm = useConfirm();
 
   const load = useCallback(() => {
     apiGet<Address[]>("/account/addresses")
@@ -44,36 +47,37 @@ export default function AccountAddressesPage() {
     event.preventDefault();
     if (form.id) {
       await apiPatch(`/account/addresses/${form.id}`, form);
-      setMessage("Da cap nhat dia chi.");
+    setMessage("Đã cập nhật địa chỉ.");
     } else {
       await apiPost("/account/addresses", form);
-      setMessage("Da tao dia chi.");
+      setMessage("Đã tạo địa chỉ.");
     }
     setForm(emptyForm);
     load();
   }
 
   async function remove(address: Address) {
+    if (!await confirm({ title: "Xóa địa chỉ?", message: "Địa chỉ này sẽ bị xóa khỏi tài khoản của bạn.", confirmLabel: "Xóa địa chỉ" })) return;
     await apiDelete(`/account/addresses/${address.id}`);
-    setMessage("Da xoa dia chi.");
+    setMessage("Đã xóa địa chỉ.");
     load();
   }
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-8">
-      <h1 className="text-3xl font-bold text-slate-950">Dia chi giao hang</h1>
+      <h1 className="text-2xl font-bold text-slate-950">Địa chỉ giao hàng</h1>
       <form onSubmit={submit} className="mt-6 grid gap-3 rounded-md border border-slate-200 bg-white p-5 shadow-sm md:grid-cols-2">
-        <Input label="Nguoi nhan" value={form.recipient_name} onChange={(value) => setForm({ ...form, recipient_name: value })} required />
-        <Input label="Dien thoai" value={form.phone} onChange={(value) => setForm({ ...form, phone: value })} required />
-        <Input label="Tinh/TP" value={form.province ?? ""} onChange={(value) => setForm({ ...form, province: value })} />
-        <Input label="Quan/Huyen" value={form.district ?? ""} onChange={(value) => setForm({ ...form, district: value })} />
-        <Input label="Phuong/Xa" value={form.ward ?? ""} onChange={(value) => setForm({ ...form, ward: value })} />
-        <Input label="Dia chi" value={form.address_line} onChange={(value) => setForm({ ...form, address_line: value })} required />
+        <Input label="Người nhận" value={form.recipient_name} onChange={(value) => setForm({ ...form, recipient_name: value })} required />
+        <Input label="Điện thoại" value={form.phone} onChange={(value) => setForm({ ...form, phone: value })} required />
+        <Input label="Tỉnh/Thành phố" value={form.province ?? ""} onChange={(value) => setForm({ ...form, province: value })} />
+        <Input label="Quận/Huyện" value={form.district ?? ""} onChange={(value) => setForm({ ...form, district: value })} />
+        <Input label="Phường/Xã" value={form.ward ?? ""} onChange={(value) => setForm({ ...form, ward: value })} />
+        <Input label="Địa chỉ" value={form.address_line} onChange={(value) => setForm({ ...form, address_line: value })} required />
         <label className="flex items-center gap-2 text-sm font-semibold">
           <input type="checkbox" checked={form.is_default} onChange={(event) => setForm({ ...form, is_default: event.target.checked })} />
-          Dat lam mac dinh
+          Đặt làm mặc định
         </label>
-        <button className="rounded-md bg-slate-950 px-5 py-3 text-sm font-semibold text-white">{form.id ? "Cap nhat" : "Tao dia chi"}</button>
+        <Button>{form.id ? "Cập nhật" : "Tạo địa chỉ"}</Button>
       </form>
       {message ? <p className="mt-3 text-sm text-teal-700">{message}</p> : null}
       <div className="mt-6 grid gap-3">
@@ -81,13 +85,13 @@ export default function AccountAddressesPage() {
           <article key={address.id} className="rounded-md border border-slate-200 bg-white p-4 shadow-sm">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <h2 className="font-bold text-slate-950">{address.recipient_name} {address.is_default ? "(Mac dinh)" : ""}</h2>
+                <h2 className="font-bold text-slate-950">{address.recipient_name} {address.is_default ? "(Mặc định)" : ""}</h2>
                 <p className="text-sm text-slate-600">{address.phone}</p>
                 <p className="mt-1 text-sm text-slate-700">{[address.address_line, address.ward, address.district, address.province].filter(Boolean).join(", ")}</p>
               </div>
               <div className="flex gap-2">
-                <button type="button" onClick={() => setForm(address)} className="rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold">Sua</button>
-                <button type="button" onClick={() => remove(address)} className="rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold">Xoa</button>
+                <button type="button" onClick={() => setForm(address)} className="rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold">Sửa</button>
+                <button type="button" onClick={() => void remove(address)} className="rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold text-red-700">Xóa</button>
               </div>
             </div>
           </article>
@@ -101,7 +105,7 @@ function Input({ label, value, onChange, required = false }: { label: string; va
   return (
     <label className="block text-sm font-semibold text-slate-700">
       {label}
-      <input required={required} value={value} onChange={(event) => onChange(event.target.value)} className="mt-1 h-10 w-full rounded-md border border-slate-300 px-3 font-normal" />
+      <TextInput required={required} value={value} onChange={(event) => onChange(event.target.value)} className="mt-1 font-normal" />
     </label>
   );
 }

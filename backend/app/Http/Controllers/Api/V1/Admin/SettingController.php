@@ -36,6 +36,6 @@ class SettingController extends Controller
             );
         }
 
-        return $this->success(Setting::query()->orderBy('key')->get(), 'Da cap nhat cau hinh.');
+        return $this->success(Setting::query()->orderBy('key')->get(), 'Đã cập nhật cấu hình.');
     }
 }

@@ -33,7 +33,7 @@ class DatabaseSeeder extends Seeder
         User::query()->updateOrCreate(
             ['email' => env('SEED_ADMIN_EMAIL', 'admin@example.com')],
             [
-                'name' => 'Quan tri vien',
+                'name' => 'Quản trị viên',
                 'password' => env('SEED_ADMIN_PASSWORD', 'Admin@123'),
                 'phone' => '0900000001',
                 'role' => 'admin',
@@ -44,7 +44,7 @@ class DatabaseSeeder extends Seeder
         User::query()->updateOrCreate(
             ['email' => env('SEED_MEMBER_EMAIL', 'member@example.com')],
             [
-                'name' => 'Khach hang demo',
+                'name' => 'Khách hàng thành viên',
                 'password' => env('SEED_MEMBER_PASSWORD', 'Member@123'),
                 'phone' => '0900000002',
                 'role' => 'member',
@@ -52,7 +52,7 @@ class DatabaseSeeder extends Seeder
             ],
         );
 
-        $categories = collect(['Dien thoai', 'Laptop', 'Phu kien', 'Thiet bi am thanh', 'Dong ho thong minh'])
+        $categories = collect(['Điện thoại', 'Laptop', 'Phụ kiện', 'Thiết bị âm thanh', 'Đồng hồ thông minh'])
             ->map(fn (string $name, int $index): Category => Category::query()->updateOrCreate(
                 ['slug' => Str::slug($name)],
                 [
@@ -112,13 +112,13 @@ class DatabaseSeeder extends Seeder
                     'category_id' => $category->id,
                     'brand_id' => $brand->id,
                     'name' => $name,
-                    'short_description' => 'San pham demo chinh hang, bao hanh day du, phu hop nhu cau hoc tap va lam viec.',
-                    'description' => 'Mo ta chi tiet cho '.$name.'. Du lieu nay duoc seed tu backend de frontend goi API that, khong hard-code danh sach san pham.',
+                    'short_description' => 'Sản phẩm chính hãng, bảo hành đầy đủ, phù hợp nhu cầu học tập và làm việc.',
+                    'description' => 'Mô tả chi tiết cho '.$name.'. Thông tin được quản lý trực tiếp từ hệ thống cửa hàng.',
                     'status' => 'active',
                     'featured' => $index % 4 === 0,
                     'sold_count' => 30 - $index,
                     'seo_title' => $name,
-                    'seo_description' => 'Mua '.$name.' gia tot tai THLTW Shop.',
+                    'seo_description' => 'Mua '.$name.' giá tốt tại Công Nghệ Việt.',
                 ],
             );
 
@@ -126,8 +126,8 @@ class DatabaseSeeder extends Seeder
                 ['sku' => 'SKU-'.str_pad((string) ($index + 1), 4, '0', STR_PAD_LEFT)],
                 [
                     'product_id' => $product->id,
-                    'name' => 'Tieu chuan',
-                    'attributes' => ['color' => $index % 2 === 0 ? 'Den' : 'Trang'],
+                    'name' => 'Tiêu chuẩn',
+                    'attributes' => ['color' => $index % 2 === 0 ? 'Đen' : 'Trắng'],
                     'price' => $price,
                     'sale_price' => $salePrice,
                     'stock_quantity' => 8 + $index,
@@ -141,7 +141,7 @@ class DatabaseSeeder extends Seeder
                     ['sku' => 'SKU-'.str_pad((string) ($index + 1), 4, '0', STR_PAD_LEFT).'-PRO'],
                     [
                         'product_id' => $product->id,
-                        'name' => 'Cao cap',
+                        'name' => 'Cao cấp',
                         'attributes' => ['color' => 'Xanh', 'storage' => '512GB'],
                         'price' => $price + 2500000,
                         'sale_price' => null,
@@ -163,7 +163,7 @@ class DatabaseSeeder extends Seeder
         }
 
         Banner::query()->updateOrCreate(
-            ['title' => 'THLTW Shop'],
+            ['title' => 'Công Nghệ Việt'],
             [
                 'image' => '/hero-ecommerce.svg',
                 'link' => '/products',
@@ -174,7 +174,7 @@ class DatabaseSeeder extends Seeder
 
         $postCategory = PostCategory::query()->updateOrCreate(
             ['slug' => 'tin-cong-nghe'],
-            ['name' => 'Tin cong nghe', 'status' => 'active'],
+            ['name' => 'Tin công nghệ', 'status' => 'active'],
         );
 
         for ($index = 1; $index <= 4; $index++) {
@@ -182,23 +182,23 @@ class DatabaseSeeder extends Seeder
                 ['slug' => 'meo-mua-sam-cong-nghe-'.$index],
                 [
                     'post_category_id' => $postCategory->id,
-                    'title' => 'Meo mua sam cong nghe '.$index,
-                    'excerpt' => 'Goi y chon san pham phu hop nhu cau va ngan sach.',
-                    'content' => 'Noi dung bai viet demo phuc vu trang tin tuc ecommerce.',
+                    'title' => 'Mẹo mua sắm công nghệ '.$index,
+                    'excerpt' => 'Gợi ý chọn sản phẩm phù hợp nhu cầu và ngân sách.',
+                    'content' => 'Nội dung bài viết cung cấp thông tin hữu ích về sản phẩm và cách sử dụng.',
                     'thumbnail' => '/product-placeholder.svg',
                     'status' => 'published',
                     'published_at' => now()->subDays($index),
-                    'seo_title' => 'Meo mua sam cong nghe '.$index,
-                    'seo_description' => 'Kinh nghiem mua sam cong nghe.',
+                    'seo_title' => 'Mẹo mua sắm công nghệ '.$index,
+                    'seo_description' => 'Kinh nghiệm mua sắm công nghệ.',
                 ],
             );
         }
 
         foreach ([
-            ['Gioi thieu', 'gioi-thieu', 'THLTW Shop la website demo ecommerce cho mon Thuc hanh lap trinh web.'],
-            ['Chinh sach doi tra', 'chinh-sach-doi-tra', 'Khach hang co the lien he doi tra theo dieu kien bao hanh va tinh trang san pham.'],
-            ['Huong dan mua hang', 'huong-dan-mua-hang', 'Chon san pham, them vao gio hang, nhap thong tin giao hang va dat don.'],
-            ['Chinh sach bao mat', 'chinh-sach-bao-mat', 'Thong tin khach hang chi duoc su dung cho muc dich xu ly don hang va cham soc khach hang.'],
+            ['Giới thiệu', 'gioi-thieu', 'Công Nghệ Việt cung cấp sản phẩm công nghệ chính hãng và dịch vụ hỗ trợ tận tâm.'],
+            ['Chính sách đổi trả', 'chinh-sach-doi-tra', 'Khách hàng có thể liên hệ đổi trả theo điều kiện bảo hành và tình trạng sản phẩm.'],
+            ['Hướng dẫn mua hàng', 'huong-dan-mua-hang', 'Chọn sản phẩm, thêm vào giỏ hàng, nhập thông tin giao hàng và đặt đơn.'],
+            ['Chính sách bảo mật', 'chinh-sach-bao-mat', 'Thông tin khách hàng chỉ được sử dụng cho mục đích xử lý đơn hàng và chăm sóc khách hàng.'],
         ] as [$title, $slug, $content]) {
             Page::query()->updateOrCreate(
                 ['slug' => $slug],
@@ -213,10 +213,10 @@ class DatabaseSeeder extends Seeder
         }
 
         foreach ([
-            ['Trang chu', '/', 1],
-            ['San pham', '/products', 2],
-            ['Bai viet', '/posts', 3],
-            ['Lien he', '/contact', 4],
+            ['Trang chủ', '/', 1],
+            ['Sản phẩm', '/products', 2],
+            ['Bài viết', '/posts', 3],
+            ['Liên hệ', '/contact', 4],
         ] as [$label, $url, $sortOrder]) {
             Menu::query()->updateOrCreate(
                 ['label' => $label, 'url' => $url],
@@ -249,8 +249,8 @@ class DatabaseSeeder extends Seeder
         ShippingMethod::query()->updateOrCreate(
             ['code' => 'standard'],
             [
-                'name' => 'Giao hang tieu chuan',
-                'description' => 'Giao hang noi dia du kien 3-5 ngay.',
+                'name' => 'Giao hàng tiêu chuẩn',
+                'description' => 'Giao hàng nội địa dự kiến 3-5 ngày.',
                 'fee' => 30000,
                 'free_shipping_threshold' => 10000000,
                 'estimated_days_min' => 3,
@@ -263,8 +263,8 @@ class DatabaseSeeder extends Seeder
         ShippingMethod::query()->updateOrCreate(
             ['code' => 'express'],
             [
-                'name' => 'Giao hang nhanh',
-                'description' => 'Uu tien xu ly va giao trong 1-2 ngay.',
+                'name' => 'Giao hàng nhanh',
+                'description' => 'Ưu tiên xử lý và giao trong 1-2 ngày.',
                 'fee' => 60000,
                 'free_shipping_threshold' => 15000000,
                 'estimated_days_min' => 1,
@@ -275,16 +275,16 @@ class DatabaseSeeder extends Seeder
         );
 
         foreach ([
-            'website_name' => 'THLTW Shop',
+            'website_name' => 'Công Nghệ Việt',
             'email' => 'support@example.com',
             'phone' => '0900000000',
-            'address' => 'TP. Ho Chi Minh',
+            'address' => 'TP. Hồ Chí Minh',
             'shipping_fee' => '30000',
             'free_shipping_threshold' => '10000000',
             'low_stock_threshold' => '5',
             'return_window_days' => '7',
-            'invoice_company_name' => 'THLTW Shop',
-            'invoice_company_address' => 'TP. Ho Chi Minh',
+            'invoice_company_name' => 'Công Nghệ Việt',
+            'invoice_company_address' => 'TP. Hồ Chí Minh',
             'invoice_company_phone' => '0900000000',
             'invoice_company_email' => 'support@example.com',
         ] as $key => $value) {
@@ -306,21 +306,23 @@ class DatabaseSeeder extends Seeder
         foreach ($statuses as $index => $status) {
             $variant = $variants[$index] ?? null;
 
-            if (! $member || ! $variant || Order::query()->where('code', 'DEMO-ORDER-'.($index + 1))->exists()) {
+            $orderCode = 'ORD-SEED-'.str_pad((string) ($index + 1), 3, '0', STR_PAD_LEFT);
+
+            if (! $member || ! $variant || Order::query()->where('code', $orderCode)->exists()) {
                 continue;
             }
 
             $unitPrice = (float) ($variant->sale_price ?? $variant->price);
             $order = Order::create([
                 'user_id' => $member->id,
-                'code' => 'DEMO-ORDER-'.($index + 1),
+                'code' => $orderCode,
                 'status' => $status,
                 'payment_status' => $status === 'completed' ? 'paid' : 'unpaid',
                 'payment_method' => 'cod',
                 'customer_name' => $member->name,
                 'customer_email' => $member->email,
                 'customer_phone' => $member->phone ?? '0900000002',
-                'shipping_address' => 'TP. Ho Chi Minh',
+                'shipping_address' => 'TP. Hồ Chí Minh',
                 'subtotal' => $unitPrice,
                 'discount_total' => 0,
                 'shipping_fee' => 30000,

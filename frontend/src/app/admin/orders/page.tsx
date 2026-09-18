@@ -64,14 +64,14 @@ export default function AdminOrdersPage() {
       shipping_carrier: tracking.carrier || undefined,
       tracking_code: tracking.code || undefined,
     });
-    setMessage("Da cap nhat trang thai don hang.");
+    setMessage("Đã cập nhật trạng thái đơn hàng.");
     setSelectedOrder(updated);
     loadOrders();
   }
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-8">
-      <h1 className="text-3xl font-bold text-slate-950">Quan ly don hang</h1>
+      <h1 className="text-3xl font-bold text-slate-950">Quản lý đơn hàng</h1>
       <div className="mt-4 flex justify-end">
         <a href={`${API_BASE_URL}/admin/orders/export${searchParams ? `?${searchParams}` : ""}`} className="rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold">
           Xuat CSV
@@ -84,22 +84,22 @@ export default function AdminOrdersPage() {
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             className="mt-1 h-10 w-full rounded-md border border-slate-300 px-3 font-normal outline-none focus:border-slate-950"
-            placeholder="Ma don, ten, email, phone"
+            placeholder="Mã đơn, tên, email, số điện thoại"
           />
         </label>
         <label className="block text-sm font-semibold text-slate-700">
-          Trang thai
+          Trạng thái
           <select
             value={status}
             onChange={(event) => setStatus(event.target.value)}
             className="mt-1 h-10 w-full rounded-md border border-slate-300 px-3 font-normal outline-none focus:border-slate-950"
           >
             <option value="">Tat ca</option>
-            <option value="pending">Cho xac nhan</option>
-            <option value="confirmed">Da xac nhan</option>
-            <option value="shipping">Dang giao</option>
+            <option value="pending">Chờ xác nhận</option>
+            <option value="confirmed">Đã xác nhận</option>
+            <option value="shipping">Đang giao</option>
             <option value="completed">Hoan thanh</option>
-            <option value="canceled">Da huy</option>
+            <option value="canceled">Đã hủy</option>
           </select>
         </label>
       </div>
@@ -110,10 +110,10 @@ export default function AdminOrdersPage() {
           <table className="w-full border-collapse text-left text-sm">
             <thead className="bg-slate-100 text-slate-700">
               <tr>
-                <th className="p-3">Ma don</th>
-                <th className="p-3">Khach hang</th>
-                <th className="p-3">Trang thai</th>
-                <th className="p-3">Tong tien</th>
+                <th className="p-3">Mã đơn</th>
+                <th className="p-3">Khách hàng</th>
+                <th className="p-3">Trạng thái</th>
+                <th className="p-3">Tổng tiền</th>
                 <th className="p-3">Thao tac</th>
               </tr>
             </thead>
@@ -156,18 +156,18 @@ export default function AdminOrdersPage() {
               </div>
               <dl className="mt-4 space-y-2 text-sm">
                 <Row label="Email" value={selectedOrder.customer_email} />
-                <Row label="Dien thoai" value={selectedOrder.customer_phone} />
-                <Row label="Dia chi" value={selectedOrder.shipping_address} />
-                <Row label="Van chuyen" value={selectedOrder.shipping_method_name ?? "Tieu chuan"} />
-                <Row label="Don vi" value={selectedOrder.shipping_carrier ?? "Dang cap nhat"} />
-                <Row label="Ma van don" value={selectedOrder.tracking_code ?? "Dang cap nhat"} />
-                <Row label="Tong tien" value={formatVnd(selectedOrder.grand_total)} />
-                <Row label="Thanh toan" value={selectedOrder.payment_status} />
+                <Row label="Điện thoại" value={selectedOrder.customer_phone} />
+                <Row label="Địa chỉ" value={selectedOrder.shipping_address} />
+                <Row label="Vận chuyển" value={selectedOrder.shipping_method_name ?? "Tiêu chuẩn"} />
+                <Row label="Đơn vị" value={selectedOrder.shipping_carrier ?? "Đang cập nhật"} />
+                <Row label="Mã vận đơn" value={selectedOrder.tracking_code ?? "Đang cập nhật"} />
+                <Row label="Tổng tiền" value={formatVnd(selectedOrder.grand_total)} />
+                <Row label="Thanh toán" value={selectedOrder.payment_status} />
               </dl>
               {selectedOrder.status === "confirmed" ? (
                 <div className="mt-4 grid gap-3 rounded-md bg-slate-50 p-3">
-                  <Input label="Don vi van chuyen" value={tracking.carrier} onChange={(value) => setTracking({ ...tracking, carrier: value })} />
-                  <Input label="Ma van don" value={tracking.code} onChange={(value) => setTracking({ ...tracking, code: value })} />
+                  <Input label="Đơn vị vận chuyển" value={tracking.carrier} onChange={(value) => setTracking({ ...tracking, carrier: value })} />
+                  <Input label="Mã vận đơn" value={tracking.code} onChange={(value) => setTracking({ ...tracking, code: value })} />
                 </div>
               ) : null}
               <div className="mt-5 flex flex-wrap gap-2">
@@ -197,7 +197,7 @@ export default function AdminOrdersPage() {
                 ))}
               </div>
               <div className="mt-6 border-t border-slate-200 pt-4">
-                <h3 className="font-semibold text-slate-950">San pham</h3>
+                <h3 className="font-semibold text-slate-950">Sản phẩm</h3>
                 <div className="mt-3 space-y-3">
                   {selectedOrder.items?.map((item) => (
                     <div key={item.id} className="rounded-md bg-slate-50 p-3 text-sm">
@@ -211,7 +211,7 @@ export default function AdminOrdersPage() {
               </div>
             </div>
           ) : (
-            <p className="text-sm text-slate-600">Chon mot don hang de xem chi tiet.</p>
+            <p className="text-sm text-slate-600">Chọn một đơn hàng để xem chi tiết.</p>
           )}
         </aside>
       </div>
@@ -247,10 +247,10 @@ function Input({ label, value, onChange }: { label: string; value: string; onCha
 
 function statusLabel(status: Order["status"]): string {
   return {
-    pending: "Cho xac nhan",
-    confirmed: "Da xac nhan",
-    shipping: "Dang giao",
+    pending: "Chờ xác nhận",
+    confirmed: "Đã xác nhận",
+    shipping: "Đang giao",
     completed: "Hoan thanh",
-    canceled: "Da huy",
+    canceled: "Đã hủy",
   }[status];
 }

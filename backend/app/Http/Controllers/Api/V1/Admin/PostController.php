@@ -37,7 +37,7 @@ class PostController extends Controller
     {
         $validated = $this->validatedPost($request);
 
-        return $this->success(Post::create($validated)->load('category'), 'Da tao bai viet.', status: 201);
+        return $this->success(Post::create($validated)->load('category'), 'Đã tạo bài viết.', status: 201);
     }
 
     public function show(Post $post): JsonResponse
@@ -50,14 +50,14 @@ class PostController extends Controller
         $validated = $this->validatedPost($request, $post);
         $post->update($validated);
 
-        return $this->success($post->refresh()->load('category'), 'Da cap nhat bai viet.');
+        return $this->success($post->refresh()->load('category'), 'Đã cập nhật bài viết.');
     }
 
     public function destroy(Post $post): JsonResponse
     {
         $post->delete();
 
-        return $this->success(null, 'Da xoa bai viet.');
+        return $this->success(null, 'Đã xóa bài viết.');
     }
 
     /**

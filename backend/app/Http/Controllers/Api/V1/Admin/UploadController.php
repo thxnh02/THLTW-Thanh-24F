@@ -54,7 +54,7 @@ class UploadController extends Controller
             'mime' => $file->getMimeType(),
             'size' => $file->getSize(),
             'original_name' => $file->getClientOriginalName(),
-        ], 'Da tai anh len.', status: 201);
+        ], 'Đã tải ảnh lên.', status: 201);
     }
 
     public function destroy(Request $request): JsonResponse
@@ -66,15 +66,15 @@ class UploadController extends Controller
         $path = ltrim($validated['path'], '/');
 
         if (! str_starts_with($path, 'uploads/images/')) {
-            return $this->error('Duong dan anh khong hop le.', 422);
+            return $this->error('Đường dẫn ảnh không hợp lệ.', 422);
         }
 
         if (! Storage::disk('public')->exists($path)) {
-            return $this->error('Anh khong ton tai.', 404);
+            return $this->error('Ảnh không tồn tại.', 404);
         }
 
         Storage::disk('public')->delete($path);
 
-        return $this->success(null, 'Da xoa anh.');
+        return $this->success(null, 'Đã xóa ảnh.');
     }
 }

@@ -21,7 +21,7 @@ class OrderStatusUpdatedMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Cap nhat don hang '.$this->order->code,
+            subject: 'Cập nhật đơn hàng '.$this->order->code,
         );
     }
 

@@ -58,7 +58,7 @@ class AccountOrderController extends Controller
         $order = $this->orderForUser($request, $code)->load('items');
 
         if ($order->status !== 'pending') {
-            return $this->error('Chi co the huy don hang dang cho xac nhan.', 409);
+            return $this->error('Chỉ có thể hủy đơn hàng đang chờ xác nhận.', 409);
         }
 
         DB::transaction(function () use ($order, $request): void {
@@ -106,7 +106,7 @@ class AccountOrderController extends Controller
             ]);
         });
 
-        return $this->success($order->refresh()->load(['items', 'payment']), 'Da huy don hang.');
+        return $this->success($order->refresh()->load(['items', 'payment']), 'Đã hủy đơn hàng.');
     }
 
     private function orderForUser(Request $request, string $code): Order

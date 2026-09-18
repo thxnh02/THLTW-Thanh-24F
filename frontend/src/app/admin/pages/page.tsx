@@ -46,10 +46,10 @@ export default function AdminPagesPage() {
     };
     if (form.id) {
       await apiPatch(`/admin/pages/${form.id}`, payload);
-      setMessage("Da cap nhat trang.");
+      setMessage("Đã cập nhật trang.");
     } else {
       await apiPost("/admin/pages", payload);
-      setMessage("Da tao trang.");
+      setMessage("Đã tạo trang.");
     }
     setForm(emptyForm);
     load();
@@ -57,8 +57,8 @@ export default function AdminPagesPage() {
 
   async function remove(page: Page) {
     const accepted = await confirm({
-      title: "Xoa trang?",
-      message: `Ban chac chan muon xoa trang "${page.title}"?`,
+      title: "Xóa trang?",
+      message: `Bạn chắc chắn muốn xóa trang "${page.title}"?`,
       confirmLabel: "Xoa",
     });
 
@@ -67,40 +67,40 @@ export default function AdminPagesPage() {
     }
 
     await apiDelete(`/admin/pages/${page.id}`);
-    setMessage("Da xoa trang.");
+      setMessage("Đã xóa trang.");
     load();
   }
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-8">
-      <h1 className="text-3xl font-bold text-slate-950">Trang tinh</h1>
+      <h1 className="text-3xl font-bold text-slate-950">Trang nội dung</h1>
       <form onSubmit={submit} className="mt-6 grid gap-4 rounded-md border border-slate-200 bg-white p-5 shadow-sm lg:grid-cols-3">
-        <Input label="Tieu de" value={form.title} onChange={(value) => setForm({ ...form, title: value })} required />
+        <Input label="Tiêu đề" value={form.title} onChange={(value) => setForm({ ...form, title: value })} required />
         <Input label="Slug" value={form.slug} onChange={(value) => setForm({ ...form, slug: value })} />
         <label className="block text-sm font-semibold text-slate-700">
           Status
           <select value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value as Page["status"] })} className="mt-1 h-10 w-full rounded-md border border-slate-300 px-3 font-normal">
-            <option value="draft">Draft</option>
-            <option value="published">Published</option>
+            <option value="draft">Bản nháp</option>
+            <option value="published">Đã xuất bản</option>
           </select>
         </label>
         <Input label="SEO title" value={form.seo_title} onChange={(value) => setForm({ ...form, seo_title: value })} />
         <Input label="SEO description" value={form.seo_description} onChange={(value) => setForm({ ...form, seo_description: value })} />
         <label className="block text-sm font-semibold text-slate-700 lg:col-span-3">
-          Noi dung
+          Nội dung
           <textarea required value={form.content} onChange={(event) => setForm({ ...form, content: event.target.value })} className="mt-1 min-h-28 w-full rounded-md border border-slate-300 px-3 py-2 font-normal" />
         </label>
-        <button className="rounded-md bg-slate-950 px-5 py-3 text-sm font-semibold text-white lg:col-span-3">{form.id ? "Cap nhat" : "Tao trang"}</button>
+        <button className="rounded-md bg-slate-950 px-5 py-3 text-sm font-semibold text-white lg:col-span-3">{form.id ? "Cập nhật" : "Tạo trang"}</button>
       </form>
       {message ? <p className="mt-3 text-sm text-teal-700">{message}</p> : null}
       <div className="mt-6 overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
         <table className="w-full border-collapse text-left text-sm">
           <thead className="bg-slate-100 text-slate-700">
             <tr>
-              <th className="p-3">Tieu de</th>
+              <th className="p-3">Tiêu đề</th>
               <th className="p-3">Slug</th>
-              <th className="p-3">Status</th>
-              <th className="p-3">Thao tac</th>
+              <th className="p-3">Trạng thái</th>
+              <th className="p-3">Thao tác</th>
             </tr>
           </thead>
           <tbody>
@@ -108,7 +108,7 @@ export default function AdminPagesPage() {
               <tr key={page.id} className="border-t border-slate-200">
                 <td className="p-3 font-semibold">{page.title}</td>
                 <td className="p-3">{page.slug}</td>
-                <td className="p-3">{page.status}</td>
+                <td className="p-3">{page.status === "published" ? "Đã xuất bản" : "Bản nháp"}</td>
                 <td className="flex gap-2 p-3">
                   <button type="button" onClick={() => setForm({ id: page.id, title: page.title, slug: page.slug, content: page.content, status: page.status, seo_title: page.seo_title ?? "", seo_description: page.seo_description ?? "" })} className="rounded-md border border-slate-300 px-3 py-2 font-semibold">
                     Sua

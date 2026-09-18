@@ -38,6 +38,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function (): void {
     Route::get('homepage', [CatalogController::class, 'homepage']);
+    Route::get('store-settings', [CatalogController::class, 'publicSettings']);
     Route::get('categories', [CatalogController::class, 'categories']);
     Route::get('brands', [CatalogController::class, 'brands']);
     Route::get('products', [CatalogController::class, 'products']);

@@ -31,7 +31,7 @@ class BannerController extends Controller
     {
         $validated = $this->validatedBanner($request);
 
-        return $this->success(Banner::create($validated), 'Da tao banner.', status: 201);
+        return $this->success(Banner::create($validated), 'Đã tạo banner.', status: 201);
     }
 
     public function show(Banner $banner): JsonResponse
@@ -44,14 +44,14 @@ class BannerController extends Controller
         $validated = $this->validatedBanner($request);
         $banner->update($validated);
 
-        return $this->success($banner->refresh(), 'Da cap nhat banner.');
+        return $this->success($banner->refresh(), 'Đã cập nhật banner.');
     }
 
     public function destroy(Banner $banner): JsonResponse
     {
         $banner->delete();
 
-        return $this->success(null, 'Da xoa banner.');
+        return $this->success(null, 'Đã xóa banner.');
     }
 
     /**

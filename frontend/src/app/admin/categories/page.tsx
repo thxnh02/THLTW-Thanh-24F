@@ -52,10 +52,10 @@ export default function AdminCategoriesPage() {
 
     if (form.id) {
       await apiPatch(`/admin/categories/${form.id}`, payload);
-      setMessage("Da cap nhat danh muc.");
+      setMessage("Đã cập nhật danh mục.");
     } else {
       await apiPost("/admin/categories", payload);
-      setMessage("Da tao danh muc.");
+      setMessage("Đã tạo danh mục.");
     }
 
     setForm(emptyForm);
@@ -65,9 +65,9 @@ export default function AdminCategoriesPage() {
   async function remove(category: CategoryRow) {
     setMessage("");
     const accepted = await confirm({
-      title: "Xoa danh muc?",
-      message: `Ban chac chan muon xoa danh muc "${category.name}"?`,
-      confirmLabel: "Xoa",
+      title: "Xóa danh mục?",
+      message: `Bạn có chắc muốn xóa danh mục "${category.name}"?`,
+      confirmLabel: "Xóa",
     });
 
     if (!accepted) {
@@ -76,29 +76,28 @@ export default function AdminCategoriesPage() {
 
     try {
       await apiDelete(`/admin/categories/${category.id}`);
-      setMessage("Da xoa danh muc.");
+      setMessage("Đã xóa danh mục.");
       load();
     } catch (reason) {
-      setMessage(reason instanceof Error ? reason.message : "Khong the xoa danh muc.");
+      setMessage(reason instanceof Error ? reason.message : "Không thể xóa danh mục.");
     }
   }
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-8">
-      <h1 className="text-3xl font-bold text-slate-950">Quan ly danh muc</h1>
+      <h1 className="text-3xl font-bold text-slate-950">Quản lý danh mục</h1>
       <form onSubmit={submit} className="mt-6 grid gap-3 rounded-md border border-slate-200 bg-white p-4 shadow-sm md:grid-cols-5">
-        <input required placeholder="Ten danh muc" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} className="h-10 rounded-md border border-slate-300 px-3" />
+        <input required placeholder="Tên danh mục" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} className="h-10 rounded-md border border-slate-300 px-3" />
         <input placeholder="Slug" value={form.slug} onChange={(event) => setForm({ ...form, slug: event.target.value })} className="h-10 rounded-md border border-slate-300 px-3" />
         <select value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value })} className="h-10 rounded-md border border-slate-300 px-3">
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
+          <option value="active">Đang hoạt động</option><option value="inactive">Đã tắt</option>
         </select>
-        <input type="number" placeholder="Thu tu" value={form.sort_order} onChange={(event) => setForm({ ...form, sort_order: event.target.value })} className="h-10 rounded-md border border-slate-300 px-3" />
+        <input type="number" placeholder="Thứ tự" value={form.sort_order} onChange={(event) => setForm({ ...form, sort_order: event.target.value })} className="h-10 rounded-md border border-slate-300 px-3" />
         <div className="flex gap-2">
-          <button className="rounded-md bg-slate-950 px-4 text-sm font-semibold text-white">{form.id ? "Cap nhat" : "Tao"}</button>
+          <button className="rounded-md bg-slate-950 px-4 text-sm font-semibold text-white">{form.id ? "Cập nhật" : "Tạo"}</button>
           {form.id ? (
             <button type="button" onClick={() => setForm(emptyForm)} className="rounded-md border border-slate-300 px-4 text-sm font-semibold">
-              Huy
+              Hủy
             </button>
           ) : null}
         </div>
@@ -108,11 +107,9 @@ export default function AdminCategoriesPage() {
         <table className="w-full border-collapse text-left text-sm">
           <thead className="bg-slate-100 text-slate-700">
             <tr>
-              <th className="p-3">Ten</th>
+              <th className="p-3">Tên</th>
               <th className="p-3">Slug</th>
-              <th className="p-3">Status</th>
-              <th className="p-3">San pham</th>
-              <th className="p-3">Thao tac</th>
+              <th className="p-3">Trạng thái</th><th className="p-3">Sản phẩm</th><th className="p-3">Thao tác</th>
             </tr>
           </thead>
           <tbody>
@@ -120,14 +117,14 @@ export default function AdminCategoriesPage() {
               <tr key={category.id} className="border-t border-slate-200">
                 <td className="p-3 font-semibold">{category.name}</td>
                 <td className="p-3">{category.slug}</td>
-                <td className="p-3">{category.status}</td>
+                <td className="p-3">{category.status === "active" ? "Đang hoạt động" : "Đã tắt"}</td>
                 <td className="p-3">{category.products_count ?? 0}</td>
                 <td className="flex gap-2 p-3">
                   <button type="button" onClick={() => setForm({ id: category.id, name: category.name, slug: category.slug, status: category.status, sort_order: String(category.sort_order ?? 0) })} className="rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold">
-                    Sua
+                    Sửa
                   </button>
                   <button type="button" disabled={(category.products_count ?? 0) > 0} onClick={() => remove(category)} className="rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50">
-                    Xoa
+                    Xóa
                   </button>
                 </td>
               </tr>

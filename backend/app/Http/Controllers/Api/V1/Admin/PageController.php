@@ -33,7 +33,7 @@ class PageController extends Controller
     {
         $validated = $this->validatedPage($request);
 
-        return $this->success(Page::create($validated), 'Da tao trang.', status: 201);
+        return $this->success(Page::create($validated), 'Đã tạo trang.', status: 201);
     }
 
     public function show(Page $page): JsonResponse
@@ -46,14 +46,14 @@ class PageController extends Controller
         $validated = $this->validatedPage($request, $page);
         $page->update($validated);
 
-        return $this->success($page->refresh(), 'Da cap nhat trang.');
+        return $this->success($page->refresh(), 'Đã cập nhật trang.');
     }
 
     public function destroy(Page $page): JsonResponse
     {
         $page->delete();
 
-        return $this->success(null, 'Da xoa trang.');
+        return $this->success(null, 'Đã xóa trang.');
     }
 
     /**

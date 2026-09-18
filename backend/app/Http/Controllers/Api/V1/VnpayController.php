@@ -28,13 +28,13 @@ class VnpayController extends Controller
         $payload = $request->query();
 
         if (! $this->isValidSignature($payload)) {
-            return $this->error('Chu ky VNPay khong hop le.', 400);
+            return $this->error('Chữ ký VNPay không hợp lệ.', 400);
         }
 
         $order = Order::query()->where('code', $payload['vnp_TxnRef'] ?? null)->first();
 
         if (! $order) {
-            return $this->error('Khong tim thay don hang.', 404);
+            return $this->error('Không tìm thấy đơn hàng.', 404);
         }
 
         $payment = Payment::query()->where('order_id', $order->id)->firstOrFail();
@@ -54,7 +54,7 @@ class VnpayController extends Controller
         return $this->success([
             'order' => $order->refresh(),
             'payment' => $payment->refresh(),
-        ], $isPaid ? 'Thanh toan VNPay thanh cong.' : 'Thanh toan VNPay khong thanh cong.');
+        ], $isPaid ? 'Thanh toán VNPay thành công.' : 'Thanh toán VNPay không thành công.');
     }
 
     /**

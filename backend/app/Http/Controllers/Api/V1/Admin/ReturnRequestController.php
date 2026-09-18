@@ -51,6 +51,6 @@ class ReturnRequestController extends Controller
             'admin_note' => ['nullable', 'string', 'max:2000'],
         ]);
 
-        return $this->success($returnService->updateByAdmin($returnRequest, $request->user(), $validated), 'Da cap nhat yeu cau doi tra.');
+        return $this->success($returnService->updateByAdmin($returnRequest, $request->user(), $validated), 'Đã cập nhật yêu cầu đổi trả.');
     }
 }

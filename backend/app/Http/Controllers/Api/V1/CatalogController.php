@@ -13,6 +13,7 @@ use App\Models\Post;
 use App\Models\PostCategory;
 use App\Models\Product;
 use App\Models\ProductVariant;
+use App\Models\Setting;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -25,10 +26,36 @@ class CatalogController extends Controller
         return $this->success([
             'banners' => Banner::query()->where('active', true)->orderBy('sort_order')->get(),
             'categories' => Category::query()->where('status', 'active')->orderBy('sort_order')->limit(8)->get(),
-            'new_products' => $this->productList(Product::query()->latest()->limit(8)->get()),
-            'best_selling_products' => $this->productList(Product::query()->orderByDesc('sold_count')->limit(8)->get()),
-            'featured_products' => $this->productList(Product::query()->where('featured', true)->limit(8)->get()),
+            'new_products' => $this->productList(Product::query()->withCount('reviews')->withAvg('reviews', 'rating')->latest()->limit(8)->get()),
+            'best_selling_products' => $this->productList(Product::query()->withCount('reviews')->withAvg('reviews', 'rating')->orderByDesc('sold_count')->limit(8)->get()),
+            'featured_products' => $this->productList(Product::query()->withCount('reviews')->withAvg('reviews', 'rating')->where('featured', true)->limit(8)->get()),
             'latest_posts' => Post::query()->with('category')->where('status', 'published')->latest('published_at')->limit(4)->get(),
+        ]);
+    }
+
+    public function publicSettings(): JsonResponse
+    {
+        $values = Setting::query()
+            ->whereIn('key', [
+                'website_name', 'logo', 'favicon', 'email', 'phone', 'address',
+                'social_facebook', 'social_instagram', 'social_tiktok',
+                'seo_title', 'seo_description',
+            ])
+            ->pluck('value', 'key');
+
+        return $this->success([
+            'store_name' => $values->get('website_name'),
+            'logo' => $values->get('logo'),
+            'favicon' => $values->get('favicon'),
+            'email' => $values->get('email'),
+            'phone' => $values->get('phone'),
+            'address' => $values->get('address'),
+            'social_facebook' => $values->get('social_facebook'),
+            'social_instagram' => $values->get('social_instagram'),
+            'social_tiktok' => $values->get('social_tiktok'),
+            'seo_title' => $values->get('seo_title'),
+            'seo_description' => $values->get('seo_description'),
+            'vnpay_enabled' => filled(config('services.vnpay.tmn_code')) && filled(config('services.vnpay.hash_secret')),
         ]);
     }
 
@@ -46,6 +73,8 @@ class CatalogController extends Controller
     {
         $query = Product::query()
             ->with(['category', 'brand', 'defaultVariant', 'images'])
+            ->withCount('reviews')
+            ->withAvg('reviews', 'rating')
             ->where('status', 'active');
 
         $this->applyProductFilters($query, $request);
@@ -75,10 +104,14 @@ class CatalogController extends Controller
     {
         abort_if($product->status !== 'active', 404);
 
-        $product->load(['category', 'brand', 'variants', 'images', 'reviews.user']);
+        $product->load(['category', 'brand', 'variants', 'images', 'reviews.user'])
+            ->loadCount('reviews')
+            ->loadAvg('reviews', 'rating');
 
         $related = Product::query()
             ->with(['category', 'brand', 'defaultVariant', 'images'])
+            ->withCount('reviews')
+            ->withAvg('reviews', 'rating')
             ->where('status', 'active')
             ->where('id', '!=', $product->id)
             ->where('category_id', $product->category_id)
@@ -133,7 +166,7 @@ class CatalogController extends Controller
 
         Contact::create($validated);
 
-        return $this->success(null, 'Tin nhan lien he da duoc ghi nhan.', status: 201);
+        return $this->success(null, 'Tin nhắn liên hệ đã được ghi nhận.', status: 201);
     }
 
     private function applyProductFilters(mixed $query, Request $request): void
@@ -198,8 +231,10 @@ class CatalogController extends Controller
             'price' => $variant?->price,
             'sale_price' => $variant?->sale_price,
             'stock_quantity' => $variant?->stock_quantity ?? 0,
-            'review_count' => $full ? $product->reviews->count() : null,
-            'average_rating' => $full ? round((float) $product->reviews->avg('rating'), 1) : null,
+            'review_count' => $product->reviews_count ?? ($full ? $product->reviews->count() : 0),
+            'average_rating' => $product->reviews_avg_rating !== null
+                ? round((float) $product->reviews_avg_rating, 1)
+                : ($full ? round((float) $product->reviews->avg('rating'), 1) : 0),
             'reviews' => $full ? $product->reviews->map(fn ($review): array => [
                 'id' => $review->id,
                 'rating' => $review->rating,

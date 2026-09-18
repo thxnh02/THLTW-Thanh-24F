@@ -8,5 +8,5 @@ export default function SearchPage() {
     window.location.replace(`/products?${params.toString()}`);
   }, []);
 
-  return <main className="mx-auto max-w-7xl px-4 py-12">Dang chuyen den ket qua tim kiem...</main>;
+  return <main className="mx-auto max-w-7xl px-4 py-12">Đang chuyển đến kết quả tìm kiếm...</main>;
 }

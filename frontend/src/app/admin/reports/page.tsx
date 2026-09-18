@@ -49,34 +49,34 @@ export default function AdminReportsPage() {
   return (
     <main className="mx-auto max-w-7xl px-4 py-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-3xl font-bold text-slate-950">Bao cao</h1>
+        <h1 className="text-3xl font-bold text-slate-950">Báo cáo</h1>
         <div className="flex gap-2">
           <select value={range} onChange={(event) => setRange(event.target.value)} className="h-10 rounded-md border border-slate-300 px-3 text-sm">
-            <option value="today">Hom nay</option>
-            <option value="last_7_days">7 ngay</option>
-            <option value="last_30_days">30 ngay</option>
-            <option value="this_month">Thang nay</option>
+            <option value="today">Hôm nay</option>
+            <option value="last_7_days">7 ngày</option>
+            <option value="last_30_days">30 ngày</option>
+            <option value="this_month">Tháng này</option>
           </select>
-          <a href={`${API_BASE_URL}/admin/reports/export?range=${range}`} className="rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold">Xuat CSV</a>
+          <a href={`${API_BASE_URL}/admin/reports/export?range=${range}`} className="rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold">Xuất CSV</a>
         </div>
       </div>
       {message ? <p className="mt-4 rounded-md bg-white p-3 text-sm text-red-600">{message}</p> : null}
-      {!report ? <p className="mt-6 rounded-md bg-white p-4">Dang tai bao cao...</p> : null}
+      {!report ? <p className="mt-6 rounded-md bg-white p-4">Đang tải báo cáo...</p> : null}
       {report ? (
         <>
           <div className="mt-6 grid gap-4 md:grid-cols-4">
-            <Metric label="Doanh thu hop le" value={formatVnd(report.valid_revenue)} />
-            <Metric label="Don hang" value={String(report.order_count)} />
-            <Metric label="Hoan thanh" value={String(report.completed_count)} />
-            <Metric label="Da huy" value={String(report.canceled_count)} />
+            <Metric label="Doanh thu hợp lệ" value={formatVnd(report.valid_revenue)} />
+            <Metric label="Đơn hàng" value={String(report.order_count)} />
+            <Metric label="Hoàn thành" value={String(report.completed_count)} />
+            <Metric label="Đã hủy" value={String(report.canceled_count)} />
             <Metric label="AOV" value={formatVnd(report.average_order_value)} />
-            <Metric label="Giam gia" value={formatVnd(report.discount_total)} />
-            <Metric label="Phi ship" value={formatVnd(report.shipping_revenue)} />
-            <Metric label="Khach moi" value={String(report.new_customers)} />
+            <Metric label="Giảm giá" value={formatVnd(report.discount_total)} />
+            <Metric label="Phí vận chuyển" value={formatVnd(report.shipping_revenue)} />
+            <Metric label="Khách mới" value={String(report.new_customers)} />
           </div>
           <div className="mt-6 grid gap-6 lg:grid-cols-2">
             <section className="rounded-md border border-slate-200 bg-white p-5 shadow-sm">
-              <h2 className="font-bold text-slate-950">San pham ban chay</h2>
+              <h2 className="font-bold text-slate-950">Sản phẩm bán chạy</h2>
               <div className="mt-3 space-y-2 text-sm">
                 {report.top_products.map((item) => (
                   <div key={`${item.product_name}-${item.sku}`} className="flex justify-between gap-4 rounded-md bg-slate-50 p-3">
@@ -87,7 +87,7 @@ export default function AdminReportsPage() {
               </div>
             </section>
             <section className="rounded-md border border-slate-200 bg-white p-5 shadow-sm">
-              <h2 className="font-bold text-slate-950">Ton kho thap</h2>
+              <h2 className="font-bold text-slate-950">Tồn kho thấp</h2>
               <div className="mt-3 space-y-2 text-sm">
                 {report.low_stock.map((item) => (
                   <div key={item.id} className="flex justify-between gap-4 rounded-md bg-slate-50 p-3">

@@ -35,7 +35,7 @@ class WishlistController extends Controller
             'product_id' => $validated['product_id'],
         ]);
 
-        return $this->success($wishlist->load('product'), 'Da them vao wishlist.', status: 201);
+        return $this->success($wishlist->load('product'), 'Đã thêm vào danh sách yêu thích.', status: 201);
     }
 
     public function destroy(Request $request, Product $product): JsonResponse
@@ -45,6 +45,6 @@ class WishlistController extends Controller
             ->where('product_id', $product->id)
             ->delete();
 
-        return $this->success(null, 'Da xoa khoi wishlist.');
+        return $this->success(null, 'Đã xóa khỏi danh sách yêu thích.');
     }
 }

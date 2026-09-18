@@ -31,7 +31,7 @@ class MenuController extends Controller
     {
         $validated = $this->validatedMenu($request);
 
-        return $this->success(Menu::create($validated)->load('parent'), 'Da tao menu.', status: 201);
+        return $this->success(Menu::create($validated)->load('parent'), 'Đã tạo menu.', status: 201);
     }
 
     public function show(Menu $menu): JsonResponse
@@ -44,18 +44,18 @@ class MenuController extends Controller
         $validated = $this->validatedMenu($request, $menu);
         $menu->update($validated);
 
-        return $this->success($menu->refresh()->load('parent'), 'Da cap nhat menu.');
+        return $this->success($menu->refresh()->load('parent'), 'Đã cập nhật menu.');
     }
 
     public function destroy(Menu $menu): JsonResponse
     {
         if ($menu->children()->exists()) {
-            return $this->error('Menu dang co menu con, khong the xoa.', 409);
+            return $this->error('Menu đang có menu con, không thể xóa.', 409);
         }
 
         $menu->delete();
 
-        return $this->success(null, 'Da xoa menu.');
+        return $this->success(null, 'Đã xóa menu.');
     }
 
     /**
@@ -73,7 +73,7 @@ class MenuController extends Controller
         ]);
 
         if ($menu && (int) ($validated['parent_id'] ?? 0) === $menu->id) {
-            abort(422, 'Menu cha khong hop le.');
+            abort(422, 'Menu cha không hợp lệ.');
         }
 
         return $validated;

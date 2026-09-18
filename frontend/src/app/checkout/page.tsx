@@ -3,173 +3,38 @@
 import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
+import { Button, Input, Select, Textarea } from "@/components/ui";
+import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
-import { apiGet, apiPost } from "@/lib/api";
+import { useStoreSettings } from "@/contexts/StoreSettingsContext";
+import { apiGetList, apiPost } from "@/lib/api";
 import { formatVnd } from "@/lib/format";
-import type { ShippingMethod } from "@/types/api";
+import type { Address, ShippingMethod } from "@/types/api";
 
-type CheckoutResponse = {
-  code: string;
-  grand_total: string | number;
-  payment_url?: string;
-};
+type CheckoutResponse = { code: string; grand_total: string | number; payment_url?: string };
 
 export default function CheckoutPage() {
   const { items, clearCart } = useCart();
-  const [form, setForm] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    address: "",
-    note: "",
-    promotionCode: "",
-    paymentMethod: "cod",
-    shippingMethodId: "",
-  });
+  const { user } = useAuth();
+  const settings = useStoreSettings();
+  const [addresses, setAddresses] = useState<Address[]>([]);
   const [shippingMethods, setShippingMethods] = useState<ShippingMethod[]>([]);
+  const [form, setForm] = useState({ name: user?.name || "", email: user?.email || "", phone: user?.phone || "", address: "", note: "", promotionCode: "", paymentMethod: "cod", shippingMethodId: "" });
   const [submitting, setSubmitting] = useState(false);
-  const [message, setMessage] = useState("");
+  const [success, setSuccess] = useState<CheckoutResponse | null>(null);
   const [error, setError] = useState("");
   const subtotal = useMemo(() => items.reduce((sum, item) => sum + item.price * item.quantity, 0), [items]);
   const selectedShipping = shippingMethods.find((method) => String(method.id) === form.shippingMethodId);
 
-  useEffect(() => {
-    apiGet<ShippingMethod[]>(`/shipping-methods?subtotal=${subtotal}`)
-      .then((methods) => {
-        setShippingMethods(methods);
-        setForm((current) => current.shippingMethodId || methods.length === 0 ? current : { ...current, shippingMethodId: String(methods[0].id) });
-      })
-      .catch((reason: Error) => setError(reason.message));
-  }, [subtotal]);
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setSubmitting(true);
-    setError("");
-    setMessage("");
+  useEffect(() => { if (user) apiGetList<Address>("/account/addresses").then((data) => { setAddresses(data); const preferred = data.find((item) => item.is_default) || data[0]; if (preferred) applyAddress(preferred); }).catch(() => undefined); }, [user]);
+  useEffect(() => { apiGetList<ShippingMethod>(`/shipping-methods?subtotal=${subtotal}`).then((methods) => { setShippingMethods(methods); setForm((current) => current.shippingMethodId || !methods.length ? current : { ...current, shippingMethodId: String(methods[0].id) }); }).catch(() => setError("Không thể tải phương thức vận chuyển.")); }, [subtotal]);
+  function applyAddress(address: Address) { setForm((current) => ({ ...current, name: address.recipient_name, phone: address.phone, address: [address.address_line, address.ward, address.district, address.province].filter(Boolean).join(", ") })); }
+  async function submit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); setSubmitting(true); setError(""); try { const order = await apiPost<CheckoutResponse>("/checkout", { customer: { name: form.name || user?.name, email: form.email || user?.email, phone: form.phone || user?.phone, address: form.address }, note: form.note || undefined, payment_method: form.paymentMethod, shipping_method_id: form.shippingMethodId ? Number(form.shippingMethodId) : undefined, promotion_code: form.promotionCode || undefined, idempotency_key: window.crypto.randomUUID(), items: items.map((item) => ({ variant_id: item.variantId, quantity: item.quantity })) }); clearCart(); if (order.payment_url) { window.location.href = order.payment_url; return; } setSuccess(order); } catch (reason) { setError(reason instanceof Error ? reason.message : "Không thể đặt hàng. Vui lòng thử lại."); } finally { setSubmitting(false); } }
 
-    try {
-      const order = await apiPost<CheckoutResponse>("/checkout", {
-        customer: {
-          name: form.name,
-          email: form.email,
-          phone: form.phone,
-          address: form.address,
-        },
-        note: form.note || undefined,
-        payment_method: form.paymentMethod,
-        shipping_method_id: form.shippingMethodId ? Number(form.shippingMethodId) : undefined,
-        promotion_code: form.promotionCode || undefined,
-        idempotency_key: window.crypto.randomUUID(),
-        items: items.map((item) => ({
-          variant_id: item.variantId,
-          quantity: item.quantity,
-        })),
-      });
-      clearCart();
-      if (order.payment_url) {
-        window.location.href = order.payment_url;
-        return;
-      }
-      setMessage(`Dat hang thanh cong. Ma don: ${order.code}. Tong tien: ${formatVnd(order.grand_total)}.`);
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "Checkout that bai.");
-    } finally {
-      setSubmitting(false);
-    }
-  }
+  if (success) return <main className="mx-auto max-w-2xl px-4 py-14"><div className="rounded-lg border border-emerald-200 bg-emerald-50 p-8 text-center"><p className="text-4xl text-emerald-700" aria-hidden="true">✓</p><h1 className="mt-4 text-2xl font-bold text-emerald-950">Đặt hàng thành công</h1><p className="mt-2 text-emerald-900">Mã đơn hàng: <strong>{success.code}</strong></p><p className="mt-1 text-sm text-emerald-800">Tổng tiền: {formatVnd(success.grand_total)}</p><div className="mt-6 flex flex-wrap justify-center gap-3"><Link href={`/account/orders/${success.code}`}><Button>Xem chi tiết đơn hàng</Button></Link><Link href="/products"><Button variant="secondary">Tiếp tục mua sắm</Button></Link></div></div></main>;
+  if (!items.length) return <main className="mx-auto max-w-7xl px-4 py-12"><div className="rounded-lg border border-slate-200 bg-white p-8"><h1 className="text-2xl font-bold">Chưa có sản phẩm để thanh toán</h1><Link href="/products" className="mt-4 inline-block text-sm font-semibold text-teal-800">Quay lại mua sắm</Link></div></main>;
 
-  if (items.length === 0 && !message) {
-    return (
-      <main className="mx-auto max-w-7xl px-4 py-12">
-        <div className="rounded-md border border-slate-200 bg-white p-8">
-          <h1 className="text-2xl font-bold">Chua co san pham de thanh toan</h1>
-          <Link href="/products" className="mt-4 inline-block rounded-md bg-slate-950 px-5 py-3 text-sm font-semibold text-white">
-            Quay lai mua sam
-          </Link>
-        </div>
-      </main>
-    );
-  }
-
-  return (
-    <main className="mx-auto max-w-4xl px-4 py-8">
-      <h1 className="text-3xl font-bold text-slate-950">Thanh toan</h1>
-      <form onSubmit={submit} className="mt-6 grid gap-4 rounded-md border border-slate-200 bg-white p-6 shadow-sm">
-        <Input label="Ho ten" value={form.name} onChange={(value) => setForm({ ...form, name: value })} required />
-        <Input label="Email" type="email" value={form.email} onChange={(value) => setForm({ ...form, email: value })} required />
-        <Input label="So dien thoai" value={form.phone} onChange={(value) => setForm({ ...form, phone: value })} required />
-        <Input label="Dia chi giao hang" value={form.address} onChange={(value) => setForm({ ...form, address: value })} required />
-        <Input label="Ma giam gia" value={form.promotionCode} onChange={(value) => setForm({ ...form, promotionCode: value.toUpperCase() })} />
-        <label className="block text-sm font-semibold text-slate-700">
-          Phuong thuc van chuyen
-          <select value={form.shippingMethodId} onChange={(event) => setForm({ ...form, shippingMethodId: event.target.value })} className="mt-1 h-11 w-full rounded-md border border-slate-300 px-3 font-normal">
-            {shippingMethods.map((method) => (
-              <option key={method.id} value={method.id}>
-                {method.name} - {formatVnd(method.fee)}
-              </option>
-            ))}
-          </select>
-          {selectedShipping ? (
-            <span className="mt-1 block text-xs font-normal text-slate-500">
-              Du kien {selectedShipping.estimated_days_min ?? "?"}-{selectedShipping.estimated_days_max ?? "?"} ngay.
-            </span>
-          ) : null}
-        </label>
-        <label className="block text-sm font-semibold text-slate-700">
-          Ghi chu
-          <textarea
-            value={form.note}
-            onChange={(event) => setForm({ ...form, note: event.target.value })}
-            className="mt-1 min-h-24 w-full rounded-md border border-slate-300 px-3 py-2 font-normal outline-none focus:border-slate-950"
-          />
-        </label>
-        <label className="block text-sm font-semibold text-slate-700">
-          Phuong thuc thanh toan
-          <select value={form.paymentMethod} onChange={(event) => setForm({ ...form, paymentMethod: event.target.value })} className="mt-1 h-11 w-full rounded-md border border-slate-300 px-3 font-normal">
-            <option value="cod">COD</option>
-            <option value="vnpay">VNPay Sandbox</option>
-          </select>
-        </label>
-        {error ? <p className="rounded-md bg-red-50 p-3 text-sm text-red-700">{error}</p> : null}
-        {message ? <p className="rounded-md bg-emerald-50 p-3 text-sm text-emerald-700">{message}</p> : null}
-        <div className="rounded-md bg-slate-50 p-3 text-sm text-slate-700">
-          <p>Tam tinh: <strong>{formatVnd(subtotal)}</strong></p>
-          <p>Phi van chuyen: <strong>{formatVnd(selectedShipping?.fee ?? 0)}</strong></p>
-        </div>
-        <button
-          disabled={submitting}
-          className="rounded-md bg-teal-700 px-5 py-3 text-sm font-semibold text-white hover:bg-teal-800 disabled:bg-slate-300"
-        >
-          {submitting ? "Dang xu ly..." : "Dat hang"}
-        </button>
-      </form>
-    </main>
-  );
+  return <main className="mx-auto max-w-5xl px-4 py-8"><p className="text-sm font-bold uppercase tracking-wider text-teal-700">Hoàn tất đơn hàng</p><h1 className="mt-1 text-3xl font-bold text-slate-950">Thanh toán</h1><form onSubmit={submit} className="mt-7 grid gap-6 lg:grid-cols-[1fr_320px]"><div className="space-y-5"><section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm"><h2 className="text-lg font-bold">Thông tin giao hàng</h2>{addresses.length ? <label className="mt-4 block text-sm font-semibold text-slate-700">Chọn địa chỉ đã lưu<Select className="mt-1" defaultValue="" onChange={(event) => { const selected = addresses.find((item) => String(item.id) === event.target.value); if (selected) applyAddress(selected); }}><option value="">Nhập địa chỉ mới</option>{addresses.map((address) => <option key={address.id} value={address.id}>{address.recipient_name} · {address.address_line}</option>)}</Select></label> : null}<div className="mt-4 grid gap-4 sm:grid-cols-2"><Field label="Họ và tên" value={form.name} onChange={(value) => setForm({ ...form, name: value })} required /><Field label="Email" type="email" value={form.email} onChange={(value) => setForm({ ...form, email: value })} required /><Field label="Số điện thoại" value={form.phone} onChange={(value) => setForm({ ...form, phone: value })} required /><Field label="Địa chỉ giao hàng" value={form.address} onChange={(value) => setForm({ ...form, address: value })} required /></div><label className="mt-4 block text-sm font-semibold text-slate-700">Ghi chú<Textarea value={form.note} onChange={(event) => setForm({ ...form, note: event.target.value })} className="mt-1" placeholder="Ghi chú cho người giao hàng (không bắt buộc)" /></label></section><section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm"><h2 className="text-lg font-bold">Vận chuyển và thanh toán</h2><label className="mt-4 block text-sm font-semibold text-slate-700">Phương thức vận chuyển<Select value={form.shippingMethodId} onChange={(event) => setForm({ ...form, shippingMethodId: event.target.value })} className="mt-1" required><option value="">Chọn phương thức</option>{shippingMethods.map((method) => <option key={method.id} value={method.id}>{method.name} · {formatVnd(method.fee)}</option>)}</Select>{selectedShipping ? <span className="mt-1 block text-xs font-normal text-slate-500">Dự kiến {selectedShipping.estimated_days_min ?? "?"}–{selectedShipping.estimated_days_max ?? "?"} ngày.</span> : null}</label><div className="mt-4 grid gap-4 sm:grid-cols-2"><label className="block text-sm font-semibold text-slate-700">Phương thức thanh toán<Select value={form.paymentMethod} onChange={(event) => setForm({ ...form, paymentMethod: event.target.value })} className="mt-1"><option value="cod">Thanh toán khi nhận hàng (COD)</option>{settings.vnpay_enabled ? <option value="vnpay">Thanh toán qua VNPay</option> : null}</Select></label><Field label="Mã giảm giá" value={form.promotionCode} onChange={(value) => setForm({ ...form, promotionCode: value.toUpperCase() })} /></div></section></div><aside className="h-fit rounded-lg border border-slate-200 bg-white p-5 shadow-sm"><h2 className="text-lg font-bold">Tóm tắt</h2><dl className="mt-5 space-y-3 text-sm"><div className="flex justify-between gap-4"><dt>Tạm tính</dt><dd>{formatVnd(subtotal)}</dd></div><div className="flex justify-between gap-4"><dt>Phí vận chuyển</dt><dd>{formatVnd(selectedShipping?.fee ?? 0)}</dd></div><div className="flex justify-between gap-4 border-t border-slate-200 pt-3 text-base font-bold"><dt>Dự kiến thanh toán</dt><dd>{formatVnd(subtotal + Number(selectedShipping?.fee ?? 0))}</dd></div></dl>{error ? <p role="alert" className="mt-4 rounded-md bg-red-50 p-3 text-sm text-red-700">{error}</p> : null}<Button type="submit" disabled={submitting || !shippingMethods.length} className="mt-6 w-full">{submitting ? "Đang xử lý..." : "Đặt hàng"}</Button><p className="mt-3 text-center text-xs leading-5 text-slate-500">Tổng tiền cuối cùng được xác nhận bởi hệ thống khi đặt hàng.</p></aside></form></main>;
 }
 
-function Input({
-  label,
-  value,
-  onChange,
-  type = "text",
-  required = false,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  type?: string;
-  required?: boolean;
-}) {
-  return (
-    <label className="block text-sm font-semibold text-slate-700">
-      {label}
-      <input
-        type={type}
-        required={required}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className="mt-1 h-11 w-full rounded-md border border-slate-300 px-3 font-normal outline-none focus:border-slate-950"
-      />
-    </label>
-  );
-}
+function Field({ label, value, onChange, type = "text", required = false }: { label: string; value: string; onChange: (value: string) => void; type?: string; required?: boolean }) { return <label className="block text-sm font-semibold text-slate-700">{label}<Input type={type} required={required} value={value} onChange={(event) => onChange(event.target.value)} className="mt-1" /></label>; }
