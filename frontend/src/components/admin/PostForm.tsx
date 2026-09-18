@@ -1,0 +1,30 @@
+"use client";
+
+import { FormEvent, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { AdminImageUpload } from "@/components/AdminImageUpload";
+import { apiGet, apiGetList, apiPatch, apiPost } from "@/lib/api";
+import { slugify } from "@/lib/slug";
+import type { Post, PostCategory } from "@/types/api";
+
+type Form = { post_category_id: string; title: string; slug: string; excerpt: string; content: string; thumbnail: string; status: "draft" | "published"; published_at: string };
+const blank: Form = { post_category_id: "", title: "", slug: "", excerpt: "", content: "", thumbnail: "", status: "draft", published_at: "" };
+
+export function PostForm({ id }: { id?: string }) {
+  const router = useRouter();
+  const [form, setFormState] = useState<Form>(blank);
+  const slugEdited = useRef(Boolean(id));
+  const setForm = (next: Form) => setFormState((current) => { const titleChanged = next.title !== current.title; const slugChanged = next.slug !== current.slug; if (slugChanged && !titleChanged) slugEdited.current = true; return titleChanged && !slugEdited.current ? { ...next, slug: slugify(next.title) } : next; });
+  const [categories, setCategories] = useState<PostCategory[]>([]);
+  const [loading, setLoading] = useState(Boolean(id));
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState("");
+
+  useEffect(() => { apiGetList<PostCategory>("/admin/post-categories").then(setCategories).catch((reason: Error) => setMessage(reason.message)); }, []);
+  useEffect(() => { if (!id) return; apiGet<Post>(`/admin/posts/${id}`).then((post) => setForm({ post_category_id: post.post_category_id ? String(post.post_category_id) : "", title: post.title, slug: post.slug, excerpt: post.excerpt ?? "", content: post.content ?? "", thumbnail: post.thumbnail ?? "", status: post.status ?? "draft", published_at: post.published_at?.slice(0, 16) ?? "" })).catch((reason: Error) => setMessage(reason.message)).finally(() => setLoading(false)); }, [id]);
+  async function submit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); setSaving(true); try { const payload = { post_category_id: form.post_category_id ? Number(form.post_category_id) : undefined, title: form.title, slug: form.slug || undefined, excerpt: form.excerpt || undefined, content: form.content, thumbnail: form.thumbnail || undefined, status: form.status, published_at: form.published_at || undefined }; if (id) await apiPatch(`/admin/posts/${id}`, payload); else await apiPost("/admin/posts", payload); router.push("/admin/posts"); } catch (reason) { setMessage(reason instanceof Error ? reason.message : "Khong the luu bai viet."); } finally { setSaving(false); } }
+  if (loading) return <p className="text-sm text-slate-500">Dang tai...</p>;
+  return <form onSubmit={submit} className="grid gap-5 rounded-md border border-slate-200 bg-white p-6 shadow-sm"><div className="grid gap-5 lg:grid-cols-2"><Field label="Tieu de" value={form.title} required onChange={(title) => setForm({ ...form, title })} /><Field label="Slug" value={form.slug} onChange={(slug) => setForm({ ...form, slug })} /><label className="text-sm font-semibold text-slate-700">Chuyen muc<select value={form.post_category_id} onChange={(event) => setForm({ ...form, post_category_id: event.target.value })} className="mt-1 h-10 w-full rounded-md border border-slate-300 px-3 font-normal"><option value="">Khong co</option>{categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label><Field label="Thoi gian xuat ban" type="datetime-local" value={form.published_at} onChange={(published_at) => setForm({ ...form, published_at })} /><label className="text-sm font-semibold text-slate-700">Trang thai<select value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value as Form["status"] })} className="mt-1 h-10 w-full rounded-md border border-slate-300 px-3 font-normal"><option value="draft">Ban nhap</option><option value="published">Da xuat ban</option></select></label><label className="text-sm font-semibold text-slate-700">Thumbnail URL<input value={form.thumbnail} onChange={(event) => setForm({ ...form, thumbnail: event.target.value })} className="mt-1 h-10 w-full rounded-md border border-slate-300 px-3 font-normal" /><span className="mt-2 block"><AdminImageUpload value={form.thumbnail} directory="posts" onChange={(thumbnail) => setForm({ ...form, thumbnail })} /></span></label></div><TextArea label="Tom tat" value={form.excerpt} onChange={(excerpt) => setForm({ ...form, excerpt })} /><TextArea label="Noi dung" value={form.content} required onChange={(content) => setForm({ ...form, content })} />{message ? <p className="text-sm text-rose-700">{message}</p> : null}<div className="flex gap-2"><button disabled={saving} className="rounded-md bg-slate-950 px-5 py-3 text-sm font-semibold text-white">{saving ? "Dang luu..." : "Luu bai viet"}</button><button type="button" onClick={() => router.push("/admin/posts")} className="rounded-md border border-slate-300 px-5 py-3 text-sm font-semibold">Huy</button></div></form>;
+}
+function Field({ label, value, onChange, type = "text", required = false }: { label: string; value: string; onChange: (value: string) => void; type?: string; required?: boolean }) { return <label className="text-sm font-semibold text-slate-700">{label}<input required={required} type={type} value={value} onChange={(event) => onChange(event.target.value)} className="mt-1 h-10 w-full rounded-md border border-slate-300 px-3 font-normal" /></label>; }
+function TextArea({ label, value, onChange, required = false }: { label: string; value: string; onChange: (value: string) => void; required?: boolean }) { return <label className="text-sm font-semibold text-slate-700">{label}<textarea required={required} value={value} onChange={(event) => onChange(event.target.value)} className="mt-1 min-h-36 w-full rounded-md border border-slate-300 px-3 py-2 font-normal" /></label>; }

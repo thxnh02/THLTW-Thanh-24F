@@ -64,6 +64,10 @@ Route::prefix('v1')->group(function (): void {
         Route::get('auth/me', [AuthController::class, 'me']);
         Route::post('auth/logout', [AuthController::class, 'logout']);
         Route::patch('account/profile', [AuthController::class, 'updateProfile']);
+        Route::patch('account/email', [AuthController::class, 'updateEmail']);
+        Route::post('account/avatar', [AuthController::class, 'uploadAvatar']);
+        Route::delete('account/avatar', [AuthController::class, 'deleteAvatar']);
+        Route::post('auth/email/verification-notification', [AuthController::class, 'resendVerification'])->middleware('throttle:6,1');
         Route::post('account/change-password', [AuthController::class, 'changePassword']);
         Route::apiResource('account/addresses', AccountAddressController::class)->except(['show']);
         Route::get('account/orders', [AccountOrderController::class, 'index']);
@@ -87,6 +91,10 @@ Route::prefix('v1')->group(function (): void {
         Route::delete('cart/items/{item}', [CartController::class, 'deleteItem']);
         Route::post('cart/merge', [CartController::class, 'merge']);
     });
+
+    Route::get('auth/email/verify/{id}/{hash}', [AuthController::class, 'verifyEmail'])
+        ->middleware(['auth:sanctum', 'signed', 'throttle:6,1'])
+        ->name('verification.verify');
 
     Route::prefix('admin')->middleware(['auth:sanctum', EnsureAccountActive::class, EnsureAdmin::class])->group(function (): void {
         Route::get('dashboard', DashboardController::class);

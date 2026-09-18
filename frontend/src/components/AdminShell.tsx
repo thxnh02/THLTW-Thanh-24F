@@ -98,8 +98,8 @@ export function AdminShell({ children }: { children: ReactNode }) {
           </div>
         </div>
       </header>
-      <div className="mx-auto grid max-w-[1500px] lg:grid-cols-[240px_1fr]">
-        <aside className={`${open ? "block" : "hidden"} border-r border-slate-200 bg-white p-3 lg:block`}>
+      <div className="mx-auto grid max-w-[1500px] lg:h-[calc(100vh-3.5rem)] lg:min-h-0 lg:grid-cols-[240px_minmax(0,1fr)]">
+        <aside className={`${open ? "block" : "hidden"} border-r border-slate-200 bg-white p-3 lg:block lg:min-h-0 lg:overflow-y-auto`}>
           <nav className="grid gap-1">
             {navItems.filter(([, , permission]) => canSee(user.role, permission)).map(([label, href]) => {
               const active = href === "/admin" ? pathname === href : pathname.startsWith(href);
@@ -116,7 +116,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
             })}
           </nav>
         </aside>
-        <div className="min-w-0">{children}</div>
+        <div className="min-w-0 lg:min-h-0 lg:overflow-y-auto">{children}</div>
       </div>
     </div>
   );

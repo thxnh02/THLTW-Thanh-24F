@@ -11,11 +11,11 @@ const links = [
   ["Tổng quan", "/account/profile"],
   ["Hồ sơ", "/account/profile"],
   ["Địa chỉ", "/account/addresses"],
+  ["Bảo mật", "/account/security"],
   ["Đơn hàng", "/account/orders"],
   ["Đổi trả", "/account/returns"],
   ["Yêu thích", "/wishlist"],
   ["Thông báo", "/account/notifications"],
-  ["Đổi mật khẩu", "/account/change-password"],
 ] as const;
 
 export function AccountShell({ children }: { children: ReactNode }) {

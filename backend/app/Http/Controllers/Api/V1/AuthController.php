@@ -6,12 +6,15 @@ use App\Http\Controllers\Concerns\ApiResponses;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Auth\Events\PasswordReset;
+use Illuminate\Auth\Events\Registered;
+use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -36,6 +39,8 @@ class AuthController extends Controller
             'role' => 'member',
             'status' => 'active',
         ]);
+
+        event(new Registered($user));
 
         $this->loginSession($request, $user);
 
@@ -110,6 +115,81 @@ class AuthController extends Controller
         $request->user()->update($validated);
 
         return $this->success($request->user()->refresh(), 'Đã cập nhật hồ sơ.');
+    }
+
+    public function updateEmail(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'email' => ['required', 'email', 'max:160', 'unique:users,email,'.$request->user()->id],
+            'current_password' => ['required', 'string'],
+        ]);
+
+        if (! Hash::check($validated['current_password'], $request->user()->password)) {
+            throw ValidationException::withMessages([
+                'current_password' => ['Mật khẩu hiện tại không đúng.'],
+            ]);
+        }
+
+        if ($validated['email'] === $request->user()->email) {
+            return $this->success($request->user()->refresh(), 'Email hiện tại không thay đổi.');
+        }
+
+        $user = $request->user();
+        $user->forceFill(['email' => $validated['email'], 'email_verified_at' => null])->save();
+        event(new Registered($user));
+
+        return $this->success($user->refresh(), 'Đã cập nhật email. Vui lòng xác minh địa chỉ mới.');
+    }
+
+    public function uploadAvatar(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'avatar' => ['required', 'file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+        ]);
+
+        $user = $request->user();
+        $oldPath = $user->avatar_path;
+        $newPath = $validated['avatar']->store('avatars', 'public');
+        $user->update(['avatar_path' => $newPath]);
+
+        if ($oldPath && str_starts_with($oldPath, 'avatars/') && Storage::disk('public')->exists($oldPath)) {
+            Storage::disk('public')->delete($oldPath);
+        }
+
+        return $this->success($user->refresh(), 'Đã cập nhật ảnh đại diện.');
+    }
+
+    public function deleteAvatar(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $path = $user->avatar_path;
+        $user->update(['avatar_path' => null]);
+
+        if ($path && str_starts_with($path, 'avatars/') && Storage::disk('public')->exists($path)) {
+            Storage::disk('public')->delete($path);
+        }
+
+        return $this->success($user->refresh(), 'Đã xóa ảnh đại diện.');
+    }
+
+    public function resendVerification(Request $request): JsonResponse
+    {
+        if ($request->user()->hasVerifiedEmail()) {
+            return $this->success($request->user()->refresh(), 'Email đã được xác minh.');
+        }
+
+        $request->user()->sendEmailVerificationNotification();
+
+        return $this->success(null, 'Đã gửi lại email xác minh.');
+    }
+
+    public function verifyEmail(EmailVerificationRequest $request): mixed
+    {
+        if (! $request->user()->hasVerifiedEmail()) {
+            $request->fulfill();
+        }
+
+        return redirect(rtrim((string) config('app.frontend_url'), '/').'/account/verify-email?status=success');
     }
 
     public function changePassword(Request $request): JsonResponse

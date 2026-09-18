@@ -56,8 +56,10 @@ class UserController extends Controller
         return $this->success(User::create($validated), 'Đã tạo tài khoản.', status: 201);
     }
 
-    public function show(User $user): JsonResponse
+    public function show(Request $request, User $user): JsonResponse
     {
+        abort_unless($request->user()->hasAdminPermission('users'), 403);
+
         return $this->success($user->loadCount('orders'));
     }
 
