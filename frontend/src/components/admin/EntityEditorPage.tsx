@@ -1,0 +1,6 @@
+"use client";
+import Link from "next/link";
+import { useParams } from "next/navigation";
+import { AdminEntityForm, type EntityField } from "./AdminEntityForm";
+export function EntityEditorPage({ endpoint, fields, title, backUrl, submitLabel }: { endpoint: string; fields: EntityField[]; title: string; backUrl: string; submitLabel: string }) { const params = useParams<{ id?: string }>(); return <main className="mx-auto max-w-7xl px-4 py-8"><div className="mb-6 flex items-center justify-between"><h1 className="text-3xl font-bold text-slate-950">{title}</h1><Link href={backUrl} className="text-sm font-semibold">Quay lai</Link></div><AdminEntityForm endpoint={endpoint} id={params.id} fields={fields} backUrl={backUrl} submitLabel={submitLabel} /></main>; }
+export function EntityCreatePage({ endpoint, fields, title, backUrl, submitLabel }: Omit<Parameters<typeof EntityEditorPage>[0], "endpoint"> & { endpoint: string }) { return <main className="mx-auto max-w-7xl px-4 py-8"><div className="mb-6 flex items-center justify-between"><h1 className="text-3xl font-bold text-slate-950">{title}</h1><Link href={backUrl} className="text-sm font-semibold">Quay lai</Link></div><AdminEntityForm endpoint={endpoint} fields={fields} backUrl={backUrl} submitLabel={submitLabel} /></main>; }

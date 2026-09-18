@@ -1,0 +1,15 @@
+"use client";
+import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useConfirm } from "@/contexts/ConfirmContext";
+import { API_BASE_URL, ApiError, apiDelete, apiGetList } from "@/lib/api";
+import { formatVnd } from "@/lib/format";
+import type { Product } from "@/types/api";
+export default function ProductsPage() {
+  const router = useRouter(); const confirm = useConfirm(); const [rows, setRows] = useState<Product[]>([]); const [message, setMessage] = useState("");
+  const load = useCallback(() => apiGetList<Product>("/admin/products").then(setRows).catch((reason: Error) => { if (reason instanceof ApiError && reason.status === 401) router.push("/admin/login"); else setMessage(reason.message); }), [router]);
+  useEffect(() => { void load(); }, [load]);
+  async function remove(row: Product) { if (!(await confirm({ title: "Xoa san pham?", message: `Xoa hoac an ${row.name}?`, confirmLabel: "Xoa" }))) return; try { await apiDelete(`/admin/products/${row.id}`); void load(); } catch (reason) { setMessage(reason instanceof Error ? reason.message : "Khong the xoa."); } }
+  return <main className="mx-auto max-w-7xl px-4 py-8"><div className="mb-6 flex flex-wrap items-center justify-between gap-3"><div><h1 className="text-3xl font-bold text-slate-950">San pham</h1><p className="mt-1 text-sm text-slate-500">Quan ly thong tin, variant, anh va ton kho.</p></div><div className="flex gap-2"><a href={`${API_BASE_URL}/admin/products/export`} className="rounded-md border border-slate-300 px-4 py-3 text-sm font-semibold">Xuat CSV</a><Link href="/admin/products/create" className="rounded-md bg-slate-950 px-4 py-3 text-sm font-semibold text-white">Them san pham</Link></div></div>{message ? <p className="mb-3 text-sm text-rose-700">{message}</p> : null}<div className="overflow-hidden rounded-md border border-slate-200 bg-white"><table className="w-full text-left text-sm"><thead className="bg-slate-100"><tr><th className="p-3">San pham</th><th className="p-3">Danh muc</th><th className="p-3">Gia</th><th className="p-3">Ton kho</th><th className="p-3">Trang thai</th><th className="p-3">Thao tac</th></tr></thead><tbody>{rows.map((row) => { const variant = row.default_variant ?? row.variants?.[0]; return <tr key={row.id} className="border-t border-slate-200"><td className="p-3"><Link href={`/admin/products/${row.id}`} className="font-semibold hover:underline">{row.name}</Link><span className="block text-slate-500">{variant?.sku ?? "-"}</span></td><td className="p-3">{row.category?.name ?? "-"}</td><td className="p-3">{formatVnd(variant?.sale_price ?? variant?.price)}</td><td className="p-3">{variant?.stock_quantity ?? row.stock_quantity ?? 0}</td><td className="p-3">{row.status}</td><td className="flex gap-2 p-3"><Link href={`/admin/products/${row.id}/edit`} className="rounded-md border border-slate-300 px-3 py-2 font-semibold">Sua</Link><button type="button" onClick={() => void remove(row)} className="rounded-md border border-slate-300 px-3 py-2 font-semibold">Xoa</button></td></tr>; })}</tbody></table></div></main>;
+}

@@ -1,0 +1,2 @@
+product_name,slug,category,brand,status,featured,sku,variant_name,price,sale_price,stock,short_description,description,image
+San pham mau,san-pham-mau,Dien thoai,Apple,active,yes,SKU-DEMO-001,Tieu chuan,1000000,900000,10,Mo ta ngan,Mo ta day du,/product-placeholder.svg
