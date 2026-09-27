@@ -27,6 +27,10 @@ class AdminProductCrudTest extends TestCase
             ->assertJsonPath('data.variants.0.sku', 'ADMIN-SKU-1')
             ->json('data.id');
 
+        $this->getJson('/api/v1/admin/products/'.$productId)
+            ->assertOk()
+            ->assertJsonPath('data.featured', true);
+
         $this->assertDatabaseHas('product_variants', [
             'product_id' => $productId,
             'sku' => 'ADMIN-SKU-1',

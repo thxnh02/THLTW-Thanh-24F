@@ -67,6 +67,21 @@ export async function apiGetPaginated<T>(path: string): Promise<{ data: T[]; met
   };
 }
 
+export async function apiGetAllPages<T>(path: string): Promise<T[]> {
+  const firstPage = await apiGetPaginated<T>(path);
+  const rows = [...firstPage.data];
+  const currentPage = firstPage.meta.current_page ?? 1;
+  const lastPage = firstPage.meta.last_page ?? currentPage;
+
+  for (let page = currentPage + 1; page <= lastPage; page += 1) {
+    const separator = path.includes("?") ? "&" : "?";
+    const nextPage = await apiGetPaginated<T>(`${path}${separator}page=${page}`);
+    rows.push(...nextPage.data);
+  }
+
+  return rows;
+}
+
 export async function apiPost<T>(
   path: string,
   payload: unknown,

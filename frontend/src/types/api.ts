@@ -48,6 +48,7 @@ export type Product = {
   name: string;
   slug: string;
   status?: "active" | "inactive" | "draft";
+  featured?: boolean;
   short_description?: string | null;
   description?: string | null;
   category?: Category | null;

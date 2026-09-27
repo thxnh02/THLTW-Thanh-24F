@@ -3,7 +3,7 @@
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { ApiError, apiGetList, apiPost } from "@/lib/api";
+import { ApiError, apiGetAllPages, apiGetList, apiPost } from "@/lib/api";
 import { formatVnd } from "@/lib/format";
 import type { InventoryMovement, Product, StockDocument } from "@/types/api";
 
@@ -37,7 +37,7 @@ export default function AdminStockPage() {
 
   const load = useCallback(() => {
     Promise.all([
-      apiGetList<Product>("/admin/products?per_page=100"),
+      apiGetAllPages<Product>("/admin/products"),
       apiGetList<StockDocument>("/admin/stock"),
       apiGetList<InventoryMovement>("/admin/stock/movements"),
     ])

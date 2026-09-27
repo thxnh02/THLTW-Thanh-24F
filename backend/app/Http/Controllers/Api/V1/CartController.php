@@ -20,6 +20,8 @@ class CartController extends Controller
 {
     use ApiResponses;
 
+    public function __construct(private readonly CartQuoteService $cartQuoteService) {}
+
     public function index(Request $request): JsonResponse
     {
         return $this->success($this->cartPayload($this->cartForUser($request)));
@@ -92,11 +94,11 @@ class CartController extends Controller
         return $this->success($this->cartPayload($cart->refresh()), 'Đã đồng bộ giỏ hàng.');
     }
 
-    public function quote(CartQuoteRequest $request, CartQuoteService $cartQuoteService): JsonResponse
+    public function quote(CartQuoteRequest $request): JsonResponse
     {
         $validated = $request->validated();
 
-        return $this->success($cartQuoteService->buildQuote(
+        return $this->success($this->cartQuoteService->buildQuote(
             $validated['items'],
             $validated['promotion_code'] ?? null,
             $request->user()?->id,
@@ -105,10 +107,10 @@ class CartController extends Controller
         ));
     }
 
-    public function validatePromotion(ValidatePromotionRequest $request, CartQuoteService $cartQuoteService): JsonResponse
+    public function validatePromotion(ValidatePromotionRequest $request): JsonResponse
     {
         $validated = $request->validated();
-        $promotion = $cartQuoteService->findUsablePromotion(
+        $promotion = $this->cartQuoteService->findUsablePromotion(
             $validated['code'],
             (float) $validated['subtotal'],
             $request->user()?->id,
@@ -121,7 +123,7 @@ class CartController extends Controller
 
         return $this->success([
             'code' => $promotion->code,
-            'discount' => $cartQuoteService->calculateDiscount($promotion, (float) $validated['subtotal']),
+            'discount' => $this->cartQuoteService->calculateDiscount($promotion, (float) $validated['subtotal']),
         ]);
     }
 
@@ -153,7 +155,7 @@ class CartController extends Controller
                 'quantity' => $item->quantity,
                 'stock_quantity' => $item->variant->stock_quantity,
             ])->values(),
-            'quote' => $items === [] ? null : app(CartQuoteService::class)->buildQuote($items),
+            'quote' => $items === [] ? null : $this->cartQuoteService->buildQuote($items),
         ];
     }
 }

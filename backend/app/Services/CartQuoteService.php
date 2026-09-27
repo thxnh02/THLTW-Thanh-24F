@@ -9,6 +9,8 @@ use Illuminate\Support\Carbon;
 
 class CartQuoteService
 {
+    public function __construct(private readonly ShippingService $shippingService) {}
+
     /**
      * @param  array<int, array{variant_id:int, quantity:int}>  $items
      * @return array<string, mixed>
@@ -53,7 +55,7 @@ class CartQuoteService
             ? $this->findUsablePromotion($promotionCode, $subtotal, $userId, $email, $lockPromotion, $lines)
             : null;
         $discount = $promotion ? $this->calculateDiscount($promotion, $subtotal, $lines) : 0.0;
-        $shipping = app(ShippingService::class)->resolve($shippingMethodId, $subtotal);
+        $shipping = $this->shippingService->resolve($shippingMethodId, $subtotal);
         $shippingFee = $promotion?->free_shipping ? 0.0 : $shipping['fee'];
 
         return [
