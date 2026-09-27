@@ -54,6 +54,7 @@ class EnsureAdmin
             'promotions' => 'promotions',
             'posts', 'post-categories', 'pages', 'menus', 'banners', 'media', 'uploads' => 'content',
             'settings' => 'settings',
+            'options' => 'stock',
             'users' => 'users',
             default => null,
         };

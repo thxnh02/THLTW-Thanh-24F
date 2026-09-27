@@ -131,6 +131,7 @@ Route::prefix('v1')->group(function (): void {
         Route::get('stock', [StockController::class, 'index']);
         Route::post('stock', [StockController::class, 'store']);
         Route::get('stock/movements', [StockController::class, 'movements']);
+        Route::get('options/product-variants', [StockController::class, 'variantOptions']);
         Route::get('orders', [OrderController::class, 'index']);
         Route::get('orders/export', [OrderController::class, 'export']);
         Route::get('orders/{order}/invoice.pdf', [OrderController::class, 'invoicePdf']);

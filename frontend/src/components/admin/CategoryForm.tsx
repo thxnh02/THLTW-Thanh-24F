@@ -36,7 +36,7 @@ export function CategoryForm({ id }: { id?: string }) {
     finally { setSaving(false); }
   }
 
-  if (loading) return <p className="text-sm text-slate-500">Dang tai...</p>;
+  if (loading) return <p className="text-sm text-slate-500">Đang tải...</p>;
   return <form onSubmit={submit} className="grid max-w-3xl gap-5 rounded-md border border-slate-200 bg-white p-6 shadow-sm">
     <Field label="Tên danh mục" error={errors.name?.[0]} value={form.name} required onChange={(name) => setForm({ ...form, name, slug: slugEdited ? form.slug : slugify(name) })} />
     <Field label="Slug" error={errors.slug?.[0]} value={form.slug} onChange={(slug) => { setSlugEdited(true); setForm({ ...form, slug }); }} />

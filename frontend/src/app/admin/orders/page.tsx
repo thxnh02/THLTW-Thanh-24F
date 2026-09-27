@@ -78,12 +78,12 @@ export default function AdminOrdersPage() {
       <h1 className="text-3xl font-bold text-slate-950">Quản lý đơn hàng</h1>
       <div className="mt-4 flex justify-end">
         <a href={`${API_BASE_URL}/admin/orders/export${searchParams ? `?${searchParams}` : ""}`} className="rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold">
-          Xuat CSV
+          Xuất CSV
         </a>
       </div>
       <div className="mt-6 grid gap-3 rounded-md border border-slate-200 bg-white p-4 shadow-sm md:grid-cols-[1fr_220px]">
         <label className="block text-sm font-semibold text-slate-700">
-          Tim kiem
+          Tìm kiếm
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
@@ -118,7 +118,7 @@ export default function AdminOrdersPage() {
                 <th className="p-3">Khách hàng</th>
                 <th className="p-3">Trạng thái</th>
                 <th className="p-3">Tổng tiền</th>
-                <th className="p-3">Thao tac</th>
+                <th className="p-3">Thao tác</th>
               </tr>
             </thead>
             <tbody>
@@ -139,7 +139,7 @@ export default function AdminOrdersPage() {
                       onClick={() => loadDetail(order.id)}
                       className="rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold"
                     >
-                      Chi tiet
+                      Chi tiết
                     </button>
                   </td>
                 </tr>

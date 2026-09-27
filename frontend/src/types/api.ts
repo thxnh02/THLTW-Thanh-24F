@@ -169,6 +169,7 @@ export type StockDocument = {
   note?: string | null;
   items?: {
     id: number;
+    product_variant_id: number;
     quantity: number;
     unit_cost?: string | number | null;
     variant?: ProductVariant & { product?: Product };
@@ -183,6 +184,18 @@ export type InventoryMovement = {
   reason: string;
   variant?: ProductVariant & { product?: Product };
   created_at: string;
+};
+
+export type ProductVariantOption = {
+  id: number;
+  sku: string;
+  name: string;
+  stock_quantity: number;
+  active: boolean;
+  product: {
+    id: number;
+    name: string;
+  };
 };
 
 export type Address = {

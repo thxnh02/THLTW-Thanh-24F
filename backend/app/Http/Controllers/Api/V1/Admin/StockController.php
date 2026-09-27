@@ -6,8 +6,11 @@ use App\Http\Controllers\Concerns\ApiResponses;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreStockDocumentRequest;
 use App\Http\Resources\InventoryMovementResource;
+use App\Http\Resources\ProductVariantOptionResource;
 use App\Http\Resources\StockDocumentResource;
 use App\Models\InventoryMovement;
+use App\Models\Product;
+use App\Models\ProductVariant;
 use App\Models\StockDocument;
 use App\Services\InventoryService;
 use Illuminate\Http\JsonResponse;
@@ -16,6 +19,18 @@ use Illuminate\Http\Request;
 class StockController extends Controller
 {
     use ApiResponses;
+
+    public function variantOptions(): JsonResponse
+    {
+        $variants = ProductVariant::query()
+            ->with('product:id,name')
+            ->orderBy(Product::select('name')->whereColumn('products.id', 'product_variants.product_id'))
+            ->orderBy('name')
+            ->orderBy('sku')
+            ->get();
+
+        return $this->success(ProductVariantOptionResource::collection($variants));
+    }
 
     public function index(Request $request): JsonResponse
     {

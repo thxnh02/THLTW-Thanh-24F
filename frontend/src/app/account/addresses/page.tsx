@@ -70,7 +70,7 @@ export default function AccountAddressesPage() {
         <Input label="Người nhận" value={form.recipient_name} onChange={(value) => setForm({ ...form, recipient_name: value })} required />
         <Input label="Điện thoại" value={form.phone} onChange={(value) => setForm({ ...form, phone: value })} required />
         <Input label="Tỉnh/Thành phố" value={form.province ?? ""} onChange={(value) => setForm({ ...form, province: value })} />
-        <Input label="Quận/Huyện" value={form.district ?? ""} onChange={(value) => setForm({ ...form, district: value })} />
+        <Input label="Quận/Hủyện" value={form.district ?? ""} onChange={(value) => setForm({ ...form, district: value })} />
         <Input label="Phường/Xã" value={form.ward ?? ""} onChange={(value) => setForm({ ...form, ward: value })} />
         <Input label="Địa chỉ" value={form.address_line} onChange={(value) => setForm({ ...form, address_line: value })} required />
         <label className="flex items-center gap-2 text-sm font-semibold">
