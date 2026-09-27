@@ -1,10 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
-import { ApiError, apiGet, apiGetList, apiPatch } from "@/lib/api";
-import type { ReturnRequest } from "@/types/api";
+import { Pagination } from "@/components/admin/Pagination";
+import { ApiError, apiGet, apiGetPaginated, apiPatch } from "@/lib/api";
+import type { PaginatedMeta, ReturnRequest } from "@/types/api";
 
 const nextStatuses: Record<ReturnRequest["status"], ReturnRequest["status"][]> = {
   requested: ["approved", "rejected", "canceled"],
@@ -17,6 +18,8 @@ const nextStatuses: Record<ReturnRequest["status"], ReturnRequest["status"][]> =
 
 export default function AdminReturnsPage() {
   const router = useRouter();
+  const urlParams = useSearchParams();
+  const page = urlParams.get("page") ?? "1";
   const [returns, setReturns] = useState<ReturnRequest[]>([]);
   const [selected, setSelected] = useState<ReturnRequest | null>(null);
   const [message, setMessage] = useState("");
@@ -24,6 +27,7 @@ export default function AdminReturnsPage() {
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
+  const [meta, setMeta] = useState<PaginatedMeta>({ current_page: 1, last_page: 1, total: 0 });
 
   const load = useCallback(() => {
     const params = new URLSearchParams();
@@ -34,8 +38,8 @@ export default function AdminReturnsPage() {
       params.set("status", status);
     }
 
-    apiGetList<ReturnRequest>(`/admin/returns${params.toString() ? `?${params}` : ""}`)
-      .then(setReturns)
+    apiGetPaginated<ReturnRequest>(`/admin/returns?${params.toString() ? `${params}&` : ""}page=${page}`)
+      .then(({ data, meta: nextMeta }) => { setReturns(data); setMeta(nextMeta); })
       .catch((reason: Error) => {
         if (reason instanceof ApiError && reason.status === 401) {
           router.push("/admin/login");
@@ -44,7 +48,7 @@ export default function AdminReturnsPage() {
         setMessage(reason.message);
       })
       .finally(() => setLoading(false));
-  }, [query, router, status]);
+  }, [page, query, router, status]);
 
   useEffect(() => {
     load();
@@ -112,6 +116,7 @@ export default function AdminReturnsPage() {
               ))}
             </tbody>
           </table>
+          <Pagination meta={meta} />
         </div>
         <aside className="h-fit rounded-md border border-slate-200 bg-white p-5 shadow-sm">
           {selected ? (

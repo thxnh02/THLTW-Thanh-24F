@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
-import { apiPost } from "@/lib/api";
+import { API_BASE_URL, apiPost } from "@/lib/api";
 import { Button, Input as TextInput } from "@/components/ui";
 
 type AuthFormProps = {
@@ -63,7 +63,12 @@ export function AuthForm({ mode, admin = false }: AuthFormProps) {
       }
 
       setMessage(mode === "login" ? "Đăng nhập thành công." : "Đăng ký thành công.");
-      router.push(admin ? "/admin" : "/account/profile");
+      const verificationUrl = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("verification_url") : null;
+      if (!admin && mode === "login" && verificationUrl?.startsWith(`${API_BASE_URL}/auth/email/verify/`)) {
+        router.push(verificationUrl);
+      } else {
+        router.push(admin ? "/admin" : "/account/profile");
+      }
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Thao tác thất bại.");
     } finally {

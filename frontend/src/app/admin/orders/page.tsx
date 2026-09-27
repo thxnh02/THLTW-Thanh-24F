@@ -1,11 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
-import { API_BASE_URL, ApiError, apiGet, apiGetList, apiPatch } from "@/lib/api";
+import { Pagination } from "@/components/admin/Pagination";
+import { API_BASE_URL, ApiError, apiGet, apiGetPaginated, apiPatch } from "@/lib/api";
 import { formatVnd } from "@/lib/format";
-import type { Order } from "@/types/api";
+import type { Order, PaginatedMeta } from "@/types/api";
 
 const nextStatuses: Record<Order["status"], Order["status"][]> = {
   pending: ["confirmed", "canceled"],
@@ -17,7 +18,10 @@ const nextStatuses: Record<Order["status"], Order["status"][]> = {
 
 export default function AdminOrdersPage() {
   const router = useRouter();
+  const urlParams = useSearchParams();
+  const page = urlParams.get("page") ?? "1";
   const [orders, setOrders] = useState<Order[]>([]);
+  const [meta, setMeta] = useState<PaginatedMeta>({ current_page: 1, last_page: 1, total: 0 });
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("");
@@ -36,8 +40,8 @@ export default function AdminOrdersPage() {
   }, [query, status]);
 
   const loadOrders = useCallback(() => {
-    apiGetList<Order>(`/admin/orders?${searchParams}`)
-      .then(setOrders)
+    apiGetPaginated<Order>(`/admin/orders?${searchParams}${searchParams ? "&" : ""}page=${page}`)
+      .then(({ data, meta: nextMeta }) => { setOrders(data); setMeta(nextMeta); })
       .catch((reason: Error) => {
         if (reason instanceof ApiError && reason.status === 401) {
           router.push("/admin/login");
@@ -45,7 +49,7 @@ export default function AdminOrdersPage() {
         }
         setMessage(reason.message);
       });
-  }, [router, searchParams]);
+  }, [page, router, searchParams]);
 
   useEffect(() => {
     loadOrders();
@@ -142,6 +146,7 @@ export default function AdminOrdersPage() {
               ))}
             </tbody>
           </table>
+          <Pagination meta={meta} />
         </div>
 
         <aside className="h-fit rounded-md border border-slate-200 bg-white p-5 shadow-sm">

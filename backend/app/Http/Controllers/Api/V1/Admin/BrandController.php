@@ -4,10 +4,12 @@ namespace App\Http\Controllers\Api\V1\Admin;
 
 use App\Http\Controllers\Concerns\ApiResponses;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreBrandRequest;
+use App\Http\Requests\UpdateBrandRequest;
+use App\Http\Resources\BrandResource;
 use App\Models\Brand;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 
 class BrandController extends Controller
 {
@@ -28,36 +30,24 @@ class BrandController extends Controller
         return $this->success($query->paginate((int) $request->integer('per_page', 15)));
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StoreBrandRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:160'],
-            'slug' => ['nullable', 'string', 'max:180', 'unique:brands,slug'],
-            'logo' => ['nullable', 'string', 'max:255'],
-            'status' => ['required', 'in:active,inactive'],
-        ]);
-        $validated['slug'] = $validated['slug'] ?? Str::slug($validated['name']);
+        $validated = $request->validated();
 
-        return $this->success(Brand::create($validated), 'Đã tạo thương hiệu.', status: 201);
+        return $this->success(new BrandResource(Brand::create($validated)), 'Đã tạo thương hiệu.', status: 201);
     }
 
     public function show(Brand $brand): JsonResponse
     {
-        return $this->success($brand->loadCount('products'));
+        return $this->success(new BrandResource($brand->loadCount('products')));
     }
 
-    public function update(Request $request, Brand $brand): JsonResponse
+    public function update(UpdateBrandRequest $request, Brand $brand): JsonResponse
     {
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:160'],
-            'slug' => ['nullable', 'string', 'max:180', 'unique:brands,slug,'.$brand->id],
-            'logo' => ['nullable', 'string', 'max:255'],
-            'status' => ['required', 'in:active,inactive'],
-        ]);
-        $validated['slug'] = $validated['slug'] ?? Str::slug($validated['name']);
+        $validated = $request->validated();
         $brand->update($validated);
 
-        return $this->success($brand->refresh(), 'Đã cập nhật thương hiệu.');
+        return $this->success(new BrandResource($brand->refresh()), 'Đã cập nhật thương hiệu.');
     }
 
     public function destroy(Brand $brand): JsonResponse

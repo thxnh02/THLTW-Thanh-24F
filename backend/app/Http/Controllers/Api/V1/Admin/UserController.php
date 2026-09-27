@@ -4,10 +4,12 @@ namespace App\Http\Controllers\Api\V1\Admin;
 
 use App\Http\Controllers\Concerns\ApiResponses;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreUserRequest;
+use App\Http\Requests\UpdateUserRequest;
+use App\Http\Resources\UserResource;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
@@ -40,41 +42,27 @@ class UserController extends Controller
         return $this->success($query->paginate((int) $request->integer('per_page', 15)));
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StoreUserRequest $request): JsonResponse
     {
         abort_unless($request->user()->isAdmin(), 403);
 
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:120'],
-            'email' => ['required', 'email', 'max:160', 'unique:users,email'],
-            'phone' => ['nullable', 'string', 'max:30'],
-            'password' => ['required', 'string', 'min:8'],
-            'role' => ['required', 'in:admin,manager,staff,member'],
-            'status' => ['required', 'in:active,locked'],
-        ]);
+        $validated = $request->validated();
 
-        return $this->success(User::create($validated), 'Đã tạo tài khoản.', status: 201);
+        return $this->success(new UserResource(User::create($validated)), 'Đã tạo tài khoản.', status: 201);
     }
 
     public function show(Request $request, User $user): JsonResponse
     {
         abort_unless($request->user()->hasAdminPermission('users'), 403);
 
-        return $this->success($user->loadCount('orders'));
+        return $this->success(new UserResource($user->loadCount('orders')));
     }
 
-    public function update(Request $request, User $user): JsonResponse
+    public function update(UpdateUserRequest $request, User $user): JsonResponse
     {
         abort_unless($request->user()->isAdmin(), 403);
 
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:120'],
-            'email' => ['required', 'email', 'max:160', Rule::unique('users', 'email')->ignore($user->id)],
-            'phone' => ['nullable', 'string', 'max:30'],
-            'password' => ['nullable', 'string', 'min:8'],
-            'role' => ['required', 'in:admin,manager,staff,member'],
-            'status' => ['required', 'in:active,locked'],
-        ]);
+        $validated = $request->validated();
 
         if (
             $user->is($request->user())
@@ -101,7 +89,7 @@ class UserController extends Controller
 
         $user->update($validated);
 
-        return $this->success($user->refresh()->loadCount('orders'), 'Đã cập nhật tài khoản.');
+        return $this->success(new UserResource($user->refresh()->loadCount('orders')), 'Đã cập nhật tài khoản.');
     }
 
     public function destroy(Request $request, User $user): JsonResponse

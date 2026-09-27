@@ -30,6 +30,10 @@ class DatabaseSeeder extends Seeder
 
     public function run(): void
     {
+        if (app()->environment('production') && (! env('SEED_ADMIN_EMAIL') || ! env('SEED_ADMIN_PASSWORD'))) {
+            throw new \RuntimeException('SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD are required when seeding production.');
+        }
+
         User::query()->updateOrCreate(
             ['email' => env('SEED_ADMIN_EMAIL', 'admin@example.com')],
             [

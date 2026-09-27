@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api\V1\Admin;
 
 use App\Http\Controllers\Concerns\ApiResponses;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\UpdateReturnStatusRequest;
+use App\Http\Resources\ReturnRequestResource;
 use App\Models\ReturnRequest;
 use App\Services\ReturnService;
 use Illuminate\Http\JsonResponse;
@@ -38,19 +40,15 @@ class ReturnRequestController extends Controller
     {
         abort_unless($request->user()->hasAdminPermission('returns'), 403);
 
-        return $this->success($returnRequest->load(['order.items', 'user', 'items.orderItem']));
+        return $this->success(new ReturnRequestResource($returnRequest->load(['order.items', 'user', 'items.orderItem'])));
     }
 
-    public function updateStatus(Request $request, ReturnRequest $returnRequest, ReturnService $returnService): JsonResponse
+    public function updateStatus(UpdateReturnStatusRequest $request, ReturnRequest $returnRequest, ReturnService $returnService): JsonResponse
     {
         abort_unless($request->user()->hasAdminPermission('returns'), 403);
 
-        $validated = $request->validate([
-            'status' => ['nullable', 'in:requested,approved,rejected,received,completed,canceled'],
-            'refund_status' => ['nullable', 'in:none,pending,refunded,failed'],
-            'admin_note' => ['nullable', 'string', 'max:2000'],
-        ]);
+        $validated = $request->validated();
 
-        return $this->success($returnService->updateByAdmin($returnRequest, $request->user(), $validated), 'Đã cập nhật yêu cầu đổi trả.');
+        return $this->success(new ReturnRequestResource($returnService->updateByAdmin($returnRequest, $request->user(), $validated)), 'Đã cập nhật yêu cầu đổi trả.');
     }
 }

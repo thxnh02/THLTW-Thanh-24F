@@ -75,6 +75,58 @@ class AdminProductCrudTest extends TestCase
         $this->postJson('/api/v1/admin/products', $payload)->assertUnprocessable();
     }
 
+    public function test_product_update_preserves_variants_until_explicitly_removed(): void
+    {
+        Sanctum::actingAs(User::factory()->admin()->create());
+        [$category, $brand] = $this->catalogParents();
+
+        $payload = $this->productPayload($category, $brand);
+        $payload['variants'] = [
+            [...$payload['variants'][0], 'sku' => 'MULTI-SKU-1', 'is_default' => true],
+            [...$payload['variants'][0], 'sku' => 'MULTI-SKU-2', 'name' => 'Red', 'is_default' => false],
+            [...$payload['variants'][0], 'sku' => 'MULTI-SKU-3', 'name' => 'Blue', 'is_default' => false],
+        ];
+
+        $productId = $this->postJson('/api/v1/admin/products', $payload)->assertCreated()->json('data.id');
+        $variants = ProductVariant::query()->where('product_id', $productId)->orderBy('id')->get();
+
+        $this->patchJson('/api/v1/admin/products/'.$productId, [
+            ...$payload,
+            'name' => 'Updated without variant loss',
+            'variants' => [[...$payload['variants'][0], 'id' => $variants[0]->id, 'sku' => 'MULTI-SKU-1-UPDATED']],
+        ])->assertOk();
+
+        $this->assertSame(3, ProductVariant::query()->where('product_id', $productId)->count());
+        $this->assertDatabaseHas('product_variants', ['id' => $variants[1]->id, 'sku' => 'MULTI-SKU-2']);
+        $this->assertDatabaseHas('product_variants', ['id' => $variants[2]->id, 'sku' => 'MULTI-SKU-3']);
+
+        $this->patchJson('/api/v1/admin/products/'.$productId, [
+            ...$payload,
+            'deleted_variant_ids' => [$variants[2]->id],
+            'variants' => [
+                [...$payload['variants'][0], 'id' => $variants[0]->id, 'sku' => 'MULTI-SKU-1-UPDATED'],
+                [...$payload['variants'][1], 'id' => $variants[1]->id],
+            ],
+        ])->assertOk();
+
+        $this->assertDatabaseMissing('product_variants', ['id' => $variants[2]->id]);
+        $this->assertSame(1, ProductVariant::query()->where('product_id', $productId)->where('is_default', true)->count());
+    }
+
+    public function test_product_variant_rules_reject_duplicate_sku_and_negative_stock(): void
+    {
+        Sanctum::actingAs(User::factory()->admin()->create());
+        [$category, $brand] = $this->catalogParents();
+        $payload = $this->productPayload($category, $brand);
+        $payload['variants'][] = [...$payload['variants'][0], 'name' => 'Duplicate'];
+
+        $this->postJson('/api/v1/admin/products', $payload)->assertUnprocessable();
+
+        $payload = $this->productPayload($category, $brand);
+        $payload['variants'][0]['stock_quantity'] = -1;
+        $this->postJson('/api/v1/admin/products', $payload)->assertUnprocessable();
+    }
+
     public function test_admin_deleting_product_with_order_soft_deletes_and_inactivates_it(): void
     {
         Sanctum::actingAs(User::factory()->admin()->create());

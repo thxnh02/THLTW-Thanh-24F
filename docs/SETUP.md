@@ -23,6 +23,8 @@ CORS_ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
 SANCTUM_STATEFUL_DOMAINS=localhost,localhost:3000,127.0.0.1,127.0.0.1:3000,127.0.0.1:8000
 ```
 
+When running seeders in production, set explicit `SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD` values first. The fallback demo admin credentials are development-only.
+
 Then run:
 
 ```powershell
@@ -60,6 +62,12 @@ MAIL_FROM_NAME="${APP_NAME}"
 ```
 
 For SMTP, configure the standard Laravel `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, and encryption values in `.env`. Order confirmation and password reset flows do not require credentials in source code.
+
+Email verification uses the same mail configuration. `MAIL_MAILER=log` writes verification links to the Laravel log and does not deliver external mail. For real delivery, provide SMTP credentials through environment variables only, then register a new account or use the resend action and verify the message in the recipient mailbox. Never commit SMTP credentials.
+
+For avatars and admin media, run `php artisan storage:link`. Uploaded files use the public disk and their database paths are persisted by the API.
+
+Registration sends a signed email-verification notification. Password recovery sends a six-digit OTP by email; configure SMTP for external delivery. OTP mail is sent synchronously, so this flow does not require a queue worker. The OTP expires after 10 minutes and can be requested again from the reset form.
 
 ## VNPay Sandbox
 

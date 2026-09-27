@@ -56,7 +56,7 @@ VNP_RETURN_URL=http://localhost:8000/api/v1/vnpay/return
 VNP_IPN_URL=http://localhost:8000/api/v1/vnpay/ipn
 ```
 
-Demo accounts:
+Development-only demo accounts (do not use these credentials in production):
 
 - Admin: `admin@example.com` / `Admin@123`
 - Member: `member@example.com` / `Member@123`

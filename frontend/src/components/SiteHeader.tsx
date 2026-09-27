@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -73,5 +74,5 @@ export function SiteHeader() {
 }
 
 function HeaderAvatar({ user }: { user: User }) {
-  return user.avatar_url ? <img src={user.avatar_url} alt="" className="size-7 rounded-full object-cover" /> : <span className="inline-flex size-7 items-center justify-center rounded-full bg-teal-100 text-xs font-bold text-teal-900" aria-hidden="true">{user.name.split(" ").filter(Boolean).slice(-2).map((part) => part[0]).join("").toUpperCase()}</span>;
+  return user.avatar_url ? <Image src={user.avatar_url} alt="" width={28} height={28} unoptimized className="size-7 rounded-full object-cover" /> : <span className="inline-flex size-7 items-center justify-center rounded-full bg-teal-100 text-xs font-bold text-teal-900" aria-hidden="true">{user.name.split(" ").filter(Boolean).slice(-2).map((part) => part[0]).join("").toUpperCase()}</span>;
 }

@@ -26,6 +26,7 @@ export type ProductVariant = {
   product_id: number;
   sku: string;
   name: string;
+  attributes?: Record<string, unknown> | null;
   price: string | number;
   sale_price?: string | number | null;
   stock_quantity: number;
@@ -39,6 +40,7 @@ export type ProductImage = {
   path: string;
   alt_text?: string | null;
   is_primary: boolean;
+  sort_order?: number;
 };
 
 export type Product = {
@@ -213,6 +215,8 @@ export type PaginatedMeta = {
   last_page?: number;
   per_page?: number;
   total?: number;
+  from?: number | null;
+  to?: number | null;
 };
 
 export type QuoteLine = {

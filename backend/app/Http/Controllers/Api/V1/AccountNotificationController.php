@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Concerns\ApiResponses;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\NotificationResource;
 use App\Models\CustomerNotification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -36,7 +37,7 @@ class AccountNotificationController extends Controller
 
         $notification->update(['read_at' => now()]);
 
-        return $this->success($notification->refresh(), 'Đã đánh dấu đã đọc.');
+        return $this->success(new NotificationResource($notification->refresh()), 'Đã đánh dấu đã đọc.');
     }
 
     public function markAllRead(Request $request): JsonResponse

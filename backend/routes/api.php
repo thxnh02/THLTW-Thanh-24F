@@ -58,11 +58,15 @@ Route::prefix('v1')->group(function (): void {
     Route::post('auth/register', [AuthController::class, 'register']);
     Route::post('auth/login', [AuthController::class, 'login']);
     Route::post('auth/forgot-password', [AuthController::class, 'forgotPassword']);
+    Route::post('auth/forgot-password/otp', [AuthController::class, 'forgotPasswordOtp'])->middleware('throttle:5,1');
+    Route::post('auth/forgot-password/otp/resend', [AuthController::class, 'resendPasswordOtp'])->middleware('throttle:3,10');
+    Route::post('auth/reset-password/otp', [AuthController::class, 'resetPasswordOtp'])->middleware('throttle:10,1');
     Route::post('auth/reset-password', [AuthController::class, 'resetPassword']);
 
     Route::middleware(['auth:sanctum', EnsureAccountActive::class])->group(function (): void {
         Route::get('auth/me', [AuthController::class, 'me']);
         Route::post('auth/logout', [AuthController::class, 'logout']);
+        Route::post('auth/email/verify-code', [AuthController::class, 'verifyEmailCode'])->middleware('throttle:10,1');
         Route::patch('account/profile', [AuthController::class, 'updateProfile']);
         Route::patch('account/email', [AuthController::class, 'updateEmail']);
         Route::post('account/avatar', [AuthController::class, 'uploadAvatar']);
@@ -93,7 +97,7 @@ Route::prefix('v1')->group(function (): void {
     });
 
     Route::get('auth/email/verify/{id}/{hash}', [AuthController::class, 'verifyEmail'])
-        ->middleware(['auth:sanctum', 'signed', 'throttle:6,1'])
+        ->middleware(['signed', 'throttle:6,1'])
         ->name('verification.verify');
 
     Route::prefix('admin')->middleware(['auth:sanctum', EnsureAccountActive::class, EnsureAdmin::class])->group(function (): void {

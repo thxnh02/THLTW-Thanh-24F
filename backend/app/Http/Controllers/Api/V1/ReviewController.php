@@ -4,22 +4,20 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Concerns\ApiResponses;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreReviewRequest;
+use App\Http\Resources\ReviewResource;
 use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\Review;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 class ReviewController extends Controller
 {
     use ApiResponses;
 
-    public function store(Request $request, Product $product): JsonResponse
+    public function store(StoreReviewRequest $request, Product $product): JsonResponse
     {
-        $validated = $request->validate([
-            'rating' => ['required', 'integer', 'min:1', 'max:5'],
-            'content' => ['nullable', 'string', 'max:2000'],
-        ]);
+        $validated = $request->validated();
 
         $hasCompletedOrder = OrderItem::query()
             ->where('product_id', $product->id)
@@ -44,6 +42,6 @@ class ReviewController extends Controller
             ],
         );
 
-        return $this->success($review->load('user'), 'Đã gửi đánh giá.', status: 201);
+        return $this->success(new ReviewResource($review->load('user')), 'Đã gửi đánh giá.', status: 201);
     }
 }

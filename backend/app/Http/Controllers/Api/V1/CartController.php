@@ -4,6 +4,11 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Concerns\ApiResponses;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\CartQuoteRequest;
+use App\Http\Requests\MergeCartRequest;
+use App\Http\Requests\StoreCartItemRequest;
+use App\Http\Requests\UpdateCartItemRequest;
+use App\Http\Requests\ValidatePromotionRequest;
 use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\Order;
@@ -25,12 +30,9 @@ class CartController extends Controller
         return $this->success($this->cartPayload($cart));
     }
 
-    public function addItem(Request $request): JsonResponse
+    public function addItem(StoreCartItemRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'variant_id' => ['required', 'integer', 'exists:product_variants,id'],
-            'quantity' => ['required', 'integer', 'min:1'],
-        ]);
+        $validated = $request->validated();
         $cart = $this->cartForUser($request);
         $variant = ProductVariant::query()->findOrFail($validated['variant_id']);
 
@@ -48,14 +50,12 @@ class CartController extends Controller
         return $this->success($this->cartPayload($cart->refresh()), 'Đã thêm vào giỏ hàng.', status: 201);
     }
 
-    public function updateItem(Request $request, CartItem $item): JsonResponse
+    public function updateItem(UpdateCartItemRequest $request, CartItem $item): JsonResponse
     {
         $cart = $this->cartForUser($request);
         abort_if($item->cart_id !== $cart->id, 404);
 
-        $validated = $request->validate([
-            'quantity' => ['required', 'integer', 'min:1'],
-        ]);
+        $validated = $request->validated();
         $item->load('variant');
 
         if ((int) $validated['quantity'] > $item->variant->stock_quantity) {
@@ -76,13 +76,9 @@ class CartController extends Controller
         return $this->success($this->cartPayload($cart->refresh()), 'Đã xóa sản phẩm khỏi giỏ hàng.');
     }
 
-    public function merge(Request $request): JsonResponse
+    public function merge(MergeCartRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'items' => ['required', 'array'],
-            'items.*.variant_id' => ['required', 'integer', 'exists:product_variants,id'],
-            'items.*.quantity' => ['required', 'integer', 'min:1'],
-        ]);
+        $validated = $request->validated();
         $cart = $this->cartForUser($request);
 
         foreach ($validated['items'] as $line) {
@@ -103,26 +99,16 @@ class CartController extends Controller
         return $this->success($this->cartPayload($cart->refresh()), 'Đã đồng bộ giỏ hàng.');
     }
 
-    public function quote(Request $request): JsonResponse
+    public function quote(CartQuoteRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'items' => ['required', 'array', 'min:1'],
-            'items.*.variant_id' => ['required', 'integer', 'exists:product_variants,id'],
-            'items.*.quantity' => ['required', 'integer', 'min:1'],
-            'promotion_code' => ['nullable', 'string', 'max:80'],
-            'shipping_method_id' => ['nullable', 'integer', 'exists:shipping_methods,id'],
-        ]);
+        $validated = $request->validated();
 
         return $this->success($this->buildQuote($validated['items'], $validated['promotion_code'] ?? null, shippingMethodId: $validated['shipping_method_id'] ?? null));
     }
 
-    public function validatePromotion(Request $request): JsonResponse
+    public function validatePromotion(ValidatePromotionRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'subtotal' => ['required', 'numeric', 'min:0'],
-            'code' => ['required', 'string', 'max:80'],
-            'email' => ['nullable', 'email', 'max:160'],
-        ]);
+        $validated = $request->validated();
 
         $promotion = $this->findUsablePromotion(
             $validated['code'],

@@ -29,6 +29,8 @@ Authenticated member:
 
 - `GET /auth/me`
 - `POST /auth/logout`
+- `POST /auth/email/verification-notification`
+- `POST /auth/email/verify-code`
 - `PATCH /account/profile`
 - `POST /account/change-password`
 - `GET /account/addresses`
@@ -127,6 +129,10 @@ Response shape:
   "meta": {}
 }
 ```
+
+Paginated admin list responses keep Laravel pagination metadata in `data` (`current_page`, `last_page`, `per_page`, `total`, `from`, `to`). Product filters include `q`, `status`, `category` and `brand`; user filters include `q`, `role` and `status`; order and return filters include their supported search/status/date parameters.
+
+Email verification sends both a six-digit code and a signed `GET /auth/email/verify/{id}/{hash}` link. Codes are hashed in `email_verification_codes`, expire after 15 minutes, allow five attempts and are invalidated after successful use. Logged-out users are sent to the frontend login flow with the signed URL preserved, and the backend still requires the authenticated user to match the signed URL user before marking the address verified.
 # Added API Endpoints
 
 Public:
@@ -152,3 +158,10 @@ Admin:
 - `GET /api/v1/admin/reports/overview`
 - `GET /api/v1/admin/reports/export`
 - `GET /api/v1/admin/orders/{id}/invoice.pdf`
+
+Password recovery OTP endpoints:
+- `POST /api/v1/auth/forgot-password/otp`
+- `POST /api/v1/auth/forgot-password/otp/resend`
+- `POST /api/v1/auth/reset-password/otp`
+
+OTP codes are hashed in `password_reset_otps`, expire after 10 minutes, allow five attempts and are invalidated after successful use. The legacy reset-link endpoints remain available for older links.

@@ -4,11 +4,12 @@ namespace App\Http\Controllers\Api\V1\Admin;
 
 use App\Http\Controllers\Concerns\ApiResponses;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StorePageRequest;
+use App\Http\Requests\UpdatePageRequest;
+use App\Http\Resources\PageResource;
 use App\Models\Page;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
 
 class PageController extends Controller
 {
@@ -29,24 +30,24 @@ class PageController extends Controller
         return $this->success($query->paginate((int) $request->integer('per_page', 15)));
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StorePageRequest $request): JsonResponse
     {
-        $validated = $this->validatedPage($request);
+        $validated = $request->validated();
 
-        return $this->success(Page::create($validated), 'Đã tạo trang.', status: 201);
+        return $this->success(new PageResource(Page::create($validated)), 'Đã tạo trang.', status: 201);
     }
 
     public function show(Page $page): JsonResponse
     {
-        return $this->success($page);
+        return $this->success(new PageResource($page));
     }
 
-    public function update(Request $request, Page $page): JsonResponse
+    public function update(UpdatePageRequest $request, Page $page): JsonResponse
     {
-        $validated = $this->validatedPage($request, $page);
+        $validated = $request->validated();
         $page->update($validated);
 
-        return $this->success($page->refresh(), 'Đã cập nhật trang.');
+        return $this->success(new PageResource($page->refresh()), 'Đã cập nhật trang.');
     }
 
     public function destroy(Page $page): JsonResponse
@@ -54,23 +55,5 @@ class PageController extends Controller
         $page->delete();
 
         return $this->success(null, 'Đã xóa trang.');
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function validatedPage(Request $request, ?Page $page = null): array
-    {
-        $validated = $request->validate([
-            'title' => ['required', 'string', 'max:200'],
-            'slug' => ['nullable', 'string', 'max:220', Rule::unique('pages', 'slug')->ignore($page?->id)],
-            'content' => ['required', 'string'],
-            'status' => ['required', 'in:draft,published'],
-            'seo_title' => ['nullable', 'string', 'max:255'],
-            'seo_description' => ['nullable', 'string', 'max:255'],
-        ]);
-        $validated['slug'] = ($validated['slug'] ?? null) ?: Str::slug($validated['title']);
-
-        return $validated;
     }
 }

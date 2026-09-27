@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api\V1\Admin;
 
 use App\Http\Controllers\Concerns\ApiResponses;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\UpdateContactStatusRequest;
+use App\Http\Resources\ContactResource;
 use App\Models\Contact;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -40,18 +42,15 @@ class ContactController extends Controller
 
     public function show(Contact $contact): JsonResponse
     {
-        return $this->success($contact);
+        return $this->success(new ContactResource($contact));
     }
 
-    public function update(Request $request, Contact $contact): JsonResponse
+    public function update(UpdateContactStatusRequest $request, Contact $contact): JsonResponse
     {
-        $validated = $request->validate([
-            'status' => ['required', 'in:new,processing,resolved'],
-            'admin_note' => ['nullable', 'string', 'max:3000'],
-        ]);
+        $validated = $request->validated();
         $contact->update($validated);
 
-        return $this->success($contact->refresh(), 'Đã cập nhật liên hệ.');
+        return $this->success(new ContactResource($contact->refresh()), 'Đã cập nhật liên hệ.');
     }
 
     public function destroy(Contact $contact): JsonResponse

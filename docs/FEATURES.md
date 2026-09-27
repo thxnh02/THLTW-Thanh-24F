@@ -35,6 +35,14 @@ Implemented in this slice:
 - SEO foundation with metadata, robots.txt and sitemap.xml
 - GitHub Actions CI for backend tests and frontend lint/type/build
 - Demo seed data
+
+## Hardening updates
+
+- Product variant edits preserve existing variants until an explicit removal is requested; duplicate SKU, stock, sale price and default-variant rules are validated.
+- Product galleries preserve existing metadata, support real image uploads, primary selection and explicit image state updates.
+- Admin lists use server pagination with URL-preserved search and supported filters across products, categories, brands, users, promotions and content records.
+- Admin forms surface Laravel field validation errors, including nested product variant errors.
+- Profile avatar, two-choice email verification (six-digit code or signed link), password security, typed store settings and brand logo uploads use persisted API workflows.
 # Feature Completion Notes
 
 - Shipping methods: public checkout methods, admin CRUD, server-side fee calculation, order-level method/fee snapshot, carrier/tracking fields, shipped/delivered timestamps.

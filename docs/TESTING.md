@@ -44,8 +44,10 @@ Current focused tests cover:
 - Admin content/settings CRUD
 - Admin stock import/export and negative stock prevention
 - Admin image upload/list/delete validation and public disk storage
+- Account avatar replacement/removal, email change verification reset, signed verification links, logged-out verification redirect, and wrong-user rejection
+- Product multi-variant preservation, explicit variant removal, duplicate SKU, and stock validation
 
-The current suite contains 58 tests with 261 assertions. The added completion tests cover shipping fee snapshots, return/refund stock safety, CSV import rollback, canceled-order report totals, manager/staff permissions, and notification privacy.
+The current suite contains 71 tests with 320 assertions. The added completion tests cover shipping fee snapshots, return/refund stock safety, CSV import rollback, canceled-order report totals, manager/staff permissions, notification privacy and email verification code/link flows.
 
 CI:
 
@@ -57,3 +59,4 @@ CI:
 - Import: valid CSV, duplicate SKU, unknown category/brand, sale price greater than price, update mode.
 - Reports: canceled orders excluded from valid revenue and date ranges applied.
 - Roles: member blocked from admin, manager/staff limited by backend permission checks.
+- Account security: registration verification mail with code and link, code expiry/attempt rules, one-time verification, password-reset OTP delivery, resend, expiry/attempt rules and one-time consumption.

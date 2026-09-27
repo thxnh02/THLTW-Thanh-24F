@@ -4,11 +4,12 @@ namespace App\Http\Controllers\Api\V1\Admin;
 
 use App\Http\Controllers\Concerns\ApiResponses;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StorePostCategoryRequest;
+use App\Http\Requests\UpdatePostCategoryRequest;
+use App\Http\Resources\PostCategoryResource;
 use App\Models\PostCategory;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
 
 class PostCategoryController extends Controller
 {
@@ -29,24 +30,24 @@ class PostCategoryController extends Controller
         return $this->success($query->paginate((int) $request->integer('per_page', 15)));
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StorePostCategoryRequest $request): JsonResponse
     {
-        $validated = $this->validatedPostCategory($request);
+        $validated = $request->validated();
 
-        return $this->success(PostCategory::create($validated), 'Đã tạo chủ đề bài viết.', status: 201);
+        return $this->success(new PostCategoryResource(PostCategory::create($validated)), 'Đã tạo chủ đề bài viết.', status: 201);
     }
 
     public function show(PostCategory $postCategory): JsonResponse
     {
-        return $this->success($postCategory->loadCount('posts'));
+        return $this->success(new PostCategoryResource($postCategory->loadCount('posts')));
     }
 
-    public function update(Request $request, PostCategory $postCategory): JsonResponse
+    public function update(UpdatePostCategoryRequest $request, PostCategory $postCategory): JsonResponse
     {
-        $validated = $this->validatedPostCategory($request, $postCategory);
+        $validated = $request->validated();
         $postCategory->update($validated);
 
-        return $this->success($postCategory->refresh()->loadCount('posts'), 'Đã cập nhật chủ đề bài viết.');
+        return $this->success(new PostCategoryResource($postCategory->refresh()->loadCount('posts')), 'Đã cập nhật chủ đề bài viết.');
     }
 
     public function destroy(PostCategory $postCategory): JsonResponse
@@ -58,20 +59,5 @@ class PostCategoryController extends Controller
         $postCategory->delete();
 
         return $this->success(null, 'Đã xóa chủ đề bài viết.');
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function validatedPostCategory(Request $request, ?PostCategory $postCategory = null): array
-    {
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:160'],
-            'slug' => ['nullable', 'string', 'max:180', Rule::unique('post_categories', 'slug')->ignore($postCategory?->id)],
-            'status' => ['required', 'in:active,inactive'],
-        ]);
-        $validated['slug'] = ($validated['slug'] ?? null) ?: Str::slug($validated['name']);
-
-        return $validated;
     }
 }

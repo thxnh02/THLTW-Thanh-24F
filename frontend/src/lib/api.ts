@@ -1,4 +1,4 @@
-import type { ApiResponse } from "@/types/api";
+import type { ApiResponse, PaginatedMeta } from "@/types/api";
 
 export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
@@ -8,6 +8,7 @@ export class ApiError extends Error {
   constructor(
     message: string,
     public status: number,
+    public errors: Record<string, string[]> = {},
   ) {
     super(message);
   }
@@ -37,6 +38,33 @@ export async function apiGetList<T>(path: string): Promise<T[]> {
   const payload = await apiGet<T[] | { data: T[] }>(path);
 
   return Array.isArray(payload) ? payload : payload.data;
+}
+
+export async function apiGetPaginated<T>(path: string): Promise<{ data: T[]; meta: PaginatedMeta }> {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    headers: authHeaders(),
+    cache: "no-store",
+    credentials: "include",
+  });
+  const json = await parseEnvelope<T[] | { data: T[]; current_page?: number; last_page?: number; per_page?: number; total?: number; from?: number | null; to?: number | null }>(response);
+  const payload = json.data;
+
+  if (Array.isArray(payload)) {
+    return { data: payload, meta: json.meta as PaginatedMeta };
+  }
+
+  return {
+    data: payload.data,
+    meta: {
+      ...(json.meta as PaginatedMeta),
+      current_page: payload.current_page,
+      last_page: payload.last_page,
+      per_page: payload.per_page,
+      total: payload.total,
+      from: payload.from,
+      to: payload.to,
+    },
+  };
 }
 
 export async function apiPost<T>(
@@ -99,6 +127,17 @@ export async function apiDelete<T>(path: string): Promise<T> {
   return parseResponse<T>(response);
 }
 
+export async function apiDeleteResponse<T>(path: string): Promise<{ data: T; message: string }> {
+  await ensureCsrfCookie();
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method: "DELETE",
+    headers: authHeaders(),
+    credentials: "include",
+  });
+  const json = await parseEnvelope<T>(response);
+  return { data: json.data, message: json.message };
+}
+
 export async function apiUploadImage(file: File, directory?: string): Promise<{
   path: string;
   url: string;
@@ -152,7 +191,7 @@ async function parseEnvelope<T>(response: Response): Promise<ApiResponse<T> & { 
   };
 
   if (!response.ok || !json.success) {
-    throw new ApiError(json.message || "Không thể tải dữ liệu.", response.status);
+    throw new ApiError(json.message || "Không thể tải dữ liệu.", response.status, json.errors ?? {});
   }
 
   return json;

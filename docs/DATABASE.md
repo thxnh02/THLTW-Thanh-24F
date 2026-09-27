@@ -18,6 +18,8 @@ Important rules:
 - Order items snapshot product name, variant name, SKU, unit price and subtotal.
 - Checkout writes `inventory_movements` and does not allow negative stock.
 - Canceled/completed order flows are prepared in schema but not fully implemented in UI yet.
+
+User `avatar_path` stores the uploaded avatar path and `email_verified_at` is set only by the signed verification flow, the authenticated six-digit verification flow or a trusted administrative operation. Verification codes are stored as hashes in `email_verification_codes`. Product variants are retained during normal product updates; explicit deletion is blocked when an order item references the variant.
 # Added Tables / Columns
 
 - `shipping_methods`: configurable checkout shipping choices with fee, free-shipping threshold, estimate and active state.

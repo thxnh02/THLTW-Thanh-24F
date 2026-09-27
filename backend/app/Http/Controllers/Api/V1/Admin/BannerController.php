@@ -4,6 +4,9 @@ namespace App\Http\Controllers\Api\V1\Admin;
 
 use App\Http\Controllers\Concerns\ApiResponses;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreBannerRequest;
+use App\Http\Requests\UpdateBannerRequest;
+use App\Http\Resources\BannerResource;
 use App\Models\Banner;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -27,24 +30,24 @@ class BannerController extends Controller
         return $this->success($query->paginate((int) $request->integer('per_page', 15)));
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StoreBannerRequest $request): JsonResponse
     {
-        $validated = $this->validatedBanner($request);
+        $validated = $request->validated();
 
-        return $this->success(Banner::create($validated), 'Đã tạo banner.', status: 201);
+        return $this->success(new BannerResource(Banner::create($validated)), 'Đã tạo banner.', status: 201);
     }
 
     public function show(Banner $banner): JsonResponse
     {
-        return $this->success($banner);
+        return $this->success(new BannerResource($banner));
     }
 
-    public function update(Request $request, Banner $banner): JsonResponse
+    public function update(UpdateBannerRequest $request, Banner $banner): JsonResponse
     {
-        $validated = $this->validatedBanner($request);
+        $validated = $request->validated();
         $banner->update($validated);
 
-        return $this->success($banner->refresh(), 'Đã cập nhật banner.');
+        return $this->success(new BannerResource($banner->refresh()), 'Đã cập nhật banner.');
     }
 
     public function destroy(Banner $banner): JsonResponse
@@ -52,21 +55,5 @@ class BannerController extends Controller
         $banner->delete();
 
         return $this->success(null, 'Đã xóa banner.');
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function validatedBanner(Request $request): array
-    {
-        return $request->validate([
-            'title' => ['required', 'string', 'max:180'],
-            'image' => ['required', 'string', 'max:255'],
-            'link' => ['nullable', 'string', 'max:255'],
-            'sort_order' => ['nullable', 'integer', 'min:0'],
-            'active' => ['required', 'boolean'],
-            'start_at' => ['nullable', 'date'],
-            'end_at' => ['nullable', 'date', 'after_or_equal:start_at'],
-        ]);
     }
 }

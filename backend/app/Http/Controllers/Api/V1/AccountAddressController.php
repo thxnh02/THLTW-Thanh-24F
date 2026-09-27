@@ -4,6 +4,9 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Concerns\ApiResponses;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreAddressRequest;
+use App\Http\Requests\UpdateAddressRequest;
+use App\Http\Resources\AddressResource;
 use App\Models\Address;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -15,12 +18,12 @@ class AccountAddressController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        return $this->success($request->user()->addresses()->latest('is_default')->latest('id')->get());
+        return $this->success(AddressResource::collection($request->user()->addresses()->latest('is_default')->latest('id')->get()));
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StoreAddressRequest $request): JsonResponse
     {
-        $validated = $this->validatedAddress($request);
+        $validated = $request->validated();
         $address = DB::transaction(function () use ($request, $validated): Address {
             if ($validated['is_default'] ?? false) {
                 $request->user()->addresses()->update(['is_default' => false]);
@@ -29,7 +32,7 @@ class AccountAddressController extends Controller
             return $request->user()->addresses()->create($validated);
         });
 
-        return $this->success($address, 'Đã tạo địa chỉ.', status: 201);
+        return $this->success(new AddressResource($address), 'Đã tạo địa chỉ.', status: 201);
     }
 
     public function show(string $id): JsonResponse
@@ -37,10 +40,10 @@ class AccountAddressController extends Controller
         abort(404);
     }
 
-    public function update(Request $request, Address $address): JsonResponse
+    public function update(UpdateAddressRequest $request, Address $address): JsonResponse
     {
         abort_if($address->user_id !== $request->user()->id, 404);
-        $validated = $this->validatedAddress($request);
+        $validated = $request->validated();
 
         DB::transaction(function () use ($request, $address, $validated): void {
             if ($validated['is_default'] ?? false) {
@@ -49,7 +52,7 @@ class AccountAddressController extends Controller
             $address->update($validated);
         });
 
-        return $this->success($address->refresh(), 'Đã cập nhật địa chỉ.');
+        return $this->success(new AddressResource($address->refresh()), 'Đã cập nhật địa chỉ.');
     }
 
     public function destroy(Request $request, Address $address): JsonResponse
@@ -58,21 +61,5 @@ class AccountAddressController extends Controller
         $address->delete();
 
         return $this->success(null, 'Đã xóa địa chỉ.');
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function validatedAddress(Request $request): array
-    {
-        return $request->validate([
-            'recipient_name' => ['required', 'string', 'max:160'],
-            'phone' => ['required', 'string', 'max:30'],
-            'province' => ['nullable', 'string', 'max:120'],
-            'district' => ['nullable', 'string', 'max:120'],
-            'ward' => ['nullable', 'string', 'max:120'],
-            'address_line' => ['required', 'string', 'max:255'],
-            'is_default' => ['nullable', 'boolean'],
-        ]);
     }
 }

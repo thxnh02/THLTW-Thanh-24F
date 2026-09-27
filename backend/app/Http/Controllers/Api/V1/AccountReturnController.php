@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Concerns\ApiResponses;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreReturnRequest;
+use App\Http\Resources\ReturnRequestResource;
 use App\Models\ReturnRequest;
 use App\Services\ReturnService;
 use Illuminate\Http\JsonResponse;
@@ -24,20 +26,11 @@ class AccountReturnController extends Controller
         return $this->success($returns);
     }
 
-    public function store(Request $request, ReturnService $returnService): JsonResponse
+    public function store(StoreReturnRequest $request, ReturnService $returnService): JsonResponse
     {
-        $validated = $request->validate([
-            'order_code' => ['required', 'string', 'max:80'],
-            'reason' => ['required', 'string', 'max:120'],
-            'description' => ['nullable', 'string', 'max:2000'],
-            'items' => ['required', 'array', 'min:1'],
-            'items.*.order_item_id' => ['required', 'integer', 'exists:order_items,id'],
-            'items.*.quantity' => ['required', 'integer', 'min:1'],
-            'items.*.reason' => ['nullable', 'string', 'max:120'],
-            'items.*.condition_note' => ['nullable', 'string', 'max:1000'],
-        ]);
+        $validated = $request->validated();
 
-        return $this->success($returnService->createForUser($request->user(), $validated), 'Đã gửi yêu cầu đổi trả.', status: 201);
+        return $this->success(new ReturnRequestResource($returnService->createForUser($request->user(), $validated)), 'Đã gửi yêu cầu đổi trả.', status: 201);
     }
 
     public function show(Request $request, string $code): JsonResponse
@@ -48,6 +41,6 @@ class AccountReturnController extends Controller
             ->where('code', $code)
             ->firstOrFail();
 
-        return $this->success($returnRequest);
+        return $this->success(new ReturnRequestResource($returnRequest));
     }
 }

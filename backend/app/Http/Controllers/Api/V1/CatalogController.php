@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Concerns\ApiResponses;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreContactRequest;
 use App\Models\Banner;
 use App\Models\Brand;
 use App\Models\Category;
@@ -154,15 +155,9 @@ class CatalogController extends Controller
         return $this->success($page);
     }
 
-    public function contact(Request $request): JsonResponse
+    public function contact(StoreContactRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:120'],
-            'email' => ['required', 'email', 'max:160'],
-            'phone' => ['nullable', 'string', 'max:30'],
-            'subject' => ['required', 'string', 'max:180'],
-            'message' => ['required', 'string', 'max:3000'],
-        ]);
+        $validated = $request->validated();
 
         Contact::create($validated);
 
