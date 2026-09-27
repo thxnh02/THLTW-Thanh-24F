@@ -19,7 +19,7 @@ class ShippingMethodController extends Controller
     {
         abort_unless($request->user()->hasAdminPermission('shipping'), 403);
 
-        return $this->success(ShippingMethod::query()->orderBy('sort_order')->orderBy('id')->paginate((int) $request->integer('per_page', 20)));
+        return $this->successPaginated(ShippingMethod::query()->orderBy('sort_order')->orderBy('id')->paginate((int) $request->integer('per_page', 20)), ShippingMethodResource::class);
     }
 
     public function store(StoreShippingMethodRequest $request): JsonResponse

@@ -35,6 +35,6 @@ class VnpayController extends Controller
         return $this->success([
             'order' => new OrderResource($result['order']),
             'payment' => new PaymentResource($result['payment']),
-        ], $result['paid'] ? 'Thanh toan VNPay thanh cong.' : 'Thanh toan VNPay khong thanh cong.');
+        ], $result['paid'] ? 'Thanh toán VNPay thành công.' : 'Thanh toán VNPay không thành công.');
     }
 }

@@ -24,7 +24,7 @@ class AccountOrderController extends Controller
             ->latest()
             ->paginate((int) $request->integer('per_page', 10));
 
-        return $this->success($orders);
+        return $this->successPaginated($orders, OrderResource::class);
     }
 
     public function show(Request $request, string $code): JsonResponse
@@ -58,7 +58,7 @@ class AccountOrderController extends Controller
             $request->user()->id,
         );
 
-        return $this->success(new OrderResource($order), 'Da huy don hang.');
+        return $this->success(new OrderResource($order), 'Đã hủy đơn hàng.');
     }
 
     private function orderForUser(Request $request, string $code): Order

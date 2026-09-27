@@ -23,7 +23,7 @@ class AccountNotificationController extends Controller
             $query->whereNull('read_at');
         }
 
-        return $this->success($query->paginate((int) $request->integer('per_page', 15)), meta: [
+        return $this->successPaginated($query->paginate((int) $request->integer('per_page', 15)), NotificationResource::class, meta: [
             'unread_count' => CustomerNotification::query()
                 ->where('user_id', $request->user()->id)
                 ->whereNull('read_at')

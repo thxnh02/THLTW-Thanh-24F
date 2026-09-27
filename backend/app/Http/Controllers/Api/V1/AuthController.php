@@ -54,7 +54,7 @@ class AuthController extends Controller
 
         $this->loginSession($request, $user);
 
-        return $this->success(['user' => $user], 'Đăng ký thành công.', status: 201);
+        return $this->success(['user' => new UserResource($user)], 'Đăng ký thành công.', status: 201);
     }
 
     public function login(LoginRequest $request): JsonResponse
@@ -87,7 +87,7 @@ class AuthController extends Controller
 
         $this->loginSession($request, $user);
 
-        return $this->success(['user' => $user], 'Đăng nhập thành công.');
+        return $this->success(['user' => new UserResource($user)], 'Đăng nhập thành công.');
     }
 
     public function me(Request $request): JsonResponse
@@ -118,7 +118,7 @@ class AuthController extends Controller
 
         $request->user()->update($validated);
 
-        return $this->success($request->user()->refresh(), 'Đã cập nhật hồ sơ.');
+        return $this->success(new UserResource($request->user()->refresh()), 'Đã cập nhật hồ sơ.');
     }
 
     public function updateEmail(UpdateEmailRequest $request): JsonResponse
@@ -132,14 +132,14 @@ class AuthController extends Controller
         }
 
         if ($validated['email'] === $request->user()->email) {
-            return $this->success($request->user()->refresh(), 'Email hiện tại không thay đổi.');
+            return $this->success(new UserResource($request->user()->refresh()), 'Email hiện tại không thay đổi.');
         }
 
         $user = $request->user();
         $user->forceFill(['email' => $validated['email'], 'email_verified_at' => null])->save();
         event(new Registered($user));
 
-        return $this->success($user->refresh(), 'Đã cập nhật email. Vui lòng xác minh địa chỉ mới.');
+        return $this->success(new UserResource($user->refresh()), 'Đã cập nhật email. Vui lòng xác minh địa chỉ mới.');
     }
 
     public function uploadAvatar(UploadAvatarRequest $request): JsonResponse
@@ -156,7 +156,7 @@ class AuthController extends Controller
             Storage::disk($disk)->delete($oldPath);
         }
 
-        return $this->success($user->refresh(), 'Đã cập nhật ảnh đại diện.');
+        return $this->success(new UserResource($user->refresh()), 'Đã cập nhật ảnh đại diện.');
     }
 
     public function deleteAvatar(Request $request): JsonResponse
@@ -170,13 +170,13 @@ class AuthController extends Controller
             Storage::disk($disk)->delete($path);
         }
 
-        return $this->success($user->refresh(), 'Đã xóa ảnh đại diện.');
+        return $this->success(new UserResource($user->refresh()), 'Đã xóa ảnh đại diện.');
     }
 
     public function resendVerification(Request $request): JsonResponse
     {
         if ($request->user()->hasVerifiedEmail()) {
-            return $this->success($request->user()->refresh(), 'Email đã được xác minh.');
+            return $this->success(new UserResource($request->user()->refresh()), 'Email đã được xác minh.');
         }
 
         $request->user()->sendEmailVerificationNotification();
@@ -191,7 +191,7 @@ class AuthController extends Controller
         $user = $request->user();
 
         if ($user->hasVerifiedEmail()) {
-            return $this->success($user->refresh(), 'Email đã được xác minh.');
+            return $this->success(new UserResource($user->refresh()), 'Email đã được xác minh.');
         }
 
         $verificationCode = EmailVerificationCode::query()
@@ -221,7 +221,7 @@ class AuthController extends Controller
             ->update(['used_at' => now()]);
         $user->markEmailAsVerified();
 
-        return $this->success($user->refresh(), 'Email đã được xác minh.');
+        return $this->success(new UserResource($user->refresh()), 'Email đã được xác minh.');
     }
 
     public function verifyEmail(Request $request, int $id, string $hash): mixed
@@ -308,7 +308,7 @@ class AuthController extends Controller
         $validated = $request->validated();
         $this->sendPasswordResetOtp($validated['email']);
 
-        return $this->success(null, 'Neu email ton tai, ma OTP dat lai mat khau da duoc gui.');
+        return $this->success(null, 'Nếu email tồn tại, mã OTP đặt lại mật khẩu đã được gửi.');
     }
 
     public function resendPasswordOtp(EmailOnlyRequest $request): JsonResponse
@@ -316,7 +316,7 @@ class AuthController extends Controller
         $validated = $request->validated();
         $this->sendPasswordResetOtp($validated['email']);
 
-        return $this->success(null, 'Neu email ton tai, ma OTP moi da duoc gui.');
+        return $this->success(null, 'Nếu email tồn tại, mã OTP mới đã được gửi.');
     }
 
     public function resetPasswordOtp(ResetPasswordOtpRequest $request): JsonResponse
@@ -329,13 +329,13 @@ class AuthController extends Controller
             : null;
 
         if (! $otp || $otp->expires_at->isPast() || $otp->attempts >= 5) {
-            return $this->error('Ma OTP khong hop le hoac da het han.', 422);
+            return $this->error('Mã OTP không hợp lệ hoặc đã hết hạn.', 422);
         }
 
         $otp->increment('attempts');
 
         if (! Hash::check($validated['token'], $otp->code_hash)) {
-            return $this->error('Ma OTP khong hop le hoac da het han.', 422);
+            return $this->error('Mã OTP không hợp lệ hoặc đã hết hạn.', 422);
         }
 
         $user->forceFill([
@@ -345,7 +345,7 @@ class AuthController extends Controller
         $otp->update(['used_at' => now()]);
         event(new PasswordReset($user));
 
-        return $this->success(null, 'Da dat lai mat khau bang OTP.');
+        return $this->success(null, 'Đã đặt lại mật khẩu bằng OTP.');
     }
 
     private function sendPasswordResetOtp(string $email): void

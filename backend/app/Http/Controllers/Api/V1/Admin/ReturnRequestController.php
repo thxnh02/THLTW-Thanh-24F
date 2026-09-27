@@ -33,7 +33,7 @@ class ReturnRequestController extends Controller
             });
         }
 
-        return $this->success($query->paginate((int) $request->integer('per_page', 15)));
+        return $this->successPaginated($query->paginate((int) $request->integer('per_page', 15)), ReturnRequestResource::class);
     }
 
     public function show(Request $request, ReturnRequest $returnRequest): JsonResponse

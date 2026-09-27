@@ -27,7 +27,7 @@ class BrandController extends Controller
             $query->where('status', $request->string('status'));
         }
 
-        return $this->success($query->paginate((int) $request->integer('per_page', 15)));
+        return $this->successPaginated($query->paginate((int) $request->integer('per_page', 15)), BrandResource::class);
     }
 
     public function store(StoreBrandRequest $request): JsonResponse

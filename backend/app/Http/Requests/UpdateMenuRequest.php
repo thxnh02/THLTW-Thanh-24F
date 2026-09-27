@@ -38,7 +38,7 @@ class UpdateMenuRequest extends FormRequest
             $menu = $this->route('menu');
 
             if ($menu && (int) ($this->input('parent_id') ?? 0) === $menu->id) {
-                $validator->errors()->add('parent_id', 'Menu cha khong hop le.');
+                $validator->errors()->add('parent_id', 'Menu cha không hợp lệ.');
             }
         });
     }

@@ -32,7 +32,7 @@ class InventoryService
                 $change = $validated['type'] === 'import' ? $quantity : -$quantity;
 
                 if ($change < 0 && $variant->stock_quantity < $quantity) {
-                    abort(409, 'Ton kho SKU '.$variant->sku.' khong du de xuat.');
+                    abort(409, 'Tồn kho SKU '.$variant->sku.' không đủ để xuất.');
                 }
 
                 $variant->increment('stock_quantity', $change);

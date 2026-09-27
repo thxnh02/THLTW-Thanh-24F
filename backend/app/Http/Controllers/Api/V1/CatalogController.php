@@ -5,6 +5,13 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Concerns\ApiResponses;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreContactRequest;
+use App\Http\Resources\BannerResource;
+use App\Http\Resources\BrandResource;
+use App\Http\Resources\CategoryResource;
+use App\Http\Resources\PageResource;
+use App\Http\Resources\PostCategoryResource;
+use App\Http\Resources\PostResource;
+use App\Http\Resources\ProductResource;
 use App\Models\Banner;
 use App\Models\Brand;
 use App\Models\Category;
@@ -25,24 +32,21 @@ class CatalogController extends Controller
     public function homepage(): JsonResponse
     {
         return $this->success([
-            'banners' => Banner::query()->where('active', true)->orderBy('sort_order')->get(),
-            'categories' => Category::query()->where('status', 'active')->orderBy('sort_order')->limit(8)->get(),
-            'new_products' => $this->productList(Product::query()->withCount('reviews')->withAvg('reviews', 'rating')->latest()->limit(8)->get()),
-            'best_selling_products' => $this->productList(Product::query()->withCount('reviews')->withAvg('reviews', 'rating')->orderByDesc('sold_count')->limit(8)->get()),
-            'featured_products' => $this->productList(Product::query()->withCount('reviews')->withAvg('reviews', 'rating')->where('featured', true)->limit(8)->get()),
-            'latest_posts' => Post::query()->with('category')->where('status', 'published')->latest('published_at')->limit(4)->get(),
+            'banners' => BannerResource::collection(Banner::query()->where('active', true)->orderBy('sort_order')->get()),
+            'categories' => CategoryResource::collection(Category::query()->where('status', 'active')->orderBy('sort_order')->limit(8)->get()),
+            'new_products' => ProductResource::collection($this->homepageProducts()->latest()->limit(8)->get()),
+            'best_selling_products' => ProductResource::collection($this->homepageProducts()->orderByDesc('sold_count')->limit(8)->get()),
+            'featured_products' => ProductResource::collection($this->homepageProducts()->where('featured', true)->limit(8)->get()),
+            'latest_posts' => PostResource::collection(Post::query()->with('category')->where('status', 'published')->latest('published_at')->limit(4)->get()),
         ]);
     }
 
     public function publicSettings(): JsonResponse
     {
-        $values = Setting::query()
-            ->whereIn('key', [
-                'website_name', 'logo', 'favicon', 'email', 'phone', 'address',
-                'social_facebook', 'social_instagram', 'social_tiktok',
-                'seo_title', 'seo_description',
-            ])
-            ->pluck('value', 'key');
+        $values = Setting::query()->whereIn('key', [
+            'website_name', 'logo', 'favicon', 'email', 'phone', 'address',
+            'social_facebook', 'social_instagram', 'social_tiktok', 'seo_title', 'seo_description',
+        ])->pluck('value', 'key');
 
         return $this->success([
             'store_name' => $values->get('website_name'),
@@ -62,28 +66,22 @@ class CatalogController extends Controller
 
     public function categories(): JsonResponse
     {
-        return $this->success(Category::query()->where('status', 'active')->orderBy('sort_order')->get());
+        return $this->success(CategoryResource::collection(Category::query()->where('status', 'active')->orderBy('sort_order')->get()));
     }
 
     public function brands(): JsonResponse
     {
-        return $this->success(Brand::query()->where('status', 'active')->orderBy('name')->get());
+        return $this->success(BrandResource::collection(Brand::query()->where('status', 'active')->orderBy('name')->get()));
     }
 
     public function products(Request $request): JsonResponse
     {
-        $query = Product::query()
-            ->with(['category', 'brand', 'defaultVariant', 'images'])
-            ->withCount('reviews')
-            ->withAvg('reviews', 'rating')
-            ->where('status', 'active');
-
+        $query = $this->productQuery()->where('status', 'active');
         $this->applyProductFilters($query, $request);
-
         $products = $query->paginate((int) $request->integer('per_page', 12))->withQueryString();
 
         return $this->success(
-            collect($products->items())->map(fn (Product $product): array => $this->productPayload($product))->values(),
+            ProductResource::collection($products->getCollection())->resolve($request),
             'Products loaded',
             [
                 'current_page' => $products->currentPage(),
@@ -109,25 +107,20 @@ class CatalogController extends Controller
             ->loadCount('reviews')
             ->loadAvg('reviews', 'rating');
 
-        $related = Product::query()
-            ->with(['category', 'brand', 'defaultVariant', 'images'])
-            ->withCount('reviews')
-            ->withAvg('reviews', 'rating')
+        $related = $this->productQuery()
             ->where('status', 'active')
             ->where('id', '!=', $product->id)
             ->where('category_id', $product->category_id)
             ->limit(4)
             ->get();
+        $product->setRelation('related_products', $related);
 
-        return $this->success([
-            ...$this->productPayload($product, true),
-            'related_products' => $this->productList($related),
-        ]);
+        return $this->success(new ProductResource($product));
     }
 
     public function postCategories(): JsonResponse
     {
-        return $this->success(PostCategory::query()->where('status', 'active')->orderBy('name')->get());
+        return $this->success(PostCategoryResource::collection(PostCategory::query()->where('status', 'active')->orderBy('name')->get()));
     }
 
     public function posts(Request $request): JsonResponse
@@ -138,30 +131,41 @@ class CatalogController extends Controller
             $query->whereHas('category', fn ($categoryQuery) => $categoryQuery->where('slug', $request->string('category')));
         }
 
-        return $this->success($query->latest('published_at')->paginate(9)->withQueryString());
+        return $this->successPaginated($query->latest('published_at')->paginate((int) $request->integer('per_page', 9))->withQueryString(), PostResource::class);
     }
 
     public function post(Post $post): JsonResponse
     {
         abort_if($post->status !== 'published', 404);
 
-        return $this->success($post->load('category'));
+        return $this->success(new PostResource($post->load('category')));
     }
 
     public function page(Page $page): JsonResponse
     {
         abort_if($page->status !== 'published', 404);
 
-        return $this->success($page);
+        return $this->success(new PageResource($page));
     }
 
     public function contact(StoreContactRequest $request): JsonResponse
     {
-        $validated = $request->validated();
-
-        Contact::create($validated);
+        Contact::create($request->validated());
 
         return $this->success(null, 'Tin nhắn liên hệ đã được ghi nhận.', status: 201);
+    }
+
+    private function productQuery(): mixed
+    {
+        return Product::query()
+            ->with(['category', 'brand', 'defaultVariant', 'images'])
+            ->withCount('reviews')
+            ->withAvg('reviews', 'rating');
+    }
+
+    private function homepageProducts(): mixed
+    {
+        return $this->productQuery();
     }
 
     private function applyProductFilters(mixed $query, Request $request): void
@@ -198,56 +202,5 @@ class CatalogController extends Controller
             'best_selling' => $query->orderByDesc('sold_count'),
             default => $query->latest(),
         };
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function productPayload(Product $product, bool $full = false): array
-    {
-        $variant = $product->defaultVariant ?? $product->variants->first();
-        $image = $product->images->first();
-
-        return [
-            'id' => $product->id,
-            'name' => $product->name,
-            'slug' => $product->slug,
-            'short_description' => $product->short_description,
-            'description' => $full ? $product->description : null,
-            'status' => $product->status,
-            'featured' => (bool) $product->featured,
-            'sold_count' => $product->sold_count,
-            'category' => $product->category,
-            'brand' => $product->brand,
-            'primary_image' => $image?->path,
-            'images' => $product->images,
-            'default_variant' => $variant,
-            'variants' => $full ? $product->variants : [],
-            'price' => $variant?->price,
-            'sale_price' => $variant?->sale_price,
-            'stock_quantity' => $variant?->stock_quantity ?? 0,
-            'review_count' => $product->reviews_count ?? ($full ? $product->reviews->count() : 0),
-            'average_rating' => $product->reviews_avg_rating !== null
-                ? round((float) $product->reviews_avg_rating, 1)
-                : ($full ? round((float) $product->reviews->avg('rating'), 1) : 0),
-            'reviews' => $full ? $product->reviews->map(fn ($review): array => [
-                'id' => $review->id,
-                'rating' => $review->rating,
-                'content' => $review->content,
-                'user_name' => $review->user?->name,
-                'created_at' => $review->created_at,
-            ])->values() : [],
-        ];
-    }
-
-    /**
-     * @return array<int, array<string, mixed>>
-     */
-    private function productList(mixed $products): array
-    {
-        return $products->loadMissing(['category', 'brand', 'defaultVariant', 'images'])
-            ->map(fn (Product $product): array => $this->productPayload($product))
-            ->values()
-            ->all();
     }
 }

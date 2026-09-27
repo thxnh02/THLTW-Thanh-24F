@@ -61,7 +61,7 @@ class StorePromotionRequest extends FormRequest
     {
         $validator->after(function (Validator $validator): void {
             if ($this->input('type') === 'percent' && (float) $this->input('value', 0) > 100) {
-                $validator->errors()->add('value', 'Gia tri phan tram khong duoc vuot qua 100.');
+                $validator->errors()->add('value', 'Giá trị phần trăm không được vượt quá 100.');
             }
         });
     }

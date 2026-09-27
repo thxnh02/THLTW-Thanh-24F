@@ -145,7 +145,7 @@ class ProductImportService
         }
 
         if ($stock < 0) {
-            $errors[] = 'Ton kho phai >= 0.';
+            $errors[] = 'Tồn kho phải >= 0.';
         }
 
         if (! $this->findCategory($row['category'] ?? null)) {

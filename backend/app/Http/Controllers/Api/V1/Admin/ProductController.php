@@ -38,7 +38,7 @@ class ProductController extends Controller
             $query->whereHas('brand', fn ($brandQuery) => $brandQuery->where('slug', $request->string('brand')));
         }
 
-        return $this->success($query->latest()->paginate((int) $request->integer('per_page', 15)));
+        return $this->successPaginated($query->latest()->paginate((int) $request->integer('per_page', 15)), ProductResource::class);
     }
 
     public function show(Product $product): JsonResponse

@@ -47,10 +47,13 @@ class UpdateProductRequest extends FormRequest
             'deleted_variant_ids' => ['nullable', 'array'],
             'deleted_variant_ids.*' => ['integer', 'exists:product_variants,id'],
             'images' => ['nullable', 'array'],
+            'images.*.id' => ['nullable', 'integer', 'exists:product_images,id'],
             'images.*.path' => ['required', 'string', 'max:255'],
             'images.*.alt_text' => ['nullable', 'string', 'max:255'],
             'images.*.is_primary' => ['nullable', 'boolean'],
             'images.*.sort_order' => ['nullable', 'integer', 'min:0'],
+            'deleted_image_ids' => ['nullable', 'array'],
+            'deleted_image_ids.*' => ['integer', 'exists:product_images,id'],
         ];
     }
 

@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Http\Controllers\Api\V1\CartController;
 use App\Models\Cart;
 use App\Models\InventoryMovement;
 use App\Models\Order;
@@ -22,7 +21,7 @@ class CheckoutService
         return $this->reusedExistingOrder;
     }
 
-    public function createOrder(array $validated, ?int $userId, string $ipAddress, CartController $cartController): Order
+    public function createOrder(array $validated, ?int $userId, string $ipAddress, CartQuoteService $cartQuoteService, VnpayService $vnpayService): Order
     {
         $existingOrder = Order::query()
             ->with(['items', 'payment'])
@@ -35,9 +34,9 @@ class CheckoutService
             return $existingOrder;
         }
 
-        return DB::transaction(function () use ($validated, $userId, $ipAddress, $cartController): Order {
+        return DB::transaction(function () use ($validated, $userId, $ipAddress, $cartQuoteService, $vnpayService): Order {
             $customerEmail = strtolower(trim($validated['customer']['email']));
-            $quote = $cartController->buildQuote(
+            $quote = $cartQuoteService->buildQuote(
                 $validated['items'],
                 $validated['promotion_code'] ?? null,
                 $userId,
@@ -47,7 +46,7 @@ class CheckoutService
             );
 
             if (($validated['promotion_code'] ?? null) && ! $quote['promotion']) {
-                abort(409, 'Ma khuyen mai khong hop le hoac da het luot su dung.');
+                abort(409, 'Mã khuyến mãi không hợp lệ hoặc đã hết lượt sử dụng.');
             }
 
             $order = Order::create([
@@ -75,7 +74,7 @@ class CheckoutService
                 $variant = ProductVariant::query()->with('product')->lockForUpdate()->findOrFail($line['variant_id']);
 
                 if (! $variant->active || $variant->stock_quantity < $line['quantity']) {
-                    abort(409, 'San pham '.$variant->sku.' khong du ton kho.');
+                    abort(409, 'Sản phẩm '.$variant->sku.' không đủ tồn kho.');
                 }
 
                 $variant->decrement('stock_quantity', $line['quantity']);
@@ -128,7 +127,7 @@ class CheckoutService
             $order->load(['items', 'payment']);
 
             if ($validated['payment_method'] === 'vnpay') {
-                $order->payment_url = $this->buildVnpayUrl($order, $ipAddress);
+                $order->payment_url = $vnpayService->createPaymentUrl($order, $ipAddress);
             }
 
             return $order;
@@ -142,38 +141,5 @@ class CheckoutService
         } while (Order::query()->where('code', $code)->exists());
 
         return $code;
-    }
-
-    private function buildVnpayUrl(Order $order, string $ipAddress): string
-    {
-        $tmnCode = config('services.vnpay.tmn_code');
-        $secret = config('services.vnpay.hash_secret');
-        $paymentUrl = config('services.vnpay.url');
-
-        if (! $tmnCode || ! $secret || ! $paymentUrl) {
-            abort(409, 'VNPay chua duoc cau hinh.');
-        }
-
-        $params = [
-            'vnp_Version' => '2.1.0',
-            'vnp_Command' => 'pay',
-            'vnp_TmnCode' => $tmnCode,
-            'vnp_Amount' => (int) round((float) $order->grand_total * 100),
-            'vnp_CurrCode' => 'VND',
-            'vnp_TxnRef' => $order->code,
-            'vnp_OrderInfo' => 'Thanh toan don hang '.$order->code,
-            'vnp_OrderType' => 'other',
-            'vnp_Locale' => 'vn',
-            'vnp_ReturnUrl' => config('services.vnpay.return_url'),
-            'vnp_IpAddr' => $ipAddress,
-            'vnp_CreateDate' => now()->format('YmdHis'),
-            'vnp_ExpireDate' => now()->addMinutes(15)->format('YmdHis'),
-        ];
-
-        ksort($params);
-        $hashData = http_build_query($params, '', '&', PHP_QUERY_RFC3986);
-        $params['vnp_SecureHash'] = hash_hmac('sha512', $hashData, $secret);
-
-        return $paymentUrl.'?'.http_build_query($params, '', '&', PHP_QUERY_RFC3986);
     }
 }

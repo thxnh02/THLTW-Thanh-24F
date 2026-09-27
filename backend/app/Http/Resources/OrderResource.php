@@ -37,6 +37,7 @@ class OrderResource extends JsonResource
             'shipping_fee' => $this->shipping_fee,
             'grand_total' => $this->grand_total,
             'promotion_code' => $this->promotion_code,
+            'payment_url' => $this->when(isset($this->payment_url), $this->payment_url),
             'created_at' => $this->created_at?->toISOString(),
             'items' => OrderItemResource::collection($this->whenLoaded('items')),
             'payment' => PaymentResource::make($this->whenLoaded('payment')),

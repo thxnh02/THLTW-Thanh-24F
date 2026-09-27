@@ -8,6 +8,7 @@ use App\Models\ProductImage;
 use App\Models\ProductVariant;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class ProductService
 {
@@ -17,7 +18,7 @@ class ProductService
         return DB::transaction(function () use ($validated): Product {
             $product = Product::create($this->productAttributes($validated));
             $this->syncVariants($product, $validated['variants']);
-            $this->syncImages($product, $validated['images'] ?? []);
+            $this->syncImages($product, $validated['images'] ?? [], true);
 
             return $product->load(['category', 'brand', 'variants', 'images']);
         });
@@ -31,8 +32,8 @@ class ProductService
             $this->deleteExplicitVariants($product, $validated['deleted_variant_ids'] ?? []);
             $this->syncVariants($product, $validated['variants']);
 
-            if (array_key_exists('images', $validated)) {
-                $this->syncImages($product, $validated['images']);
+            if (array_key_exists('images', $validated) || array_key_exists('deleted_image_ids', $validated)) {
+                $this->syncImages($product, $validated['images'] ?? [], false, $validated['deleted_image_ids'] ?? []);
             }
 
             return $product->refresh()->load(['category', 'brand', 'variants', 'images']);
@@ -59,8 +60,12 @@ class ProductService
     /** @param array<int, array<string, mixed>> $variants */
     private function syncVariants(Product $product, array $variants): void
     {
-        $hasDefault = collect($variants)->contains(fn (array $variant): bool => (bool) ($variant['is_default'] ?? false));
+        $existingDefaultId = $product->variants()->where('is_default', true)->value('id');
+        $explicitDefault = collect($variants)->first(fn (array $variant): bool => (bool) ($variant['is_default'] ?? false));
+        $preservedDefaultId = $explicitDefault === null ? $existingDefaultId : null;
         $defaultAssigned = false;
+
+        $product->variants()->update(['is_default' => false]);
 
         foreach ($variants as $index => $variantData) {
             $skuQuery = ProductVariant::query()->where('sku', $variantData['sku']);
@@ -70,16 +75,20 @@ class ProductService
             }
 
             if ($skuQuery->exists()) {
-                abort(422, 'SKU da ton tai: '.$variantData['sku']);
+                throw ValidationException::withMessages([
+                    'variants.'.$index.'.sku' => ['SKU đã tồn tại: '.$variantData['sku']],
+                ]);
             }
 
             if (isset($variantData['id']) && ! ProductVariant::query()->whereKey($variantData['id'])->where('product_id', $product->id)->exists()) {
-                abort(422, 'Variant khong thuoc san pham nay.');
+                throw ValidationException::withMessages([
+                    'variants.'.$index.'.id' => ['Biến thể không thuộc sản phẩm này.'],
+                ]);
             }
 
-            $isDefault = $hasDefault
-                ? (bool) ($variantData['is_default'] ?? false) && ! $defaultAssigned
-                : $index === 0;
+            $isExplicitDefault = (bool) ($variantData['is_default'] ?? false) && ! $defaultAssigned;
+            $isPreservedDefault = $preservedDefaultId !== null && (int) ($variantData['id'] ?? 0) === (int) $preservedDefaultId;
+            $isDefault = $isExplicitDefault || $isPreservedDefault;
             $defaultAssigned = $defaultAssigned || $isDefault;
 
             ProductVariant::query()->updateOrCreate(
@@ -97,6 +106,19 @@ class ProductService
                 ],
             );
         }
+
+        if (! $defaultAssigned && $preservedDefaultId !== null) {
+            $preserved = $product->variants()->whereKey($preservedDefaultId)->first();
+            if ($preserved) {
+                $preserved->update(['is_default' => true]);
+                $defaultAssigned = true;
+            }
+        }
+
+        if (! $defaultAssigned) {
+            $fallback = $product->variants()->oldest('id')->first();
+            $fallback?->update(['is_default' => true]);
+        }
     }
 
     /** @param array<int, int> $variantIds */
@@ -112,37 +134,81 @@ class ProductService
             ->get();
 
         if ($variants->count() !== count(array_unique($variantIds))) {
-            abort(422, 'Chi co the xoa variant cua san pham nay.');
+            abort(422, 'Chỉ có thể xóa biến thể của sản phẩm này.');
         }
 
         if (OrderItem::query()->whereIn('product_variant_id', $variants->modelKeys())->exists()) {
-            abort(409, 'Variant da co trong don hang nen khong the xoa.');
+            abort(409, 'Biến thể đã có trong đơn hàng nên không thể xóa.');
         }
 
         $variants->each->delete();
     }
 
     /** @param array<int, array<string, mixed>> $images */
-    private function syncImages(Product $product, array $images): void
+    private function syncImages(Product $product, array $images, bool $isCreate, array $deletedImageIds = []): void
     {
-        ProductImage::query()->where('product_id', $product->id)->delete();
+        if ($isCreate) {
+            foreach ($images as $index => $imageData) {
+                ProductImage::create([
+                    'product_id' => $product->id,
+                    'path' => $imageData['path'],
+                    'alt_text' => $imageData['alt_text'] ?? $product->name,
+                    'is_primary' => false,
+                    'sort_order' => $imageData['sort_order'] ?? $index + 1,
+                ]);
+            }
+        } else {
+            $this->deleteExplicitImages($product, $deletedImageIds);
 
-        $hasPrimary = collect($images)->contains(fn (array $image): bool => (bool) ($image['is_primary'] ?? false));
-        $primaryAssigned = false;
+            foreach ($images as $index => $imageData) {
+                if (isset($imageData['id'])) {
+                    $image = ProductImage::query()->find($imageData['id']);
+                    if (! $image || $image->product_id !== $product->id) {
+                        throw ValidationException::withMessages([
+                            'images.'.$index.'.id' => ['Ảnh không thuộc sản phẩm này.'],
+                        ]);
+                    }
+                } else {
+                    $image = new ProductImage(['product_id' => $product->id]);
+                }
+                $image->fill([
+                    'path' => $imageData['path'],
+                    'alt_text' => $imageData['alt_text'] ?? $product->name,
+                    'sort_order' => $imageData['sort_order'] ?? $index + 1,
+                ]);
+                $image->save();
+            }
+        }
 
-        foreach ($images as $index => $imageData) {
-            $isPrimary = $hasPrimary
-                ? (bool) ($imageData['is_primary'] ?? false) && ! $primaryAssigned
-                : $index === 0;
-            $primaryAssigned = $primaryAssigned || $isPrimary;
+        $allImages = $product->images()->get();
+        if ($allImages->isEmpty()) {
+            return;
+        }
 
-            ProductImage::create([
-                'product_id' => $product->id,
-                'path' => $imageData['path'],
-                'alt_text' => $imageData['alt_text'] ?? $product->name,
-                'is_primary' => $isPrimary,
-                'sort_order' => $imageData['sort_order'] ?? $index + 1,
+        $requestedPrimary = collect($images)->first(fn (array $image): bool => (bool) ($image['is_primary'] ?? false));
+        $primary = $requestedPrimary
+            ? (isset($requestedPrimary['id'])
+                ? $allImages->firstWhere('id', $requestedPrimary['id'])
+                : $allImages->where('path', $requestedPrimary['path'])->sortByDesc('id')->first())
+            : $allImages->firstWhere('is_primary', true) ?? $allImages->first();
+        $primary ??= $allImages->first();
+        $allImages->each(fn (ProductImage $image) => $image->update(['is_primary' => $image->is($primary)]));
+    }
+
+    /** @param array<int, int> $imageIds */
+    private function deleteExplicitImages(Product $product, array $imageIds): void
+    {
+        if ($imageIds === []) {
+            return;
+        }
+
+        $images = ProductImage::query()->whereIn('id', $imageIds)->get();
+        if ($images->count() !== count(array_unique($imageIds)) || $images->contains(fn (ProductImage $image): bool => $image->product_id !== $product->id)) {
+            throw ValidationException::withMessages([
+                'deleted_image_ids' => ['Chỉ có thể xóa ảnh của sản phẩm này.'],
             ]);
         }
+
+        $images->each->delete();
     }
 }

@@ -35,7 +35,7 @@ class PromotionController extends Controller
             $query->where('type', $request->string('type'));
         }
 
-        return $this->success($query->paginate((int) $request->integer('per_page', 15)));
+        return $this->successPaginated($query->paginate((int) $request->integer('per_page', 15)), PromotionResource::class);
     }
 
     public function store(StorePromotionRequest $request): JsonResponse
@@ -46,7 +46,7 @@ class PromotionController extends Controller
 
         return $this->success(
             new PromotionResource($promotion->load(['products:id,name', 'categories:id,name', 'brands:id,name'])),
-            'Da tao ma khuyen mai.',
+            'Đã tạo mã khuyến mãi.',
             status: 201,
         );
     }
@@ -64,19 +64,19 @@ class PromotionController extends Controller
 
         return $this->success(
             new PromotionResource($promotion->refresh()->load(['products:id,name', 'categories:id,name', 'brands:id,name'])->loadCount('usages')),
-            'Da cap nhat ma khuyen mai.',
+            'Đã cập nhật mã khuyến mãi.',
         );
     }
 
     public function destroy(Promotion $promotion): JsonResponse
     {
         if ($promotion->usages()->exists() || Order::query()->where('promotion_code', $promotion->code)->exists()) {
-            return $this->error('Ma khuyen mai da phat sinh giao dich, khong the xoa.', 409);
+            return $this->error('Mã khuyến mãi đã phát sinh giao dịch, không thể xóa.', 409);
         }
 
         $promotion->delete();
 
-        return $this->success(null, 'Da xoa ma khuyen mai.');
+        return $this->success(null, 'Đã xóa mã khuyến mãi.');
     }
 
     /**

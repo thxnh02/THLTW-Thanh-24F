@@ -27,7 +27,7 @@ class BannerController extends Controller
             $query->where('active', $request->boolean('active'));
         }
 
-        return $this->success($query->paginate((int) $request->integer('per_page', 15)));
+        return $this->successPaginated($query->paginate((int) $request->integer('per_page', 15)), BannerResource::class);
     }
 
     public function store(StoreBannerRequest $request): JsonResponse

@@ -27,14 +27,14 @@ class MenuController extends Controller
             $query->where('active', $request->boolean('active'));
         }
 
-        return $this->success($query->paginate((int) $request->integer('per_page', 15)));
+        return $this->successPaginated($query->paginate((int) $request->integer('per_page', 15)), MenuResource::class);
     }
 
     public function store(StoreMenuRequest $request): JsonResponse
     {
         return $this->success(
             new MenuResource(Menu::create($request->validated())->load('parent')),
-            'Da tao menu.',
+            'Đã tạo menu.',
             status: 201,
         );
     }
@@ -48,17 +48,17 @@ class MenuController extends Controller
     {
         $menu->update($request->validated());
 
-        return $this->success(new MenuResource($menu->refresh()->load('parent')), 'Da cap nhat menu.');
+        return $this->success(new MenuResource($menu->refresh()->load('parent')), 'Đã cập nhật menu.');
     }
 
     public function destroy(Menu $menu): JsonResponse
     {
         if ($menu->children()->exists()) {
-            return $this->error('Menu dang co menu con, khong the xoa.', 409);
+            return $this->error('Menu đang có menu con, không thể xóa.', 409);
         }
 
         $menu->delete();
 
-        return $this->success(null, 'Da xoa menu.');
+        return $this->success(null, 'Đã xóa menu.');
     }
 }

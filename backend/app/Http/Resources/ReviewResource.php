@@ -22,6 +22,7 @@ class ReviewResource extends JsonResource
             'content' => $this->content,
             'status' => $this->status,
             'created_at' => $this->created_at?->toISOString(),
+            'user_name' => $this->whenLoaded('user', fn (): ?string => $this->user?->name),
             'user' => UserResource::make($this->whenLoaded('user')),
         ];
     }

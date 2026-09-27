@@ -24,6 +24,8 @@ class AuthTest extends TestCase
             ->assertCreated()
             ->assertJsonPath('success', true)
             ->assertJsonStructure(['data' => ['user' => ['id', 'name', 'email', 'role', 'status']]])
+            ->assertJsonMissingPath('data.user.password')
+            ->assertJsonMissingPath('data.user.remember_token')
             ->assertJsonMissingPath('data.token');
 
         $this->assertDatabaseHas('users', [
@@ -48,6 +50,8 @@ class AuthTest extends TestCase
         $login
             ->assertOk()
             ->assertJsonPath('data.user.email', 'login@example.com')
+            ->assertJsonMissingPath('data.user.password')
+            ->assertJsonMissingPath('data.user.remember_token')
             ->assertJsonMissingPath('data.token');
 
         $this->withHeader('Origin', 'http://localhost:3000')->getJson('/api/v1/auth/me')

@@ -23,7 +23,7 @@ class AccountReturnController extends Controller
             ->latest()
             ->paginate((int) $request->integer('per_page', 10));
 
-        return $this->success($returns);
+        return $this->successPaginated($returns, ReturnRequestResource::class);
     }
 
     public function store(StoreReturnRequest $request, ReturnService $returnService): JsonResponse

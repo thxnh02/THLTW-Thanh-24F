@@ -34,7 +34,7 @@ class OrderStatusService
         }
 
         if (! in_array($validated['status'], $this->allowedTransitions[$order->status] ?? [], true)) {
-            abort(409, 'Trang thai don hang khong hop le.');
+            abort(409, 'Trạng thái đơn hàng không hợp lệ.');
         }
 
         DB::transaction(function () use ($order, $validated, $adminId): void {
@@ -43,7 +43,7 @@ class OrderStatusService
             $toStatus = $validated['status'];
 
             if (! in_array($toStatus, $this->allowedTransitions[$fromStatus] ?? [], true)) {
-                abort(409, 'Trang thai don hang khong hop le.');
+                abort(409, 'Trạng thái đơn hàng không hợp lệ.');
             }
 
             if ($toStatus === 'canceled') {
@@ -87,7 +87,7 @@ class OrderStatusService
     public function cancelForMember(Order $order, int $userId): Order
     {
         if ($order->status !== 'pending') {
-            abort(409, 'Chi co the huy don hang dang cho xac nhan.');
+            abort(409, 'Chỉ có thể hủy đơn hàng đang chờ xác nhận.');
         }
 
         DB::transaction(function () use ($order, $userId): void {
@@ -95,7 +95,7 @@ class OrderStatusService
             $fromStatus = $lockedOrder->status;
 
             if ($fromStatus !== 'pending') {
-                abort(409, 'Chi co the huy don hang dang cho xac nhan.');
+                abort(409, 'Chỉ có thể hủy đơn hàng đang chờ xác nhận.');
             }
 
             $this->restoreStockOnce($lockedOrder, $userId);

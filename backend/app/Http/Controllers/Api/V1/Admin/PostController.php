@@ -31,7 +31,7 @@ class PostController extends Controller
             $query->where('post_category_id', $request->integer('category'));
         }
 
-        return $this->success($query->paginate((int) $request->integer('per_page', 15)));
+        return $this->successPaginated($query->paginate((int) $request->integer('per_page', 15)), PostResource::class);
     }
 
     public function store(StorePostRequest $request): JsonResponse

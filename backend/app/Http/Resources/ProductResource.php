@@ -31,17 +31,18 @@ class ProductResource extends JsonResource
             'seo_description' => $this->seo_description,
             'category' => CategoryResource::make($this->whenLoaded('category')),
             'brand' => BrandResource::make($this->whenLoaded('brand')),
-            'primary_image' => ProductImageResource::make($primaryImage),
+            'primary_image' => $primaryImage?->path,
             'images' => ProductImageResource::collection($this->whenLoaded('images')),
             'default_variant' => ProductVariantResource::make($variant),
             'variants' => ProductVariantResource::collection($this->whenLoaded('variants')),
             'price' => $variant?->price,
             'sale_price' => $variant?->sale_price,
-            'stock_quantity' => $variant?->stock_quantity,
-            'review_count' => $this->when(isset($this->reviews_count), $this->reviews_count),
-            'reviews_count' => $this->when(isset($this->reviews_count), $this->reviews_count),
-            'average_rating' => $this->when(isset($this->reviews_avg_rating), $this->reviews_avg_rating),
+            'stock_quantity' => $variant?->stock_quantity ?? 0,
+            'review_count' => (int) ($this->reviews_count ?? ($this->relationLoaded('reviews') ? $this->reviews->count() : 0)),
+            'reviews_count' => (int) ($this->reviews_count ?? ($this->relationLoaded('reviews') ? $this->reviews->count() : 0)),
+            'average_rating' => round((float) ($this->reviews_avg_rating ?? ($this->relationLoaded('reviews') ? $this->reviews->avg('rating') : 0)), 1),
             'reviews' => ReviewResource::collection($this->whenLoaded('reviews')),
+            'related_products' => ProductResource::collection($this->whenLoaded('related_products')),
         ];
     }
 }

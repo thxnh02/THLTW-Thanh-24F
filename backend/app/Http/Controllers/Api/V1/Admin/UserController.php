@@ -39,7 +39,7 @@ class UserController extends Controller
             $query->where('status', $request->string('status'));
         }
 
-        return $this->success($query->paginate((int) $request->integer('per_page', 15)));
+        return $this->successPaginated($query->paginate((int) $request->integer('per_page', 15)), UserResource::class);
     }
 
     public function store(StoreUserRequest $request): JsonResponse

@@ -50,7 +50,7 @@ class OrderController extends Controller
             $query->whereDate('created_at', '<=', $request->date('date_to'));
         }
 
-        return $this->success($query->paginate((int) $request->integer('per_page', 15)));
+        return $this->successPaginated($query->paginate((int) $request->integer('per_page', 15)), OrderResource::class);
     }
 
     public function show(Order $order): JsonResponse
@@ -114,21 +114,21 @@ class OrderController extends Controller
         $updatedOrder = $result['order'];
 
         if (! $result['changed']) {
-            return $this->success(new OrderResource($updatedOrder), 'Trang thai khong thay doi.');
+            return $this->success(new OrderResource($updatedOrder), 'Trạng thái không thay đổi.');
         }
 
         $this->notifyOrderStatus($updatedOrder);
 
-        return $this->success(new OrderResource($updatedOrder), 'Da cap nhat trang thai don hang.');
+        return $this->success(new OrderResource($updatedOrder), 'Đã cập nhật trạng thái đơn hàng.');
     }
 
     private function notifyOrderStatus(Order $order): void
     {
         $labels = [
-            'confirmed' => 'Da xac nhan',
-            'shipping' => 'Dang giao',
-            'completed' => 'Hoan thanh',
-            'canceled' => 'Da huy',
+            'confirmed' => 'Đã xác nhận',
+            'shipping' => 'Đang giao',
+            'completed' => 'Hoàn thành',
+            'canceled' => 'Đã hủy',
         ];
 
         if (! isset($labels[$order->status])) {
@@ -139,8 +139,8 @@ class OrderController extends Controller
             CustomerNotification::create([
                 'user_id' => $order->user_id,
                 'type' => 'order_status',
-                'title' => 'Don hang '.$order->code,
-                'message' => 'Trang thai moi: '.$labels[$order->status],
+                'title' => 'Đơn hàng '.$order->code,
+                'message' => 'Trạng thái mới: '.$labels[$order->status],
                 'action_url' => '/account/orders/'.$order->code,
             ]);
         }

@@ -5,9 +5,12 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Concerns\ApiResponses;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CheckoutRequest;
+use App\Http\Resources\OrderResource;
 use App\Mail\OrderConfirmationMail;
 use App\Models\Order;
+use App\Services\CartQuoteService;
 use App\Services\CheckoutService;
+use App\Services\VnpayService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -18,14 +21,19 @@ class CheckoutController extends Controller
 {
     use ApiResponses;
 
-    public function store(CheckoutRequest $request, CheckoutService $checkoutService, CartController $cartController): JsonResponse
-    {
+    public function store(
+        CheckoutRequest $request,
+        CheckoutService $checkoutService,
+        CartQuoteService $cartQuoteService,
+        VnpayService $vnpayService,
+    ): JsonResponse {
         try {
             $order = $checkoutService->createOrder(
                 $request->validated(),
                 $request->user()?->id,
                 $request->ip() ?: '127.0.0.1',
-                $cartController
+                $cartQuoteService,
+                $vnpayService,
             );
         } catch (HttpException $exception) {
             return $this->error($exception->getMessage(), $exception->getStatusCode());
@@ -36,8 +44,8 @@ class CheckoutController extends Controller
         }
 
         return $this->success(
-            $order,
-            $checkoutService->reusedExistingOrder() ? 'Don hang da ton tai.' : 'Dat hang thanh cong.',
+            new OrderResource($order),
+            $checkoutService->reusedExistingOrder() ? 'Đơn hàng đã tồn tại.' : 'Đặt hàng thành công.',
             status: $checkoutService->reusedExistingOrder() ? 200 : 201,
         );
     }

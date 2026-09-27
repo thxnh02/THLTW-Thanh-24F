@@ -27,7 +27,7 @@ class PostCategoryController extends Controller
             $query->where('status', $request->string('status'));
         }
 
-        return $this->success($query->paginate((int) $request->integer('per_page', 15)));
+        return $this->successPaginated($query->paginate((int) $request->integer('per_page', 15)), PostCategoryResource::class);
     }
 
     public function store(StorePostCategoryRequest $request): JsonResponse

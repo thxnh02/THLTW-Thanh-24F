@@ -5,9 +5,43 @@ namespace App\Services;
 use App\Models\Order;
 use App\Models\Payment;
 use Illuminate\Support\Facades\DB;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class VnpayService
 {
+    public function createPaymentUrl(Order $order, string $ipAddress): string
+    {
+        $tmnCode = config('services.vnpay.tmn_code');
+        $secret = config('services.vnpay.hash_secret');
+        $paymentUrl = config('services.vnpay.url');
+
+        if (! $tmnCode || ! $secret || ! $paymentUrl) {
+            throw new HttpException(409, 'VNPay chưa được cấu hình.');
+        }
+
+        $params = [
+            'vnp_Version' => '2.1.0',
+            'vnp_Command' => 'pay',
+            'vnp_TmnCode' => $tmnCode,
+            'vnp_Amount' => (int) round((float) $order->grand_total * 100),
+            'vnp_CurrCode' => 'VND',
+            'vnp_TxnRef' => $order->code,
+            'vnp_OrderInfo' => 'Thanh toán đơn hàng '.$order->code,
+            'vnp_OrderType' => 'other',
+            'vnp_Locale' => 'vn',
+            'vnp_ReturnUrl' => config('services.vnpay.return_url'),
+            'vnp_IpAddr' => $ipAddress,
+            'vnp_CreateDate' => now()->format('YmdHis'),
+            'vnp_ExpireDate' => now()->addMinutes(15)->format('YmdHis'),
+        ];
+
+        ksort($params);
+        $hashData = http_build_query($params, '', '&', PHP_QUERY_RFC3986);
+        $params['vnp_SecureHash'] = hash_hmac('sha512', $hashData, $secret);
+
+        return $paymentUrl.'?'.http_build_query($params, '', '&', PHP_QUERY_RFC3986);
+    }
+
     /**
      * @param  array<string, mixed>  $payload
      * @return array{order?: Order, payment?: Payment, paid?: bool, error?: string, status?: int}
@@ -15,13 +49,13 @@ class VnpayService
     public function processCallback(array $payload): array
     {
         if (! $this->isValidSignature($payload)) {
-            return ['error' => 'Chu ky VNPay khong hop le.', 'status' => 400];
+            return ['error' => 'Chữ ký VNPay không hợp lệ.', 'status' => 400];
         }
 
         $order = Order::query()->where('code', $payload['vnp_TxnRef'] ?? null)->first();
 
         if (! $order) {
-            return ['error' => 'Khong tim thay don hang.', 'status' => 404];
+            return ['error' => 'Không tìm thấy đơn hàng.', 'status' => 404];
         }
 
         [$order, $payment, $isPaid] = DB::transaction(function () use ($payload, $order): array {

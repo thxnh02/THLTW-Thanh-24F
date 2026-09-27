@@ -27,7 +27,7 @@ class PageController extends Controller
             $query->where('status', $request->string('status'));
         }
 
-        return $this->success($query->paginate((int) $request->integer('per_page', 15)));
+        return $this->successPaginated($query->paginate((int) $request->integer('per_page', 15)), PageResource::class);
     }
 
     public function store(StorePageRequest $request): JsonResponse

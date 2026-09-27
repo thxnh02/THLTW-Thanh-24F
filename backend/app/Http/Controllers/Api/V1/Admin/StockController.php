@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1\Admin;
 use App\Http\Controllers\Concerns\ApiResponses;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreStockDocumentRequest;
+use App\Http\Resources\InventoryMovementResource;
 use App\Http\Resources\StockDocumentResource;
 use App\Models\InventoryMovement;
 use App\Models\StockDocument;
@@ -28,7 +29,7 @@ class StockController extends Controller
             $query->where('code', 'like', '%'.$request->string('q')->trim()->toString().'%');
         }
 
-        return $this->success($query->paginate((int) $request->integer('per_page', 15)));
+        return $this->successPaginated($query->paginate((int) $request->integer('per_page', 15)), StockDocumentResource::class);
     }
 
     public function store(StoreStockDocumentRequest $request, InventoryService $inventoryService): JsonResponse
@@ -46,6 +47,6 @@ class StockController extends Controller
             $query->where('product_variant_id', $request->integer('variant_id'));
         }
 
-        return $this->success($query->paginate((int) $request->integer('per_page', 20)));
+        return $this->successPaginated($query->paginate((int) $request->integer('per_page', 20)), InventoryMovementResource::class);
     }
 }

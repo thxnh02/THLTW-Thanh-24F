@@ -34,7 +34,7 @@ class StoreProductRequest extends FormRequest
             'seo_title' => ['nullable', 'string', 'max:255'],
             'seo_description' => ['nullable', 'string', 'max:255'],
             'variants' => ['required', 'array', 'min:1'],
-            'variants.*.id' => ['nullable', 'integer', 'exists:product_variants,id'],
+            'variants.*.id' => ['prohibited'],
             'variants.*.sku' => ['required', 'string', 'max:120'],
             'variants.*.name' => ['required', 'string', 'max:160'],
             'variants.*.attributes' => ['nullable', 'array'],
@@ -46,10 +46,12 @@ class StoreProductRequest extends FormRequest
             'deleted_variant_ids' => ['nullable', 'array'],
             'deleted_variant_ids.*' => ['integer', 'exists:product_variants,id'],
             'images' => ['nullable', 'array'],
+            'images.*.id' => ['prohibited'],
             'images.*.path' => ['required', 'string', 'max:255'],
             'images.*.alt_text' => ['nullable', 'string', 'max:255'],
             'images.*.is_primary' => ['nullable', 'boolean'],
             'images.*.sort_order' => ['nullable', 'integer', 'min:0'],
+            'deleted_image_ids' => ['prohibited'],
         ];
     }
 
