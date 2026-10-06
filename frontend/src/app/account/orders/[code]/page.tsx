@@ -104,6 +104,7 @@ export default function AccountOrderDetailPage() {
             <p><strong>Địa chỉ:</strong> {order.shipping_address}</p>
             <p><strong>Thanh toán:</strong> {paymentMethodLabel(order.payment_method)} · {paymentStatusLabel(order.payment_status)}</p>
             {order.payment?.paid_at ? <p><strong>Thanh toán lúc:</strong> {formatDateTime(order.payment.paid_at)}</p> : null}
+            {order.payment_method === "vnpay" && order.payment?.transaction_ref ? <p><strong>Mã giao dịch:</strong> {order.payment.transaction_ref}</p> : null}
             <p><strong>Vận chuyển:</strong> {order.shipping_method_name ?? "Chưa cập nhật"}</p>
             <p><strong>Đơn vị:</strong> {order.shipping_carrier ?? "Chưa cập nhật"}</p>
             <p><strong>Mã vận đơn:</strong> {order.tracking_code ?? "Chưa cập nhật"}</p>

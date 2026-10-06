@@ -18,6 +18,7 @@ class Payment extends Model
         return [
             'amount' => 'decimal:2',
             'provider_payload' => 'array',
+            'paid_at' => 'datetime',
         ];
     }
 }

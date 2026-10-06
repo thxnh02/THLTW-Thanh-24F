@@ -76,6 +76,16 @@ class AdminOrderTest extends TestCase
             'order_id' => $order->id,
             'status' => 'paid',
         ]);
+        $this->assertNotNull(Payment::query()->where('order_id', $order->id)->value('paid_at'));
+    }
+
+    public function test_cod_payment_has_no_paid_at_before_completion(): void
+    {
+        $this->seed();
+        Sanctum::actingAs(User::factory()->admin()->create());
+        $order = $this->createOrder('shipping');
+
+        $this->assertNull(Payment::query()->where('order_id', $order->id)->value('paid_at'));
     }
 
     public function test_admin_cancel_restores_stock_once(): void

@@ -133,6 +133,8 @@ export default function AdminOrdersPage() {
                 <Row label="Tổng tiền" value={formatVnd(selectedOrder.grand_total)} />
                 <Row label="Phương thức" value={paymentMethodLabel(selectedOrder.payment_method)} />
                 <Row label="Thanh toán" value={paymentStatusLabel(selectedOrder.payment_status)} />
+                {selectedOrder.payment?.paid_at ? <Row label="Thanh toán lúc" value={formatDateTime(selectedOrder.payment.paid_at)} /> : null}
+                {selectedOrder.payment_method === "vnpay" && selectedOrder.payment?.transaction_ref ? <Row label="Mã giao dịch" value={selectedOrder.payment.transaction_ref} /> : null}
               </dl>
               {selectedOrder.status === "confirmed" ? <div className="mt-4 grid gap-3 rounded-md bg-slate-50 p-3"><Input label="Đơn vị vận chuyển" value={tracking.carrier} onChange={(value) => setTracking({ ...tracking, carrier: value })} /><Input label="Mã vận đơn" value={tracking.code} onChange={(value) => setTracking({ ...tracking, code: value })} /></div> : null}
               <div className="mt-5 flex flex-wrap gap-2">

@@ -64,17 +64,21 @@ class VnpayService
             $isPaid = ($payload['vnp_ResponseCode'] ?? null) === '00'
                 && ($payload['vnp_TransactionStatus'] ?? null) === '00';
 
-            if ($payment->status !== 'paid') {
-                $payment->update([
-                    'status' => $isPaid ? 'paid' : 'failed',
-                    'transaction_ref' => $payload['vnp_TransactionNo'] ?? $payload['vnp_TxnRef'] ?? null,
-                    'provider_payload' => $payload,
-                ]);
-
-                $lockedOrder->update([
-                    'payment_status' => $isPaid ? 'paid' : 'failed',
-                ]);
+            if ($payment->status === 'paid') {
+                return [$lockedOrder->refresh(), $payment->refresh(), true];
             }
+
+            $payment->status = $isPaid ? 'paid' : 'failed';
+            $payment->transaction_ref = $payload['vnp_TransactionNo'] ?? $payload['vnp_TxnRef'] ?? null;
+            $payment->provider_payload = $payload;
+            if ($isPaid) {
+                $payment->paid_at ??= now();
+            }
+            $payment->save();
+
+            $lockedOrder->update([
+                'payment_status' => $isPaid ? 'paid' : 'failed',
+            ]);
 
             return [$lockedOrder->refresh(), $payment->refresh(), $isPaid];
         });

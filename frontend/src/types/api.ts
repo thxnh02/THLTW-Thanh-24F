@@ -303,7 +303,7 @@ export type Payment = {
   method: string;
   status: string;
   amount: string | number;
-  transaction_id?: string | null;
+  transaction_ref?: string | null;
   paid_at?: string | null;
 };
 

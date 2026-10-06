@@ -31,6 +31,8 @@ export default function AdminOrderDetailPage() {
             <div><dt className="text-xs text-slate-500">Thanh toán</dt><dd>{paymentStatusLabel(order.payment_status)}</dd></div>
             <div><dt className="text-xs text-slate-500">Phương thức</dt><dd>{paymentMethodLabel(order.payment_method)}</dd></div>
             <div><dt className="text-xs text-slate-500">Tổng tiền</dt><dd>{formatVnd(order.grand_total)}</dd></div>
+            {order.payment?.paid_at ? <div><dt className="text-xs text-slate-500">Thanh toán lúc</dt><dd>{formatDateTime(order.payment.paid_at)}</dd></div> : null}
+            {order.payment_method === "vnpay" && order.payment?.transaction_ref ? <div><dt className="text-xs text-slate-500">Mã giao dịch</dt><dd>{order.payment.transaction_ref}</dd></div> : null}
           </dl>
           <div className="mt-6 border-t border-slate-200 pt-5"><h2 className="font-bold">Lịch sử trạng thái</h2><div className="mt-4 space-y-3">{order.histories?.map((history) => <div key={history.id} className="rounded-md bg-slate-50 p-3 text-sm"><p className="font-semibold">{history.from_status ? `${orderStatusLabel(history.from_status)} → ` : ""}{orderStatusLabel(history.to_status)}</p><p className="text-slate-500">{formatDateTime(history.created_at)}</p>{history.note ? <p className="mt-1 text-slate-600">Ghi chú: {history.note}</p> : null}</div>)}{!order.histories?.length ? <p className="text-sm text-slate-500">Chưa có lịch sử trạng thái.</p> : null}</div></div>
         </section>

@@ -58,7 +58,11 @@ class OrderStatusService
 
             if ($toStatus === 'completed' && $lockedOrder->payment_method === 'cod') {
                 $lockedOrder->payment_status = 'paid';
-                $lockedOrder->payment?->update(['status' => 'paid']);
+                if ($lockedOrder->payment) {
+                    $lockedOrder->payment->status = 'paid';
+                    $lockedOrder->payment->paid_at ??= now();
+                    $lockedOrder->payment->save();
+                }
             }
 
             if ($toStatus === 'shipping') {

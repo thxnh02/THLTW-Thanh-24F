@@ -20,7 +20,7 @@ class PaymentResource extends JsonResource
             'method' => $this->method,
             'status' => $this->status,
             'amount' => $this->amount,
-            'transaction_id' => $this->transaction_id,
+            'transaction_ref' => $this->transaction_ref,
             'paid_at' => $this->paid_at?->toISOString(),
         ];
     }
