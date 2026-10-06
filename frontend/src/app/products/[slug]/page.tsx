@@ -2,10 +2,12 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { use, useEffect, useMemo, useState } from "react";
 
 import { ProductCard } from "@/components/ProductCard";
 import { Badge, Button, ErrorState, Input, Select, Skeleton } from "@/components/ui";
+import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
 import { apiGet, apiPost } from "@/lib/api";
 import { formatVnd } from "@/lib/format";
@@ -14,6 +16,8 @@ import type { Product, ProductVariant } from "@/types/api";
 export default function ProductDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params);
   const { addItem } = useCart();
+  const { user, ready } = useAuth();
+  const router = useRouter();
   const [product, setProduct] = useState<Product | null>(null);
   const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null);
   const [quantity, setQuantity] = useState(1);
@@ -51,6 +55,23 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
     } catch (reason) {
       setMessage(reason instanceof Error ? reason.message : "Vui lòng đăng nhập để thêm vào danh sách yêu thích.");
     }
+  }
+
+  function addProductToCart() {
+    if (!product) {
+      return;
+    }
+    if (!ready) {
+      setMessage("Đang kiểm tra tài khoản của bạn.");
+      return;
+    }
+    if (!user) {
+      setMessage("Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng.");
+      router.push(`/login?redirect=${encodeURIComponent(`/products/${product.slug}`)}`);
+      return;
+    }
+    addItem(product, selectedVariant, quantity);
+    setMessage("Đã thêm sản phẩm vào giỏ hàng.");
   }
 
   async function submitReview() {
@@ -142,7 +163,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
           <div className="mt-6 flex flex-wrap gap-3">
             <Button
               type="button"
-              onClick={() => addItem(product, selectedVariant, quantity)}
+              onClick={addProductToCart}
               disabled={!selectedVariant || selectedVariant.stock_quantity <= 0}
               className="bg-teal-700 hover:bg-teal-800"
             >

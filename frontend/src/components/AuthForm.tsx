@@ -64,8 +64,12 @@ export function AuthForm({ mode, admin = false }: AuthFormProps) {
 
       setMessage(mode === "login" ? "Đăng nhập thành công." : "Đăng ký thành công.");
       const verificationUrl = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("verification_url") : null;
+      const requestedRedirect = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("redirect") : null;
+      const safeRedirect = requestedRedirect && requestedRedirect.startsWith("/") && !requestedRedirect.startsWith("//") ? requestedRedirect : null;
       if (!admin && mode === "login" && verificationUrl?.startsWith(`${API_BASE_URL}/auth/email/verify/`)) {
         router.push(verificationUrl);
+      } else if (!admin && mode === "login" && safeRedirect) {
+        router.push(safeRedirect);
       } else {
         router.push(admin ? "/admin" : "/account/profile");
       }

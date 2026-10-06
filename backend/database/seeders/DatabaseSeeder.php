@@ -61,7 +61,7 @@ class DatabaseSeeder extends Seeder
                 ['slug' => Str::slug($name)],
                 [
                     'name' => $name,
-                    'image' => '/product-placeholder.svg',
+                    'image' => ['/catalog/phone-laptop.jpg', '/catalog/workspace.jpg', '/catalog/tech-flatlay.jpg', '/catalog/phone-mac.jpg', '/catalog/tablet-watch.jpg'][$index % 5],
                     'status' => 'active',
                     'sort_order' => $index + 1,
                 ],
@@ -122,7 +122,7 @@ class DatabaseSeeder extends Seeder
                     'featured' => $index % 4 === 0,
                     'sold_count' => 30 - $index,
                     'seo_title' => $name,
-                    'seo_description' => 'Mua '.$name.' giá tốt tại Công Nghệ Việt.',
+                    'seo_description' => 'Mua '.$name.' giá tốt tại NovaTech Store.',
                 ],
             );
 
@@ -159,22 +159,25 @@ class DatabaseSeeder extends Seeder
             ProductImage::query()->updateOrCreate(
                 ['product_id' => $product->id, 'sort_order' => 1],
                 [
-                    'path' => '/product-placeholder.svg',
+                    'path' => ['/catalog/phone-laptop.jpg', '/catalog/phone-mac.jpg', '/catalog/workspace.jpg', '/catalog/apple-devices.jpg', '/catalog/tech-flatlay.jpg', '/catalog/tablet-watch.jpg'][$index % 6],
                     'alt_text' => $name,
                     'is_primary' => true,
                 ],
             );
         }
 
-        Banner::query()->updateOrCreate(
-            ['title' => 'Công Nghệ Việt'],
-            [
-                'image' => '/hero-ecommerce.svg',
-                'link' => '/products',
-                'sort_order' => 1,
-                'active' => true,
-            ],
-        );
+        Banner::query()->whereIn('title', ['THLTW Shop', 'Công Nghệ Việt'])->delete();
+
+        foreach ([
+            ['title' => 'NovaTech Store', 'image' => '/catalog/tech-flatlay.jpg', 'link' => '/products', 'sort_order' => 1],
+            ['title' => 'NovaTech Store | Điện thoại và tablet', 'image' => '/catalog/phone-mac.jpg', 'link' => '/products?category=dien-thoai', 'sort_order' => 2],
+            ['title' => 'NovaTech Store | Góc làm việc hiện đại', 'image' => '/catalog/workspace.jpg', 'link' => '/products?category=laptop', 'sort_order' => 3],
+        ] as $banner) {
+            Banner::query()->updateOrCreate(
+                ['title' => $banner['title']],
+                [...$banner, 'active' => true],
+            );
+        }
 
         $postCategory = PostCategory::query()->updateOrCreate(
             ['slug' => 'tin-cong-nghe'],
@@ -189,7 +192,7 @@ class DatabaseSeeder extends Seeder
                     'title' => 'Mẹo mua sắm công nghệ '.$index,
                     'excerpt' => 'Gợi ý chọn sản phẩm phù hợp nhu cầu và ngân sách.',
                     'content' => 'Nội dung bài viết cung cấp thông tin hữu ích về sản phẩm và cách sử dụng.',
-                    'thumbnail' => '/product-placeholder.svg',
+                    'thumbnail' => '/catalog/workspace.jpg',
                     'status' => 'published',
                     'published_at' => now()->subDays($index),
                     'seo_title' => 'Mẹo mua sắm công nghệ '.$index,
@@ -199,7 +202,7 @@ class DatabaseSeeder extends Seeder
         }
 
         foreach ([
-            ['Giới thiệu', 'gioi-thieu', 'Công Nghệ Việt cung cấp sản phẩm công nghệ chính hãng và dịch vụ hỗ trợ tận tâm.'],
+            ['Giới thiệu', 'gioi-thieu', 'NovaTech Store cung cấp sản phẩm công nghệ chính hãng và dịch vụ hỗ trợ tận tâm.'],
             ['Chính sách đổi trả', 'chinh-sach-doi-tra', 'Khách hàng có thể liên hệ đổi trả theo điều kiện bảo hành và tình trạng sản phẩm.'],
             ['Hướng dẫn mua hàng', 'huong-dan-mua-hang', 'Chọn sản phẩm, thêm vào giỏ hàng, nhập thông tin giao hàng và đặt đơn.'],
             ['Chính sách bảo mật', 'chinh-sach-bao-mat', 'Thông tin khách hàng chỉ được sử dụng cho mục đích xử lý đơn hàng và chăm sóc khách hàng.'],
@@ -279,7 +282,7 @@ class DatabaseSeeder extends Seeder
         );
 
         foreach ([
-            'website_name' => 'Công Nghệ Việt',
+            'website_name' => 'NovaTech Store',
             'email' => 'support@example.com',
             'phone' => '0900000000',
             'address' => 'TP. Hồ Chí Minh',
@@ -287,7 +290,7 @@ class DatabaseSeeder extends Seeder
             'free_shipping_threshold' => '10000000',
             'low_stock_threshold' => '5',
             'return_window_days' => '7',
-            'invoice_company_name' => 'Công Nghệ Việt',
+            'invoice_company_name' => 'NovaTech Store',
             'invoice_company_address' => 'TP. Hồ Chí Minh',
             'invoice_company_phone' => '0900000000',
             'invoice_company_email' => 'support@example.com',

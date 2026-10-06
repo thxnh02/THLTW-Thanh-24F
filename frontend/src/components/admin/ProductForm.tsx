@@ -333,6 +333,13 @@ export function ProductForm({ id }: { id?: string }) {
       return;
     }
 
+    const categoryId = Number(form.category_id);
+    if (!Number.isInteger(categoryId) || !categories.some((category) => category.id === categoryId)) {
+      setErrors((current) => ({ ...current, category_id: "Danh mục đã chọn không còn tồn tại. Vui lòng chọn lại danh mục." }));
+      setMessage("Không thể lưu sản phẩm vì danh mục không hợp lệ.");
+      return;
+    }
+
     setSaving(true);
     setMessage("");
 
@@ -340,7 +347,7 @@ export function ProductForm({ id }: { id?: string }) {
       const payload = {
         name: form.name,
         slug: form.slug || undefined,
-        category_id: Number(form.category_id),
+        category_id: categoryId,
         brand_id: form.brand_id ? Number(form.brand_id) : undefined,
         short_description: form.short_description || undefined,
         description: form.description || undefined,
@@ -414,8 +421,12 @@ export function ProductForm({ id }: { id?: string }) {
           value={form.category_id}
           required
           disabled={optionsLoading}
+          error={errors.category_id}
           options={categories.map((category) => ({ value: String(category.id), label: category.name }))}
-          onChange={(category_id) => setForm((current) => ({ ...current, category_id }))}
+          onChange={(category_id) => {
+            setForm((current) => ({ ...current, category_id }));
+            setErrors((current) => Object.fromEntries(Object.entries(current).filter(([key]) => key !== "category_id")));
+          }}
         />
         <SelectField
           label="Thương hiệu"
@@ -524,7 +535,7 @@ export function ProductForm({ id }: { id?: string }) {
 
       {message ? <p className="text-sm text-rose-700">{message}</p> : null}
       <div className="flex gap-2">
-        <button disabled={saving} className="rounded-md bg-slate-950 px-5 py-3 text-sm font-semibold text-white">
+        <button disabled={saving || optionsLoading || categories.length === 0} className="rounded-md bg-slate-950 px-5 py-3 text-sm font-semibold text-white">
           {saving ? "Đang lưu..." : "Lưu sản phẩm"}
         </button>
         <button type="button" onClick={() => router.push("/admin/products")} className="rounded-md border border-slate-300 px-5 py-3 text-sm font-semibold">
@@ -597,13 +608,14 @@ function Field({ label, value, onChange, type = "text", required = false, error,
   );
 }
 
-function SelectField({ label, value, options, onChange, required = false, disabled = false }: {
+function SelectField({ label, value, options, onChange, required = false, disabled = false, error }: {
   label: string;
   value: string;
   options: { value: string; label: string }[];
   onChange: (value: string) => void;
   required?: boolean;
   disabled?: boolean;
+  error?: string;
 }) {
   return (
     <label className="text-sm font-semibold text-slate-700">
@@ -611,6 +623,7 @@ function SelectField({ label, value, options, onChange, required = false, disabl
       <select required={required} disabled={disabled} value={value} onChange={(event) => onChange(event.target.value)} className="mt-1 h-10 w-full rounded-md border border-slate-300 px-3 font-normal disabled:bg-slate-100">
         {options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
       </select>
+      {error ? <span className="mt-1 block text-xs font-normal text-rose-700">{error}</span> : null}
     </label>
   );
 }

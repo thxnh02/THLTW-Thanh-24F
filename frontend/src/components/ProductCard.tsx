@@ -1,22 +1,40 @@
 "use client";
 
-import Link from "next/link";
 import Image from "next/image";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
+import { Badge, Button } from "@/components/ui";
+import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/contexts/ToastContext";
 import { effectivePrice, formatVnd } from "@/lib/format";
-import { Badge, Button } from "@/components/ui";
 import type { Product } from "@/types/api";
 
 export function ProductCard({ product }: { product: Product }) {
   const { addItem } = useCart();
+  const { user, ready } = useAuth();
+  const router = useRouter();
   const toast = useToast();
   const hasSale = product.sale_price !== null && product.sale_price !== undefined;
   const outOfStock = !product.default_variant || product.stock_quantity <= 0;
   const discount = hasSale && Number(product.price) > 0
     ? Math.round((1 - Number(product.sale_price) / Number(product.price)) * 100)
     : 0;
+
+  function handleAddToCart() {
+    if (!ready) {
+      toast.info("Đang kiểm tra tài khoản của bạn.");
+      return;
+    }
+    if (!user) {
+      toast.info("Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng.");
+      router.push(`/login?redirect=${encodeURIComponent(`/products/${product.slug}`)}`);
+      return;
+    }
+    addItem(product);
+    toast.success("Đã thêm sản phẩm vào giỏ hàng.");
+  }
 
   return (
     <article className="flex h-full flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md">
@@ -50,14 +68,14 @@ export function ProductCard({ product }: { product: Product }) {
             <p className="font-bold text-slate-950">
               {formatVnd(effectivePrice(product.price, product.sale_price))}
             </p>
-            {hasSale ? (
-              <p className="text-xs text-slate-500 line-through">{formatVnd(product.price)}</p>
-            ) : null}
-            <p className="mt-1 text-xs text-slate-500">{product.review_count ? `★ ${Number(product.average_rating || 0).toFixed(1)} · ${product.review_count} đánh giá` : "Chưa có đánh giá"}</p>
+            {hasSale ? <p className="text-xs text-slate-500 line-through">{formatVnd(product.price)}</p> : null}
+            <p className="mt-1 text-xs text-slate-500">
+              {product.review_count ? `★ ${Number(product.average_rating || 0).toFixed(1)} · ${product.review_count} đánh giá` : "Chưa có đánh giá"}
+            </p>
           </div>
           <Button
             type="button"
-            onClick={() => { addItem(product); toast.success("Đã thêm sản phẩm vào giỏ hàng."); }}
+            onClick={handleAddToCart}
             disabled={outOfStock}
             className="shrink-0 bg-teal-700 px-3 hover:bg-teal-800"
           >

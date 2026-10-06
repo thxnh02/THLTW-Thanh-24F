@@ -57,10 +57,11 @@ class ArchitectureCleanupTest extends TestCase
         $this->getJson('/api/v1/brands')->assertOk()->assertJsonPath('data.0.slug', 'apple');
 
         $product = Product::query()->where('status', 'active')->firstOrFail();
-        $this->getJson('/api/v1/products/'.$product->slug)
+        $productResponse = $this->getJson('/api/v1/products/'.$product->slug);
+        $productResponse
             ->assertOk()
-            ->assertJsonPath('data.primary_image', '/product-placeholder.svg')
             ->assertJsonStructure(['data' => ['variants', 'images', 'reviews', 'related_products']]);
+        $this->assertStringStartsWith('/catalog/', (string) $productResponse->json('data.primary_image'));
 
         $post = Post::query()->where('status', 'published')->firstOrFail();
         $this->getJson('/api/v1/posts/'.$post->slug)->assertOk()->assertJsonPath('data.category.slug', 'tin-cong-nghe');

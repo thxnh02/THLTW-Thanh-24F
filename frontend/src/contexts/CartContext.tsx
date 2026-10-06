@@ -45,36 +45,36 @@ type CartContextValue = {
 const CartContext = createContext<CartContextValue | null>(null);
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [items, setItems] = useState<CartItem[]>(() => {
-    if (typeof window === "undefined") {
-      return [];
-    }
-
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      return [];
-    }
-
-    try {
-      const parsed = JSON.parse(raw) as StoredCart;
-      if (parsed.version === 1 && Array.isArray(parsed.items)) {
-        return parsed.items;
-      }
-    } catch {
-      window.localStorage.removeItem(STORAGE_KEY);
-    }
-
-    return [];
-  });
+  const [items, setItems] = useState<CartItem[]>([]);
+  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    if (typeof window === "undefined") {
+    const timer = window.setTimeout(() => {
+      const raw = window.localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        try {
+          const parsed = JSON.parse(raw) as StoredCart;
+          if (parsed.version === 1 && Array.isArray(parsed.items)) {
+            setItems(parsed.items);
+          }
+        } catch {
+          window.localStorage.removeItem(STORAGE_KEY);
+        }
+      }
+      setHydrated(true);
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated) {
       return;
     }
 
     const payload: StoredCart = { version: 1, items };
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-  }, [items]);
+  }, [hydrated, items]);
 
   const addItem = useCallback(
     (product: Product, variant?: ProductVariant | null, quantity = 1) => {

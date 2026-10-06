@@ -5,7 +5,7 @@ import { createContext, type ReactNode, useContext, useEffect, useMemo, useState
 import { apiGet } from "@/lib/api";
 import type { StoreSettings } from "@/types/api";
 
-const fallbackSettings: StoreSettings = { store_name: "Công Nghệ Việt" };
+const fallbackSettings: StoreSettings = { store_name: "NovaTech Store" };
 const StoreSettingsContext = createContext<StoreSettings>(fallbackSettings);
 
 export function StoreSettingsProvider({ children }: { children: ReactNode }) {
