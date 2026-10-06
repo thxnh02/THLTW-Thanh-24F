@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\Payment;
 use App\Models\ProductVariant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -26,6 +27,48 @@ class AccountOrderTest extends TestCase
             ->assertJsonPath('data.code', $order->code);
     }
 
+    public function test_member_sees_only_their_own_orders_and_pagination_metadata(): void
+    {
+        $this->seed();
+        $member = User::factory()->create();
+        $otherMember = User::factory()->create();
+        Sanctum::actingAs($member);
+
+        foreach (range(1, 6) as $index) {
+            $this->createOrderForUser($member, 'pending');
+        }
+        $otherOrder = $this->createOrderForUser($otherMember, 'pending');
+
+        $this->getJson('/api/v1/account/orders?per_page=5&page=2')
+            ->assertOk()
+            ->assertJsonPath('data.current_page', 2)
+            ->assertJsonPath('data.last_page', 2)
+            ->assertJsonPath('data.total', 6)
+            ->assertJsonMissing(['code' => $otherOrder->code]);
+
+        $this->getJson('/api/v1/account/orders/'.$otherOrder->code)->assertNotFound();
+    }
+
+    public function test_member_order_detail_includes_payment_and_chronological_histories(): void
+    {
+        $this->seed();
+        $member = User::factory()->create();
+        Sanctum::actingAs($member);
+        $order = $this->createOrderForUser($member, 'shipping');
+        $order->histories()->createMany([
+            ['from_status' => 'confirmed', 'to_status' => 'shipping', 'changed_by' => null, 'created_at' => now()->subMinutes(5), 'updated_at' => now()->subMinutes(5)],
+            ['from_status' => 'pending', 'to_status' => 'confirmed', 'changed_by' => null, 'created_at' => now()->subMinutes(10), 'updated_at' => now()->subMinutes(10)],
+        ]);
+
+        $this->getJson('/api/v1/account/orders/'.$order->code)
+            ->assertOk()
+            ->assertJsonPath('data.items.0.product_variant_id', $order->items()->first()->product_variant_id)
+            ->assertJsonPath('data.payment.method', 'cod')
+            ->assertJsonPath('data.histories.0.to_status', 'confirmed')
+            ->assertJsonPath('data.histories.1.to_status', 'shipping')
+            ->assertJsonMissingPath('data.histories.0.changed_by');
+    }
+
     public function test_member_cancel_pending_order_restores_stock_once(): void
     {
         $this->seed();
@@ -38,6 +81,12 @@ class AccountOrderTest extends TestCase
         $this->postJson('/api/v1/account/orders/'.$order->code.'/cancel')
             ->assertOk()
             ->assertJsonPath('data.status', 'canceled');
+
+        $this->assertDatabaseHas('order_status_histories', [
+            'order_id' => $order->id,
+            'from_status' => 'pending',
+            'to_status' => 'canceled',
+        ]);
 
         $this->assertSame($startingStock + 2, $variant->refresh()->stock_quantity);
         $this->assertDatabaseHas('inventory_movements', [
@@ -91,6 +140,13 @@ class AccountOrderTest extends TestCase
             'unit_price' => $unitPrice,
             'quantity' => $quantity,
             'subtotal' => $unitPrice * $quantity,
+        ]);
+
+        Payment::create([
+            'order_id' => $order->id,
+            'method' => 'cod',
+            'status' => $status === 'completed' ? 'paid' : 'pending',
+            'amount' => ($unitPrice * $quantity) + 30000,
         ]);
 
         return $order;

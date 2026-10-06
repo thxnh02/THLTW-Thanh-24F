@@ -57,6 +57,27 @@ class AdminOrderTest extends TestCase
         ])->assertStatus(409);
     }
 
+    public function test_completing_cod_order_marks_order_and_payment_paid(): void
+    {
+        $this->seed();
+        Sanctum::actingAs(User::factory()->admin()->create());
+        $order = $this->createOrder('shipping');
+
+        $this->patchJson('/api/v1/admin/orders/'.$order->id.'/status', [
+            'status' => 'completed',
+        ])->assertOk();
+
+        $this->assertDatabaseHas('orders', [
+            'id' => $order->id,
+            'status' => 'completed',
+            'payment_status' => 'paid',
+        ]);
+        $this->assertDatabaseHas('payments', [
+            'order_id' => $order->id,
+            'status' => 'paid',
+        ]);
+    }
+
     public function test_admin_cancel_restores_stock_once(): void
     {
         $this->seed();

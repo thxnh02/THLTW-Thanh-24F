@@ -297,6 +297,16 @@ export type AuthPayload = {
   user: User;
 };
 
+export type Payment = {
+  id: number;
+  order_id: number;
+  method: string;
+  status: string;
+  amount: string | number;
+  transaction_id?: string | null;
+  paid_at?: string | null;
+};
+
 export type Order = {
   id: number;
   code: string;
@@ -318,6 +328,7 @@ export type Order = {
   discount_total?: string | number;
   shipping_fee?: string | number;
   created_at: string;
+  payment?: Payment | null;
   items_count?: number;
   items?: {
     id: number;

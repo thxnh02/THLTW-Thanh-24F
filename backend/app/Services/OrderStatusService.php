@@ -28,7 +28,11 @@ class OrderStatusService
     {
         if ($order->status === $validated['status']) {
             return [
-                'order' => $order->load(['items', 'payment', 'histories']),
+                'order' => $order->load([
+                    'items',
+                    'payment',
+                    'histories' => fn ($query) => $query->oldest(),
+                ]),
                 'changed' => false,
             ];
         }
@@ -79,7 +83,11 @@ class OrderStatusService
         });
 
         return [
-            'order' => $order->refresh()->load(['items', 'payment', 'histories']),
+            'order' => $order->refresh()->load([
+                'items',
+                'payment',
+                'histories' => fn ($query) => $query->oldest(),
+            ]),
             'changed' => true,
         ];
     }
@@ -111,7 +119,11 @@ class OrderStatusService
             ]);
         });
 
-        return $order->refresh()->load(['items', 'payment']);
+        return $order->refresh()->load([
+            'items',
+            'payment',
+            'histories' => fn ($query) => $query->oldest(),
+        ]);
     }
 
     public function restoreStockOnce(Order $order, int $actorId, string $reason = 'order_cancel'): void

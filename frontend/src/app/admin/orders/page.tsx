@@ -5,7 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 import { Pagination } from "@/components/admin/Pagination";
 import { API_BASE_URL, ApiError, apiGet, apiGetPaginated, apiPatch } from "@/lib/api";
-import { formatVnd } from "@/lib/format";
+import { formatDateTime, formatVnd } from "@/lib/format";
+import { orderStatusLabel, orderStatusTone, paymentMethodLabel, paymentStatusLabel } from "@/lib/order-status";
 import type { Order, PaginatedMeta } from "@/types/api";
 
 const nextStatuses: Record<Order["status"], Order["status"][]> = {
@@ -30,12 +31,8 @@ export default function AdminOrdersPage() {
 
   const searchParams = useMemo(() => {
     const params = new URLSearchParams();
-    if (query) {
-      params.set("q", query);
-    }
-    if (status) {
-      params.set("status", status);
-    }
+    if (query) params.set("q", query);
+    if (status) params.set("status", status);
     return params.toString();
   }, [query, status]);
 
@@ -84,25 +81,16 @@ export default function AdminOrdersPage() {
       <div className="mt-6 grid gap-3 rounded-md border border-slate-200 bg-white p-4 shadow-sm md:grid-cols-[1fr_220px]">
         <label className="block text-sm font-semibold text-slate-700">
           Tìm kiếm
-          <input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            className="mt-1 h-10 w-full rounded-md border border-slate-300 px-3 font-normal outline-none focus:border-slate-950"
-            placeholder="Mã đơn, tên, email, số điện thoại"
-          />
+          <input value={query} onChange={(event) => setQuery(event.target.value)} className="mt-1 h-10 w-full rounded-md border border-slate-300 px-3 font-normal outline-none focus:border-slate-950" placeholder="Mã đơn, tên, email, số điện thoại" />
         </label>
         <label className="block text-sm font-semibold text-slate-700">
           Trạng thái
-          <select
-            value={status}
-            onChange={(event) => setStatus(event.target.value)}
-            className="mt-1 h-10 w-full rounded-md border border-slate-300 px-3 font-normal outline-none focus:border-slate-950"
-          >
-            <option value="">Tat ca</option>
+          <select value={status} onChange={(event) => setStatus(event.target.value)} className="mt-1 h-10 w-full rounded-md border border-slate-300 px-3 font-normal outline-none focus:border-slate-950">
+            <option value="">Tất cả</option>
             <option value="pending">Chờ xác nhận</option>
             <option value="confirmed">Đã xác nhận</option>
             <option value="shipping">Đang giao</option>
-            <option value="completed">Hoan thanh</option>
+            <option value="completed">Hoàn thành</option>
             <option value="canceled">Đã hủy</option>
           </select>
         </label>
@@ -113,37 +101,19 @@ export default function AdminOrdersPage() {
         <div className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
           <table className="w-full border-collapse text-left text-sm">
             <thead className="bg-slate-100 text-slate-700">
-              <tr>
-                <th className="p-3">Mã đơn</th>
-                <th className="p-3">Khách hàng</th>
-                <th className="p-3">Trạng thái</th>
-                <th className="p-3">Tổng tiền</th>
-                <th className="p-3">Thao tác</th>
-              </tr>
+              <tr><th className="p-3">Mã đơn</th><th className="p-3">Khách hàng</th><th className="p-3">Trạng thái</th><th className="p-3">Tổng tiền</th><th className="p-3">Thao tác</th></tr>
             </thead>
             <tbody>
               {orders.map((order) => (
                 <tr key={order.id} className="border-t border-slate-200">
                   <td className="p-3 font-semibold">{order.code}</td>
-                  <td className="p-3">
-                    <p>{order.customer_name}</p>
-                    <p className="text-xs text-slate-500">{order.payment_method.toUpperCase()}</p>
-                  </td>
-                  <td className="p-3">
-                    <StatusBadge status={order.status} />
-                  </td>
+                  <td className="p-3"><p>{order.customer_name}</p><p className="text-xs text-slate-500">{paymentMethodLabel(order.payment_method)}</p></td>
+                  <td className="p-3"><StatusBadge status={order.status} /></td>
                   <td className="p-3">{formatVnd(order.grand_total)}</td>
-                  <td className="p-3">
-                    <button
-                      type="button"
-                      onClick={() => loadDetail(order.id)}
-                      className="rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold"
-                    >
-                      Chi tiết
-                    </button>
-                  </td>
+                  <td className="p-3"><button type="button" onClick={() => loadDetail(order.id)} className="rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold">Chi tiết</button></td>
                 </tr>
               ))}
+              {orders.length === 0 ? <tr><td className="p-4 text-slate-600" colSpan={5}>Không có đơn hàng.</td></tr> : null}
             </tbody>
           </table>
           <Pagination meta={meta} />
@@ -152,13 +122,7 @@ export default function AdminOrdersPage() {
         <aside className="h-fit rounded-md border border-slate-200 bg-white p-5 shadow-sm">
           {selectedOrder ? (
             <div>
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <h2 className="text-lg font-bold text-slate-950">{selectedOrder.code}</h2>
-                  <p className="text-sm text-slate-600">{selectedOrder.customer_name}</p>
-                </div>
-                <StatusBadge status={selectedOrder.status} />
-              </div>
+              <div className="flex items-start justify-between gap-4"><div><h2 className="text-lg font-bold text-slate-950">{selectedOrder.code}</h2><p className="text-sm text-slate-600">{selectedOrder.customer_name}</p></div><StatusBadge status={selectedOrder.status} /></div>
               <dl className="mt-4 space-y-2 text-sm">
                 <Row label="Email" value={selectedOrder.customer_email} />
                 <Row label="Điện thoại" value={selectedOrder.customer_phone} />
@@ -167,57 +131,19 @@ export default function AdminOrdersPage() {
                 <Row label="Đơn vị" value={selectedOrder.shipping_carrier ?? "Đang cập nhật"} />
                 <Row label="Mã vận đơn" value={selectedOrder.tracking_code ?? "Đang cập nhật"} />
                 <Row label="Tổng tiền" value={formatVnd(selectedOrder.grand_total)} />
-                <Row label="Thanh toán" value={selectedOrder.payment_status} />
+                <Row label="Phương thức" value={paymentMethodLabel(selectedOrder.payment_method)} />
+                <Row label="Thanh toán" value={paymentStatusLabel(selectedOrder.payment_status)} />
               </dl>
-              {selectedOrder.status === "confirmed" ? (
-                <div className="mt-4 grid gap-3 rounded-md bg-slate-50 p-3">
-                  <Input label="Đơn vị vận chuyển" value={tracking.carrier} onChange={(value) => setTracking({ ...tracking, carrier: value })} />
-                  <Input label="Mã vận đơn" value={tracking.code} onChange={(value) => setTracking({ ...tracking, code: value })} />
-                </div>
-              ) : null}
+              {selectedOrder.status === "confirmed" ? <div className="mt-4 grid gap-3 rounded-md bg-slate-50 p-3"><Input label="Đơn vị vận chuyển" value={tracking.carrier} onChange={(value) => setTracking({ ...tracking, carrier: value })} /><Input label="Mã vận đơn" value={tracking.code} onChange={(value) => setTracking({ ...tracking, code: value })} /></div> : null}
               <div className="mt-5 flex flex-wrap gap-2">
-                <a
-                  href={`${API_BASE_URL}/admin/orders/${selectedOrder.id}/invoice`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold"
-                >
-                  Hoa don
-                </a>
-                <a
-                  href={`${API_BASE_URL}/admin/orders/${selectedOrder.id}/invoice.pdf`}
-                  className="rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold"
-                >
-                  PDF
-                </a>
-                {nextStatuses[selectedOrder.status].map((nextStatus) => (
-                  <button
-                    key={nextStatus}
-                    type="button"
-                    onClick={() => updateStatus(selectedOrder, nextStatus)}
-                    className="rounded-md bg-slate-950 px-3 py-2 text-sm font-semibold text-white"
-                  >
-                    {statusLabel(nextStatus)}
-                  </button>
-                ))}
+                <a href={`${API_BASE_URL}/admin/orders/${selectedOrder.id}/invoice`} target="_blank" rel="noreferrer" className="rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold">Hóa đơn</a>
+                <a href={`${API_BASE_URL}/admin/orders/${selectedOrder.id}/invoice.pdf`} className="rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold">PDF</a>
+                {nextStatuses[selectedOrder.status].map((nextStatus) => <button key={nextStatus} type="button" onClick={() => updateStatus(selectedOrder, nextStatus)} className="rounded-md bg-slate-950 px-3 py-2 text-sm font-semibold text-white">{orderStatusLabel(nextStatus)}</button>)}
               </div>
-              <div className="mt-6 border-t border-slate-200 pt-4">
-                <h3 className="font-semibold text-slate-950">Sản phẩm</h3>
-                <div className="mt-3 space-y-3">
-                  {selectedOrder.items?.map((item) => (
-                    <div key={item.id} className="rounded-md bg-slate-50 p-3 text-sm">
-                      <p className="font-semibold">{item.product_name}</p>
-                      <p className="text-slate-600">
-                        {item.variant_name} - {item.sku} x {item.quantity}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <div className="mt-6 border-t border-slate-200 pt-4"><h3 className="font-semibold text-slate-950">Sản phẩm</h3><div className="mt-3 space-y-3">{selectedOrder.items?.map((item) => <div key={item.id} className="rounded-md bg-slate-50 p-3 text-sm"><p className="font-semibold">{item.product_name}</p><p className="text-slate-600">{item.variant_name} - {item.sku} x {item.quantity}</p></div>)}</div></div>
+              <div className="mt-6 border-t border-slate-200 pt-4"><h3 className="font-semibold text-slate-950">Lịch sử trạng thái</h3><div className="mt-3 space-y-2 text-sm">{selectedOrder.histories?.map((history) => <div key={history.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-slate-50 p-3"><span>{history.from_status ? `${orderStatusLabel(history.from_status)} → ` : ""}{orderStatusLabel(history.to_status)}</span><span className="text-slate-500">{formatDateTime(history.created_at)}</span></div>)}{!selectedOrder.histories?.length ? <p className="text-slate-500">Chưa có lịch sử trạng thái.</p> : null}</div></div>
             </div>
-          ) : (
-            <p className="text-sm text-slate-600">Chọn một đơn hàng để xem chi tiết.</p>
-          )}
+          ) : <p className="text-sm text-slate-600">Chọn một đơn hàng để xem chi tiết.</p>}
         </aside>
       </div>
     </main>
@@ -225,37 +151,11 @@ export default function AdminOrdersPage() {
 }
 
 function StatusBadge({ status }: { status: Order["status"] }) {
-  return (
-    <span className="inline-flex rounded-md bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">
-      {statusLabel(status)}
-    </span>
-  );
+  const tone = orderStatusTone(status);
+  const styles = { brand: "bg-teal-50 text-teal-800", success: "bg-emerald-50 text-emerald-800", warning: "bg-amber-50 text-amber-800", danger: "bg-red-50 text-red-800", neutral: "bg-slate-100 text-slate-700" };
+  return <span className={`inline-flex rounded-md px-2 py-1 text-xs font-semibold ${styles[tone]}`}>{orderStatusLabel(status)}</span>;
 }
 
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex justify-between gap-4">
-      <dt className="text-slate-500">{label}</dt>
-      <dd className="font-semibold text-slate-900">{value}</dd>
-    </div>
-  );
-}
+function Row({ label, value }: { label: string; value: string }) { return <div className="flex justify-between gap-4"><dt className="text-slate-500">{label}</dt><dd className="font-semibold text-slate-900">{value}</dd></div>; }
 
-function Input({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
-  return (
-    <label className="block text-sm font-semibold text-slate-700">
-      {label}
-      <input value={value} onChange={(event) => onChange(event.target.value)} className="mt-1 h-10 w-full rounded-md border border-slate-300 px-3 font-normal outline-none focus:border-slate-950" />
-    </label>
-  );
-}
-
-function statusLabel(status: Order["status"]): string {
-  return {
-    pending: "Chờ xác nhận",
-    confirmed: "Đã xác nhận",
-    shipping: "Đang giao",
-    completed: "Hoan thanh",
-    canceled: "Đã hủy",
-  }[status];
-}
+function Input({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) { return <label className="block text-sm font-semibold text-slate-700">{label}<input value={value} onChange={(event) => onChange(event.target.value)} className="mt-1 h-10 w-full rounded-md border border-slate-300 px-3 font-normal outline-none focus:border-slate-950" /></label>; }

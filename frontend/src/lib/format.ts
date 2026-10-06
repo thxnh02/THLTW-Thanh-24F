@@ -11,3 +11,14 @@ export function formatVnd(value?: number | string | null): string {
 export function effectivePrice(price?: number | string | null, salePrice?: number | string | null): number {
   return Number(salePrice ?? price ?? 0);
 }
+
+export function formatDateTime(value?: string | null): string {
+  if (!value) {
+    return "Chưa cập nhật";
+  }
+
+  return new Intl.DateTimeFormat("vi-VN", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(value));
+}

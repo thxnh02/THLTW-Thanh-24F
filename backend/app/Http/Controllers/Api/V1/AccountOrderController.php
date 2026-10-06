@@ -29,7 +29,11 @@ class AccountOrderController extends Controller
 
     public function show(Request $request, string $code): JsonResponse
     {
-        $order = $this->orderForUser($request, $code)->load(['items', 'payment']);
+        $order = $this->orderForUser($request, $code)->load([
+            'items',
+            'payment',
+            'histories' => fn ($query) => $query->oldest(),
+        ]);
 
         return $this->success(new OrderResource($order));
     }

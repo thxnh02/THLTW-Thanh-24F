@@ -17,7 +17,6 @@ class OrderStatusHistoryResource extends JsonResource
         return [
             'id' => $this->id,
             'order_id' => $this->order_id,
-            'changed_by' => $this->changed_by,
             'from_status' => $this->from_status,
             'to_status' => $this->to_status,
             'note' => $this->note,

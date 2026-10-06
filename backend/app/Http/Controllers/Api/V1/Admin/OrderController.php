@@ -55,7 +55,11 @@ class OrderController extends Controller
 
     public function show(Order $order): JsonResponse
     {
-        return $this->success(new OrderResource($order->load(['items', 'payment', 'histories'])));
+        return $this->success(new OrderResource($order->load([
+            'items',
+            'payment',
+            'histories' => fn ($query) => $query->oldest(),
+        ])));
     }
 
     public function export(Request $request): StreamedResponse
