@@ -45,7 +45,7 @@ export default function Home() {
     return <main className="mx-auto max-w-7xl px-4 py-10"><Skeleton className="aspect-[2.1/1] w-full" /><div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{[1, 2, 3, 4].map((item) => <Skeleton key={item} className="h-72" />)}</div></main>;
   }
 
-  const storeName = settings.store_name || "NovaTech Store";
+  const storeName = settings.store_name;
   const slides = home.banners.length > 0 ? home.banners : [{ id: 0, title: storeName, image: "/catalog/tech-flatlay.jpg", link: "/products" }];
   const activeIndex = activeSlide % slides.length;
   const activeBanner = slides[activeIndex];

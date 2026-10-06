@@ -3,12 +3,13 @@ import type { ReactNode } from "react";
 
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
+import { DEFAULT_STORE_NAME } from "@/lib/branding";
 
 import "./globals.css";
 import { Providers } from "./providers";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const fallback = { name: "NovaTech Store", description: "Thiết bị công nghệ chính hãng và dịch vụ hỗ trợ tận tâm." };
+  const fallback = { name: DEFAULT_STORE_NAME, description: "Thiết bị công nghệ chính hãng và dịch vụ hỗ trợ tận tâm." };
   let settings = fallback;
 
   try {

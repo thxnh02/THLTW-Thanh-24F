@@ -10,23 +10,23 @@ const buttonStyles: Record<ButtonVariant, string> = {
 };
 
 export function Button({ variant = "primary", className = "", ...props }: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: ButtonVariant }) {
-  return <button className={`inline-flex min-h-11 items-center justify-center rounded-md px-4 py-2 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 disabled:cursor-not-allowed ${buttonStyles[variant]} ${className}`} {...props} />;
+  return <button className={`inline-flex min-h-11 items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2 disabled:cursor-not-allowed ${buttonStyles[variant]} ${className}`} {...props} />;
 }
 
 export function IconButton({ label, className = "", ...props }: ButtonHTMLAttributes<HTMLButtonElement> & { label: string }) {
-  return <button aria-label={label} title={label} className={`inline-flex size-11 items-center justify-center rounded-md border border-slate-300 bg-white text-lg text-slate-900 transition hover:border-teal-700 hover:text-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-600 disabled:cursor-not-allowed disabled:opacity-50 ${className}`} {...props} />;
+  return <button aria-label={label} title={label} className={`inline-flex size-11 items-center justify-center rounded-xl border border-slate-300 bg-white text-lg text-slate-900 transition active:scale-[0.98] hover:border-teal-700 hover:text-teal-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 disabled:cursor-not-allowed disabled:opacity-50 ${className}`} {...props} />;
 }
 
 export function Input({ className = "", ...props }: InputHTMLAttributes<HTMLInputElement>) {
-  return <input className={`h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-teal-700 focus:ring-2 focus:ring-teal-600/20 ${className}`} {...props} />;
+  return <input className={`h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus-visible:border-teal-700 focus-visible:ring-2 focus-visible:ring-teal-600/20 ${className}`} {...props} />;
 }
 
 export function Select({ className = "", ...props }: SelectHTMLAttributes<HTMLSelectElement>) {
-  return <select className={`h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-950 outline-none transition focus:border-teal-700 focus:ring-2 focus:ring-teal-600/20 ${className}`} {...props} />;
+  return <select className={`h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-950 outline-none transition focus-visible:border-teal-700 focus-visible:ring-2 focus-visible:ring-teal-600/20 ${className}`} {...props} />;
 }
 
 export function Textarea({ className = "", ...props }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  return <textarea className={`min-h-28 w-full rounded-md border border-slate-300 bg-white px-3 py-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-teal-700 focus:ring-2 focus:ring-teal-600/20 ${className}`} {...props} />;
+  return <textarea className={`min-h-28 w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus-visible:border-teal-700 focus-visible:ring-2 focus-visible:ring-teal-600/20 ${className}`} {...props} />;
 }
 
 export function Badge({ children, tone = "neutral" }: { children: ReactNode; tone?: "neutral" | "brand" | "success" | "warning" | "danger" }) {
@@ -35,11 +35,11 @@ export function Badge({ children, tone = "neutral" }: { children: ReactNode; ton
 }
 
 export function SectionCard({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return <section className={`rounded-lg border border-slate-200 bg-white p-5 shadow-sm ${className}`}>{children}</section>;
+  return <section className={`rounded-2xl border border-slate-200 bg-white p-5 shadow-sm ${className}`}>{children}</section>;
 }
 
 export function PageHeader({ eyebrow, title, description, action }: { eyebrow?: string; title: string; description?: string; action?: ReactNode }) {
-  return <div className="mb-7 flex flex-wrap items-end justify-between gap-4"><div>{eyebrow ? <p className="mb-2 text-xs font-bold uppercase tracking-wider text-teal-700">{eyebrow}</p> : null}<h1 className="text-3xl font-bold tracking-normal text-slate-950">{title}</h1>{description ? <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">{description}</p> : null}</div>{action}</div>;
+  return <div className="mb-8 flex flex-wrap items-end justify-between gap-4"><div>{eyebrow ? <p className="mb-2 text-xs font-bold uppercase tracking-wider text-teal-700">{eyebrow}</p> : null}<h1 className="text-3xl font-bold tracking-normal text-slate-950">{title}</h1>{description ? <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">{description}</p> : null}</div>{action}</div>;
 }
 
 export function EmptyState({ title, message, action }: { title: string; message: string; action?: ReactNode }) {
@@ -51,5 +51,5 @@ export function ErrorState({ title = "Đã xảy ra lỗi", message, onRetry }: 
 }
 
 export function Skeleton({ className = "" }: { className?: string }) {
-  return <div aria-hidden="true" className={`animate-pulse rounded-md bg-slate-200 ${className}`} />;
+  return <div aria-hidden="true" className={`animate-pulse rounded-xl bg-slate-200 ${className}`} />;
 }

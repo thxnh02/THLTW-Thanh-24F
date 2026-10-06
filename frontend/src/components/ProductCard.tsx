@@ -2,10 +2,9 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { motion, useReducedMotion } from "motion/react";
 
 import { Badge, Button } from "@/components/ui";
-import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/contexts/ToastContext";
 import { effectivePrice, formatVnd } from "@/lib/format";
@@ -13,9 +12,8 @@ import type { Product } from "@/types/api";
 
 export function ProductCard({ product }: { product: Product }) {
   const { addItem } = useCart();
-  const { user, ready } = useAuth();
-  const router = useRouter();
   const toast = useToast();
+  const reducedMotion = useReducedMotion();
   const hasSale = product.sale_price !== null && product.sale_price !== undefined;
   const outOfStock = !product.default_variant || product.stock_quantity <= 0;
   const discount = hasSale && Number(product.price) > 0
@@ -23,66 +21,12 @@ export function ProductCard({ product }: { product: Product }) {
     : 0;
 
   function handleAddToCart() {
-    if (!ready) {
-      toast.info("Đang kiểm tra tài khoản của bạn.");
-      return;
-    }
-    if (!user) {
-      toast.info("Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng.");
-      router.push(`/login?redirect=${encodeURIComponent(`/products/${product.slug}`)}`);
-      return;
-    }
     addItem(product);
     toast.success("Đã thêm sản phẩm vào giỏ hàng.");
   }
 
-  return (
-    <article className="flex h-full flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md">
-      <Link href={`/products/${product.slug}`} className="block bg-slate-100">
-        <Image
-          src={product.primary_image || "/product-placeholder.svg"}
-          alt={product.name}
-          width={640}
-          height={480}
-          className="aspect-[4/3] w-full object-cover"
-        />
-      </Link>
-      <div className="flex flex-1 flex-col gap-3 p-4">
-        <div className="flex min-h-28 flex-col">
-          <div className="flex min-h-6 flex-wrap gap-2">
-            {discount > 0 ? <Badge tone="danger">-{discount}%</Badge> : null}
-            {outOfStock ? <Badge tone="neutral">Hết hàng</Badge> : null}
-          </div>
-          <p className="mt-2 text-xs font-semibold uppercase text-teal-700">
-            {product.category?.name ?? "Sản phẩm"}
-          </p>
-          <Link href={`/products/${product.slug}`} className="mt-1 block font-semibold text-slate-950 hover:text-teal-800">
-            {product.name}
-          </Link>
-          <p className="mt-2 line-clamp-2 text-sm text-slate-600">
-            {product.short_description || "Thông tin sản phẩm đang được cập nhật."}
-          </p>
-        </div>
-        <div className="mt-auto flex items-end justify-between gap-3">
-          <div>
-            <p className="font-bold text-slate-950">
-              {formatVnd(effectivePrice(product.price, product.sale_price))}
-            </p>
-            {hasSale ? <p className="text-xs text-slate-500 line-through">{formatVnd(product.price)}</p> : null}
-            <p className="mt-1 text-xs text-slate-500">
-              {product.review_count ? `★ ${Number(product.average_rating || 0).toFixed(1)} · ${product.review_count} đánh giá` : "Chưa có đánh giá"}
-            </p>
-          </div>
-          <Button
-            type="button"
-            onClick={handleAddToCart}
-            disabled={outOfStock}
-            className="shrink-0 bg-teal-700 px-3 hover:bg-teal-800"
-          >
-            Thêm vào giỏ
-          </Button>
-        </div>
-      </div>
-    </article>
-  );
+  return <motion.article initial={false} whileHover={reducedMotion ? undefined : { y: -2 }} whileTap={reducedMotion ? undefined : { scale: 0.995 }} className="flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:border-teal-200 hover:shadow-md">
+    <Link href={`/products/${product.slug}`} className="block bg-slate-100"><Image src={product.primary_image || "/product-placeholder.svg"} alt={product.name} width={640} height={480} className="aspect-[4/3] w-full object-cover" /></Link>
+    <div className="flex flex-1 flex-col gap-3 p-4"><div className="flex min-h-28 flex-col"><div className="flex min-h-6 flex-wrap gap-2">{discount > 0 ? <Badge tone="danger">-{discount}%</Badge> : null}{outOfStock ? <Badge tone="neutral">Hết hàng</Badge> : null}</div><p className="mt-2 text-xs font-semibold uppercase text-teal-700">{product.category?.name ?? "Sản phẩm"}</p><Link href={`/products/${product.slug}`} className="mt-1 block font-semibold text-slate-950 hover:text-teal-800">{product.name}</Link><p className="mt-2 line-clamp-2 text-sm text-slate-600">{product.short_description || "Thông tin sản phẩm đang được cập nhật."}</p></div><div className="mt-auto flex items-end justify-between gap-3"><div><p className="font-bold text-slate-950">{formatVnd(effectivePrice(product.price, product.sale_price))}</p>{hasSale ? <p className="text-xs text-slate-500 line-through">{formatVnd(product.price)}</p> : null}<p className="mt-1 text-xs text-slate-500">{product.review_count ? `★ ${Number(product.average_rating || 0).toFixed(1)} · ${product.review_count} đánh giá` : "Chưa có đánh giá"}</p></div><Button type="button" onClick={handleAddToCart} disabled={outOfStock} className="shrink-0 bg-teal-700 px-3 hover:bg-teal-800">Thêm vào giỏ</Button></div></div>
+  </motion.article>;
 }
