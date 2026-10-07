@@ -1,0 +1,16 @@
+"use client";
+
+import { useState } from "react";
+import { Pagination } from "@/components/admin/shared/Pagination";
+import { useConfirm } from "@/contexts/ConfirmContext";
+import { usePaginatedAdminRows } from "@/hooks/admin/usePaginatedAdminRows";
+import { apiDeleteResponse, apiPatch } from "@/lib/api";
+import type { Contact } from "@/types/api";
+
+export default function AdminContactsPage() {
+  const confirm = useConfirm(); const { rows, meta, message, setMessage, router } = usePaginatedAdminRows<Contact>("/admin/contacts"); const [contacts, setContacts] = useState<Contact[]>([]);
+  const displayed = contacts.length ? contacts : rows;
+  async function update(contact: Contact, status: Contact["status"]) { try { const updated = await apiPatch<Contact>(`/admin/contacts/${contact.id}`, { status, admin_note: contact.admin_note || undefined }); setContacts((current) => (current.length ? current : rows).map((item) => item.id === contact.id ? updated : item)); setMessage("Đã cập nhật liên hệ."); } catch (reason) { setMessage(reason instanceof Error ? reason.message : "Không thể cập nhật liên hệ."); } }
+  async function remove(contact: Contact) { if (!(await confirm({ title: "Xóa liên hệ?", message: `Bạn chắc chắn muốn xóa liên hệ từ "${contact.name}"?`, confirmLabel: "Xóa" }))) return; try { const response = await apiDeleteResponse<null>(`/admin/contacts/${contact.id}`); setMessage(response.message); router.refresh(); } catch (reason) { setMessage(reason instanceof Error ? reason.message : "Không thể xử lý liên hệ."); } }
+  return <main className="mx-auto max-w-7xl px-4 py-8"><h1 className="text-3xl font-bold text-slate-950">Liên hệ</h1>{message ? <p className="mt-3 text-sm text-teal-700">{message}</p> : null}<div className="mt-6 grid gap-4">{displayed.length ? displayed.map((contact) => <article key={contact.id} className="rounded-md border border-slate-200 bg-white p-5 shadow-sm"><div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="font-bold text-slate-950">{contact.subject}</h2><p className="text-sm text-slate-600">{contact.name} - {contact.email} - {contact.phone ?? ""}</p></div><span className="rounded-md bg-slate-100 px-3 py-1 text-sm font-semibold">{contact.status}</span></div><p className="mt-3 whitespace-pre-line text-sm text-slate-700">{contact.message}</p><textarea value={contact.admin_note ?? ""} onChange={(event) => setContacts((current) => (current.length ? current : rows).map((item) => item.id === contact.id ? { ...item, admin_note: event.target.value } : item))} placeholder="Ghi chú quản trị" className="mt-4 min-h-20 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" /><div className="mt-3 flex flex-wrap gap-2">{(["new", "processing", "resolved"] as const).map((status) => <button key={status} type="button" onClick={() => void update(contact, status)} className="rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold">{status === "new" ? "Mới" : status === "processing" ? "Đang xử lý" : "Đã xử lý"}</button>)}<button type="button" onClick={() => void remove(contact)} className="rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold">Xóa</button></div></article>) : <p className="rounded-md border border-dashed border-slate-300 p-8 text-center text-slate-500">Chưa có liên hệ.</p>}</div><Pagination meta={meta} /></main>;
+}
