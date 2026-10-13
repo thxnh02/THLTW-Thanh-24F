@@ -3,35 +3,16 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Support\Str;
 
 class StoreBrandRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
         return true;
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, array<int, mixed>>
-     */
     public function rules(): array
     {
-        return [
-            'name' => ['required', 'string', 'max:160'],
-            'slug' => ['nullable', 'string', 'max:180', 'unique:brands,slug'],
-            'logo' => ['nullable', 'string', 'max:255'],
-            'status' => ['required', 'in:active,inactive'],
-        ];
-    }
-
-    protected function prepareForValidation(): void
-    {
-        $this->merge(['slug' => $this->filled('slug') ? $this->input('slug') : Str::slug((string) $this->input('name'))]);
+        return ['name' => ['required', 'string', 'max:150'], 'slug' => ['required', 'string', 'max:170', 'unique:brands,slug'], 'logo' => ['nullable', 'string', 'max:255'], 'description' => ['nullable', 'string'], 'sort_order' => ['nullable', 'integer', 'min:0'], 'status' => ['required', 'boolean']];
     }
 }

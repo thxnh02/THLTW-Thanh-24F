@@ -1,2 +1,0 @@
-import { API_CONFIG } from "@/config/api"; import { adminResourceService } from "@/services/admin/adminResourceService"; import { create } from "@/services/transport";
-export const mediaAdminService = { list: <T>(query = "") => adminResourceService.paginated<T>(`${API_CONFIG.ENDPOINTS.ADMIN.UPLOADS}${query ? `?${query}` : ""}`), upload: <T>(data: FormData) => create<T>(API_CONFIG.ENDPOINTS.ADMIN.UPLOADS, data), remove: <T>(id: string | number) => adminResourceService.remove<T>(API_CONFIG.ENDPOINTS.ADMIN.UPLOAD(id)) };

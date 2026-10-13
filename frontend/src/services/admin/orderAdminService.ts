@@ -1,2 +1,0 @@
-import { API_CONFIG } from "@/config/api"; import { adminResourceService } from "@/services/admin/adminResourceService";
-export const orderAdminService = { list: <T>(query = "") => adminResourceService.paginated<T>(`${API_CONFIG.ENDPOINTS.ADMIN.ORDERS}${query ? `?${query}` : ""}`), get: <T>(id: string | number) => adminResourceService.get<T>(API_CONFIG.ENDPOINTS.ADMIN.ORDER(id)), updateStatus: <T>(id: string | number, payload: unknown) => adminResourceService.update<T>(API_CONFIG.ENDPOINTS.ADMIN.ORDER_STATUS(id), payload) };
