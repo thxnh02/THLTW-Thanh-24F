@@ -1,0 +1,60 @@
+# CT_24F - Course ecommerce API
+
+Project nhỏ theo phạm vi bài học hiện tại: Laravel JSON API, Next.js, Axios, danh mục, thương hiệu và danh sách sản phẩm có phân trang. Không có đăng nhập, giỏ hàng, đơn hàng hay thanh toán.
+
+## Cài lần đầu với Laragon
+
+1. Mở Laragon và bấm **Start All**.
+2. Nhấp đúp `setup-mysql.bat`.
+3. Nhấp đúp `start-dev.bat`.
+
+`setup-mysql.bat` tạo database `ecommerce_thltw` nếu chưa có, tạo `.env` từ mẫu, chạy migration và seed. Script không xóa database, bảng hay dữ liệu hiện có.
+
+## Chạy hằng ngày
+
+1. Laragon: **Start All**.
+2. Nhấp đúp `start-dev.bat`.
+
+Frontend: `http://127.0.0.1:3000`  
+API: `http://127.0.0.1:8000/api`
+
+Nếu port `8000` hoặc `3000` đang được dùng, đóng tiến trình đang dùng port đó rồi chạy lại script.
+
+## Lệnh thủ công để học
+
+```powershell
+cd backend
+copy .env.example .env
+composer install
+php artisan key:generate
+php artisan migrate
+php artisan db:seed
+php artisan serve --host=127.0.0.1 --port=8000
+```
+
+```powershell
+cd frontend
+copy .env.example .env.local
+npm install
+npm run dev
+```
+
+## Phạm vi API
+
+- `GET /api/categories`
+- `GET /api/categories/{slug}`
+- `GET /api/brands`
+- `GET /api/products?page=2` — chính xác 12 sản phẩm mỗi trang
+- Admin CRUD có phân trang: `/api/admin/categories`, `/api/admin/brands`
+- Admin tạo sản phẩm: `POST /api/admin/products`
+
+Luồng theo bài học: **Model → FormRequest → Controller → Resource → Route → Test**.
+
+## Frontend
+
+- Shop: `/categories`, `/brands`, `/products`
+- Admin danh mục và thương hiệu: danh sách, thêm, sửa; xóa có hộp thoại xác nhận ngay trong danh sách
+- Admin sản phẩm: form tạo sản phẩm mới
+- Axios: `config/api.js` → service → axios client → Laravel API
+
+Xem thêm [database](docs/DATABASE.md), [kiểm thử API](docs/API_TEST.md) và [cấu trúc frontend](docs/FRONTEND_ARCHITECTURE.md).
