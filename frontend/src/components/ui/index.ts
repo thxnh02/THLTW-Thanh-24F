@@ -9,3 +9,6 @@ export { SectionCard } from "./SectionCard";
 export { Select } from "./Select";
 export { Skeleton } from "./Skeleton";
 export { Textarea } from "./Textarea";
+export { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogTitle, AlertDialogTrigger } from "./alert-dialog";
+export { Sheet, SheetClose, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "./sheet";
+export { Tabs, TabsContent, TabsList, TabsTrigger } from "./tabs";

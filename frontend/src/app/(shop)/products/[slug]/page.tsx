@@ -5,7 +5,7 @@ import Link from "next/link";
 import { use, useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Heart, Minus, PackageCheck, Plus, RotateCcw, ShieldCheck, ShoppingCart, Star, Truck } from "lucide-react";
 import { ProductCard } from "@/components/shop/product/ProductCard";
-import { Badge, Button, EmptyState, ErrorState, Input, SectionCard, Select, Skeleton, Textarea } from "@/components/ui";
+import { Badge, Button, EmptyState, ErrorState, Input, SectionCard, Select, Skeleton, Tabs, TabsContent, TabsList, TabsTrigger, Textarea } from "@/components/ui";
 import { useCart } from "@/contexts/CartContext";
 import { apiGet, apiPost } from "@/lib/api";
 import type { Product, ProductImage, ProductVariant } from "@/types/api";
@@ -194,7 +194,7 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-sm font-bold text-teal-700">{product.category?.name ?? "Thiết bị công nghệ"}{product.brand ? ` · ${product.brand.name}` : ""}</p>
-                <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">{product.name}</h1>
+                <h1 className="mt-2 text-3xl font-black tracking-normal text-slate-950 sm:text-4xl">{product.name}</h1>
               </div>
               <Button type="button" variant="secondary" onClick={() => void addWishlist()} className="size-11 shrink-0 p-0" aria-label="Thêm vào yêu thích" title="Thêm vào yêu thích">
                 <Heart size={19} aria-hidden="true" />
@@ -265,6 +265,8 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
           ))}
         </div>
 
+        <ProductInformationTabs description={product.description} attributes={selectedVariant?.attributes} reviewCount={reviews.length} />
+
         <div className="mt-10 grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
           <div className="space-y-6">
             <SectionCard>
@@ -316,6 +318,11 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
 
 function ProductRail({ title, products }: { title: string; products: Product[] }) {
   return <section className="mt-12"><div className="mb-4 flex items-end justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[0.18em] text-teal-700">Gợi ý cho bạn</p><h2 className="mt-1 text-2xl font-black">{title}</h2></div><Link href="/products" className="text-sm font-bold text-teal-700 hover:underline">Xem tất cả</Link></div><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{products.map((item) => <ProductCard key={item.id} product={item} />)}</div></section>;
+}
+
+function ProductInformationTabs({ description, attributes, reviewCount }: { description?: string | null; attributes?: Record<string, unknown> | null; reviewCount: number }) {
+  const specificationCount = attributes ? Object.keys(attributes).length : 0;
+  return <section className="mt-8 rounded-lg border border-[var(--border)] bg-white p-4 shadow-[var(--shadow-card)] sm:p-5"><Tabs defaultValue="description"><TabsList className="w-full justify-start overflow-x-auto"><TabsTrigger value="description">Mô tả</TabsTrigger><TabsTrigger value="specifications">Thông số</TabsTrigger><TabsTrigger value="reviews">Đánh giá ({reviewCount})</TabsTrigger></TabsList><TabsContent value="description" className="pt-4 text-sm leading-7 text-slate-600">{description || "Thông tin mô tả chi tiết đang được cập nhật."}</TabsContent><TabsContent value="specifications" className="pt-4 text-sm text-slate-600">{specificationCount ? `${specificationCount} thông số kỹ thuật được hiển thị chi tiết bên dưới.` : "Thông số kỹ thuật đang được cập nhật."}</TabsContent><TabsContent value="reviews" className="pt-4 text-sm text-slate-600">{reviewCount ? `Sản phẩm hiện có ${reviewCount} đánh giá từ khách hàng.` : "Sản phẩm chưa có đánh giá. Hãy để lại trải nghiệm của bạn."} <a href="#reviews" className="font-semibold text-teal-800 hover:underline">Xem đánh giá</a></TabsContent></Tabs></section>;
 }
 
 function ProductLoading() {
