@@ -2,9 +2,9 @@
 
 import { FormEvent, useState } from "react";
 
-import { useAuth } from "@/contexts/AuthContext";
-import { useToast } from "@/contexts/ToastContext";
-import { apiPost } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/context/ToastContext";
+import { post } from "@/services/http";
 import { Badge, Button, Input } from "@/components/ui";
 
 export function EmailVerificationPanel({ compact = false }: { compact?: boolean }) {
@@ -25,7 +25,7 @@ export function EmailVerificationPanel({ compact = false }: { compact?: boolean 
 
     setVerifying(true);
     try {
-      await apiPost(`/auth/email/verify-code`, { code });
+      await post(`/auth/email/verify-code`, { code });
       await refreshUser();
       setCode("");
       toast.success("Email đã được xác minh thành công.");
@@ -39,7 +39,7 @@ export function EmailVerificationPanel({ compact = false }: { compact?: boolean 
   async function resendVerification() {
     setResending(true);
     try {
-      await apiPost("/auth/email/verification-notification", {});
+      await post("/auth/email/verification-notification", {});
       setCode("");
       toast.success("Đã gửi email mới gồm mã xác nhận và link xác minh.");
     } catch (reason) {

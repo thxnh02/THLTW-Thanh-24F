@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 
-import { ApiError, apiGet, apiPost } from "@/lib/api";
+import { ApiError, get, post } from "@/services/http";
 import type { Order, ReturnRequest } from "@/types/api";
 import { Button, Input, Skeleton, Textarea } from "@/components/ui";
 
@@ -18,7 +18,7 @@ export default function AccountOrderReturnPage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    apiGet<Order>(`/account/orders/${params.code}`)
+    get<Order>(`/account/orders/${params.code}`)
       .then((payload) => {
         setOrder(payload);
         setQuantities(Object.fromEntries((payload.items ?? []).map((item) => [item.id, 0])));
@@ -49,7 +49,7 @@ export default function AccountOrderReturnPage() {
     setSubmitting(true);
     setMessage("");
     try {
-      const result = await apiPost<ReturnRequest>("/account/returns", {
+      const result = await post<ReturnRequest>("/account/returns", {
         order_code: order.code,
         reason,
         description: description || undefined,

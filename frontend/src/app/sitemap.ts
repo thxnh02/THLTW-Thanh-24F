@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-import { API_BASE_URL } from "@/lib/api";
+import { API_BASE_URL } from "@/services/http";
 import type { Page, Post, Product } from "@/types/api";
 
 type Paginated<T> = {

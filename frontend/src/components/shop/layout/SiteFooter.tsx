@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 
-import { useStoreSettings } from "@/contexts/StoreSettingsContext";
+import { useStoreSettings } from "@/context/StoreSettingsContext";
 
 export function SiteFooter() {
   const settings = useStoreSettings();

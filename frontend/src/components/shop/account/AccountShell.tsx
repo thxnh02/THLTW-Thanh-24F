@@ -5,8 +5,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 
-import { useAuth } from "@/contexts/AuthContext";
-import { useStoreSettings } from "@/contexts/StoreSettingsContext";
+import { useAuth } from "@/context/AuthContext";
+import { useStoreSettings } from "@/context/StoreSettingsContext";
 
 const links = [
   ["Hồ sơ", "/account/profile", UserRound],

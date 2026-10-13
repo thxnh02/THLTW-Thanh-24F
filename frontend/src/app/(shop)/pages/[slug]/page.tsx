@@ -3,7 +3,7 @@
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import { apiGet } from "@/lib/api";
+import { get } from "@/services/http";
 import type { Page } from "@/types/api";
 import Link from "next/link";
 import { ErrorState, Skeleton } from "@/components/ui";
@@ -14,7 +14,7 @@ export default function StaticPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    apiGet<Page>(`/pages/${params.slug}`)
+    get<Page>(`/pages/${params.slug}`)
       .then(setPage)
       .catch((reason: Error) => setError(reason.message));
   }, [params.slug]);

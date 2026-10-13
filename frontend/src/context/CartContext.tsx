@@ -10,12 +10,11 @@ import {
   useState,
 } from "react";
 
-import { apiPost } from "@/lib/api";
+import { cartService } from "@/services/cartService";
+import { guestCartStorage } from "@/store/guestCartStorage";
 import type { CartQuote, Product, ProductVariant } from "@/types/api";
 
-const STORAGE_KEY = "thltw_guest_cart_v1";
-
-type CartItem = {
+export type CartItem = {
   variantId: number;
   productId: number;
   productName: string;
@@ -25,11 +24,6 @@ type CartItem = {
   price: number;
   stockQuantity: number;
   quantity: number;
-};
-
-type StoredCart = {
-  version: 1;
-  items: CartItem[];
 };
 
 type CartContextValue = {
@@ -50,17 +44,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        try {
-          const parsed = JSON.parse(raw) as StoredCart;
-          if (parsed.version === 1 && Array.isArray(parsed.items)) {
-            setItems(parsed.items);
-          }
-        } catch {
-          window.localStorage.removeItem(STORAGE_KEY);
-        }
-      }
+      setItems(guestCartStorage.load());
       setHydrated(true);
     }, 0);
 
@@ -72,8 +56,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    const payload: StoredCart = { version: 1, items };
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    guestCartStorage.save(items);
   }, [hydrated, items]);
 
   const addItem = useCallback(
@@ -140,7 +123,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const quote = useCallback(
     (promotionCode?: string, shippingMethodId?: number) =>
-      apiPost<CartQuote>("/cart/quote", {
+      cartService.quote({
         promotion_code: promotionCode || undefined,
         shipping_method_id: shippingMethodId,
         items: items.map((item) => ({

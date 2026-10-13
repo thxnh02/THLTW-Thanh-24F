@@ -2,8 +2,8 @@
 
 import { createContext, type ReactNode, useContext, useEffect, useMemo, useState } from "react";
 
-import { apiGet } from "@/lib/api";
-import { DEFAULT_STORE_NAME } from "@/lib/branding";
+import { storeSettingsService } from "@/services/storeSettingsService";
+import { DEFAULT_STORE_NAME } from "@/data/storeBranding";
 import type { StoreSettings } from "@/types/api";
 
 type StoreSettingsValue = Omit<StoreSettings, "store_name"> & { store_name: string };
@@ -14,7 +14,7 @@ export function StoreSettingsProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<StoreSettingsValue>(fallbackSettings);
 
   useEffect(() => {
-    apiGet<StoreSettings>("/store-settings")
+    storeSettingsService.getPublic()
       .then((value) => setSettings({ ...fallbackSettings, ...value, store_name: value.store_name || fallbackSettings.store_name }))
       .catch(() => undefined);
   }, []);

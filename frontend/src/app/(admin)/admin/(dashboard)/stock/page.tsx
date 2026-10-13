@@ -4,8 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-import { ApiError, apiGet, apiGetPaginated, apiPost } from "@/lib/api";
-import { formatVnd } from "@/lib/format";
+import { ApiError, get, getPaginated, post } from "@/services/http";
+import { formatVnd } from "@/utils/format";
 import type { InventoryMovement, PaginatedMeta, ProductVariantOption, StockDocument } from "@/types/api";
 import { Pagination } from "@/components/admin/shared/Pagination";
 
@@ -78,9 +78,9 @@ export default function AdminStockPage() {
 
     try {
       const [variantOptions, documentResult, movementResult] = await Promise.all([
-        apiGet<ProductVariantOption[]>("/admin/options/product-variants"),
-        apiGetPaginated<StockDocument>(`/admin/stock?${documentQuery.toString()}`),
-        apiGetPaginated<InventoryMovement>(`/admin/stock/movements?${movementQuery.toString()}`),
+        get<ProductVariantOption[]>("/admin/options/product-variants"),
+        getPaginated<StockDocument>(`/admin/stock?${documentQuery.toString()}`),
+        getPaginated<InventoryMovement>(`/admin/stock/movements?${movementQuery.toString()}`),
       ]);
 
       setVariants(variantOptions);
@@ -142,7 +142,7 @@ export default function AdminStockPage() {
     setSaving(true);
 
     try {
-      await apiPost<StockDocument>("/admin/stock", {
+      await post<StockDocument>("/admin/stock", {
         type: form.type,
         supplier: form.supplier || undefined,
         reason: form.reason || undefined,

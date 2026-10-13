@@ -3,7 +3,7 @@
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import { ApiError, apiGet } from "@/lib/api";
+import { ApiError, get } from "@/services/http";
 import type { ReturnRequest } from "@/types/api";
 import { Badge, ErrorState, Skeleton } from "@/components/ui";
 
@@ -14,7 +14,7 @@ export default function AccountReturnDetailPage() {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    apiGet<ReturnRequest>(`/account/returns/${params.code}`)
+    get<ReturnRequest>(`/account/returns/${params.code}`)
       .then(setReturnRequest)
       .catch((reason: Error) => {
         if (reason instanceof ApiError && reason.status === 401) {

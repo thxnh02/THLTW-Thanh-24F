@@ -6,8 +6,8 @@ import { useEffect, useState } from "react";
 
 import { ProductCard } from "@/components/shop/product/ProductCard";
 import { Button, ErrorState, SectionCard, Skeleton } from "@/components/ui";
-import { useStoreSettings } from "@/contexts/StoreSettingsContext";
-import { apiGet } from "@/lib/api";
+import { useStoreSettings } from "@/context/StoreSettingsContext";
+import { contentService } from "@/services/contentService";
 import type { HomePayload } from "@/types/api";
 
 export default function Home() {
@@ -20,13 +20,13 @@ export default function Home() {
 
   function loadHome() {
     setError("");
-    apiGet<HomePayload>("/homepage")
+    contentService.getHomepage()
       .then(setHome)
       .catch((reason: Error) => setError(reason.message));
   }
 
   useEffect(() => {
-    apiGet<HomePayload>("/homepage")
+    contentService.getHomepage()
       .then(setHome)
       .catch((reason: Error) => setError(reason.message));
   }, []);

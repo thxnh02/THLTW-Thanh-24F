@@ -11,6 +11,8 @@ export type Category = {
   slug: string;
   image?: string | null;
   status: string;
+  sort_order?: number;
+  products_count?: number;
 };
 
 export type Brand = {
@@ -19,6 +21,7 @@ export type Brand = {
   slug: string;
   logo?: string | null;
   status: string;
+  products_count?: number;
 };
 
 export type ProductVariant = {

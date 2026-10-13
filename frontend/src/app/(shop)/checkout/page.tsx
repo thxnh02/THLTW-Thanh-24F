@@ -6,11 +6,12 @@ import { Check, ChevronRight, CircleDollarSign, CreditCard, MapPin, Truck } from
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
 import { Badge, Button, Input, Select, Textarea } from "@/components/ui";
-import { useAuth } from "@/contexts/AuthContext";
-import { useCart } from "@/contexts/CartContext";
-import { useStoreSettings } from "@/contexts/StoreSettingsContext";
-import { apiGetList, apiPost } from "@/lib/api";
-import { formatVnd } from "@/lib/format";
+import { useAuth } from "@/context/AuthContext";
+import { useCart } from "@/context/CartContext";
+import { useStoreSettings } from "@/context/StoreSettingsContext";
+import { accountService } from "@/services/accountService";
+import { checkoutService } from "@/services/checkoutService";
+import { formatVnd } from "@/utils/format";
 import type { Address, ShippingMethod } from "@/types/api";
 
 type PaymentMethod = "cod" | "vnpay";
@@ -31,7 +32,7 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     if (!user) return;
-    apiGetList<Address>("/account/addresses").then((data) => {
+    accountService.getAddresses().then((data) => {
       setAddresses(data);
       const preferred = data.find((item) => item.is_default) || data[0];
       if (preferred) applyAddress(preferred);
@@ -39,7 +40,7 @@ export default function CheckoutPage() {
   }, [user]);
 
   useEffect(() => {
-    apiGetList<ShippingMethod>(`/shipping-methods?subtotal=${subtotal}`).then((methods) => {
+    checkoutService.getShippingMethods(subtotal).then((methods) => {
       setShippingMethods(methods);
       setForm((current) => current.shippingMethodId || !methods.length ? current : { ...current, shippingMethodId: String(methods[0].id) });
     }).catch(() => setError("Không thể tải phương thức vận chuyển."));
@@ -54,7 +55,7 @@ export default function CheckoutPage() {
     setSubmitting(true);
     setError("");
     try {
-      const order = await apiPost<CheckoutResponse>("/checkout", {
+      const order = await checkoutService.checkout<CheckoutResponse>({
         customer: { name: form.name || user?.name, email: form.email || user?.email, phone: form.phone || user?.phone, address: form.address },
         note: form.note || undefined,
         payment_method: form.paymentMethod,

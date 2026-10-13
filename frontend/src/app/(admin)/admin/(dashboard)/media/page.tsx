@@ -5,8 +5,8 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { AdminImageUpload } from "@/components/admin/media/AdminImageUpload";
-import { useConfirm } from "@/contexts/ConfirmContext";
-import { ApiError, apiDelete, apiGet } from "@/lib/api";
+import { useConfirm } from "@/context/ConfirmContext";
+import { ApiError, del, get } from "@/services/http";
 
 type MediaFile = {
   path: string;
@@ -23,7 +23,7 @@ export default function AdminMediaPage() {
   const [message, setMessage] = useState("");
 
   const load = useCallback(() => {
-    apiGet<MediaFile[]>(`/admin/uploads/images${directory ? `?directory=${encodeURIComponent(directory)}` : ""}`)
+    get<MediaFile[]>(`/admin/uploads/images${directory ? `?directory=${encodeURIComponent(directory)}` : ""}`)
       .then(setFiles)
       .catch((reason: Error) => {
         if (reason instanceof ApiError && reason.status === 401) {
@@ -49,7 +49,7 @@ export default function AdminMediaPage() {
       return;
     }
 
-    await apiDelete(`/admin/uploads/images?path=${encodeURIComponent(file.path)}`);
+    await del(`/admin/uploads/images?path=${encodeURIComponent(file.path)}`);
     setMessage("Đã xóa ảnh.");
     load();
   }

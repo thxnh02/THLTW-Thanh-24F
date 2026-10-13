@@ -5,7 +5,9 @@ import { useEffect, useMemo, useState } from "react";
 
 import { ProductCard } from "@/components/shop/product/ProductCard";
 import { Button, EmptyState, ErrorState, Input, Select, Sheet, SheetContent, SheetHeader, SheetTitle, Skeleton } from "@/components/ui";
-import { apiGetList, apiGetResponse } from "@/lib/api";
+import { brandService } from "@/services/brandService";
+import { categoryService } from "@/services/categoryService";
+import { productService } from "@/services/productService";
 import type { Brand, Category, PaginatedMeta, Product } from "@/types/api";
 
 type FilterState = { q: string; category: string; brand: string; min_price: string; max_price: string; sort: string; page: string };
@@ -42,7 +44,7 @@ export default function ProductsPage() {
   }, [query]);
 
   useEffect(() => {
-    Promise.all([apiGetList<Category>("/categories"), apiGetList<Brand>("/brands")])
+    Promise.all([categoryService.getCategories(), brandService.getBrands()])
       .then(([categoryData, brandData]) => {
         setCategories(categoryData);
         setBrands(brandData);
@@ -53,7 +55,7 @@ export default function ProductsPage() {
   useEffect(() => {
     let active = true;
     window.history.replaceState(null, "", queryString ? `/products?${queryString}` : "/products");
-    apiGetResponse<Product[]>(`/products?${queryString}`)
+    productService.getProducts(queryString)
       .then(({ data, meta: responseMeta }) => {
         if (!active) return;
         setProducts(data);

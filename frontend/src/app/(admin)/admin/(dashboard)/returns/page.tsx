@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { Pagination } from "@/components/admin/shared/Pagination";
-import { ApiError, apiGet, apiGetPaginated, apiPatch } from "@/lib/api";
+import { ApiError, get, getPaginated, patch } from "@/services/http";
 import type { PaginatedMeta, ReturnRequest } from "@/types/api";
 
 const nextStatuses: Record<ReturnRequest["status"], ReturnRequest["status"][]> = {
@@ -38,7 +38,7 @@ export default function AdminReturnsPage() {
       params.set("status", status);
     }
 
-    apiGetPaginated<ReturnRequest>(`/admin/returns?${params.toString() ? `${params}&` : ""}page=${page}`)
+    getPaginated<ReturnRequest>(`/admin/returns?${params.toString() ? `${params}&` : ""}page=${page}`)
       .then(({ data, meta: nextMeta }) => { setReturns(data); setMeta(nextMeta); })
       .catch((reason: Error) => {
         if (reason instanceof ApiError && reason.status === 401) {
@@ -56,7 +56,7 @@ export default function AdminReturnsPage() {
 
   async function loadDetail(id: number) {
     try {
-      setSelected(await apiGet<ReturnRequest>(`/admin/returns/${id}`));
+      setSelected(await get<ReturnRequest>(`/admin/returns/${id}`));
     } catch (reason) {
       setMessage(reason instanceof Error ? reason.message : "Không thể tải chi tiết.");
     }
@@ -68,7 +68,7 @@ export default function AdminReturnsPage() {
     }
     setProcessing(true);
     try {
-      const updated = await apiPatch<ReturnRequest>(`/admin/returns/${selected.id}/status`, { status });
+      const updated = await patch<ReturnRequest>(`/admin/returns/${selected.id}/status`, { status });
       setSelected(updated);
       setMessage("Đã cập nhật yêu cầu đổi trả.");
       load();

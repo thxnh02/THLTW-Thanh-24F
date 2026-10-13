@@ -2,8 +2,8 @@
 
 import { FormEvent, useState } from "react";
 
-import { apiPost } from "@/lib/api";
-import { useStoreSettings } from "@/contexts/StoreSettingsContext";
+import { post } from "@/services/http";
+import { useStoreSettings } from "@/context/StoreSettingsContext";
 import { Button, Input as TextInput, Textarea } from "@/components/ui";
 
 export default function ContactPage() {
@@ -18,7 +18,7 @@ export default function ContactPage() {
     setFeedback("");
 
     try {
-      await apiPost("/contact", form);
+      await post("/contact", form);
       setFeedback("Đã gửi liên hệ thành công. Chúng tôi sẽ phản hồi sớm.");
       setForm({ name: "", email: "", phone: "", subject: "", message: "" });
     } catch (reason) {

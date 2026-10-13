@@ -2,11 +2,11 @@
 
 import type { ReactNode } from "react";
 
-import { AuthProvider } from "@/contexts/AuthContext";
-import { CartProvider } from "@/contexts/CartContext";
-import { ConfirmProvider } from "@/contexts/ConfirmContext";
-import { StoreSettingsProvider } from "@/contexts/StoreSettingsContext";
-import { ToastProvider } from "@/contexts/ToastContext";
+import { AuthProvider } from "@/context/AuthContext";
+import { CartProvider } from "@/context/CartContext";
+import { ConfirmProvider } from "@/context/ConfirmContext";
+import { StoreSettingsProvider } from "@/context/StoreSettingsContext";
+import { ToastProvider } from "@/context/ToastContext";
 
 export function AppProviders({ children }: { children: ReactNode }) {
   return (

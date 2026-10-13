@@ -2,7 +2,7 @@
 
 import { type SyntheticEvent, useState } from "react";
 
-import { API_BASE_URL, apiUploadForm } from "@/lib/api";
+import { API_BASE_URL, uploadForm } from "@/services/http";
 
 type ImportResult = {
   total: number;
@@ -33,7 +33,7 @@ export default function AdminProductImportPage() {
     formData.append("mode", mode);
 
     try {
-      const payload = await apiUploadForm<ImportResult>(`/admin/products/import${action === "preview" ? "/preview" : ""}`, formData);
+      const payload = await uploadForm<ImportResult>(`/admin/products/import${action === "preview" ? "/preview" : ""}`, formData);
       setResult(payload);
       setMessage(action === "preview" ? "Đã kiểm tra file CSV." : "Đã nhập file CSV.");
     } catch (reason) {

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { ApiError, apiGetList } from "@/lib/api";
+import { ApiError, getList } from "@/services/http";
 import type { ReturnRequest } from "@/types/api";
 import { Badge, EmptyState, Skeleton } from "@/components/ui";
 
@@ -15,7 +15,7 @@ export default function AccountReturnsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    apiGetList<ReturnRequest>("/account/returns")
+    getList<ReturnRequest>("/account/returns")
       .then(setReturns)
       .catch((reason: Error) => {
         if (reason instanceof ApiError && reason.status === 401) {

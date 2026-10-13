@@ -10,9 +10,12 @@ import type { FormEvent } from "react";
 
 import { AdminImageUpload } from "@/components/admin/media/AdminImageUpload";
 import { Badge, Button, Input, SectionCard, Select, Textarea } from "@/components/ui";
-import { ApiError, apiGet, apiGetAllPages, apiPatch, apiPost } from "@/lib/api";
-import { formatVnd } from "@/lib/format";
-import { slugify } from "@/lib/slug";
+import { ApiError } from "@/services/http";
+import { brandAdminService } from "@/services/admin/brandAdminService";
+import { categoryAdminService } from "@/services/admin/categoryAdminService";
+import { productAdminService } from "@/services/admin/productAdminService";
+import { formatVnd } from "@/utils/format";
+import { slugify } from "@/utils/slug";
 import type { Brand, Category, Product, ProductImage, ProductVariant } from "@/types/api";
 
 type VariantForm = {
@@ -72,7 +75,7 @@ export function ProductForm({ id }: { id?: string }) {
     let mounted = true;
     async function loadOptions() {
       try {
-        const [categoryRows, brandRows] = await Promise.all([apiGetAllPages<Category>("/admin/categories"), apiGetAllPages<Brand>("/admin/brands")]);
+        const [categoryRows, brandRows] = await Promise.all([categoryAdminService.getAllCategories(), brandAdminService.getAllBrands()]);
         if (mounted) { setCategories(categoryRows); setBrands(brandRows); setOptionsError(""); }
       } catch (reason) {
         if (mounted) setOptionsError(toMessage(reason, "Không thể tải danh mục và thương hiệu."));
@@ -85,11 +88,12 @@ export function ProductForm({ id }: { id?: string }) {
   }, []);
 
   useEffect(() => {
-    if (!id) { setLoading(false); return; }
+    const productId = id ?? "";
+    if (!productId) { setLoading(false); return; }
     let mounted = true;
     async function loadProduct() {
       try {
-        const product = await apiGet<Product>(`/admin/products/${id}`);
+        const product = await productAdminService.get<Product>(productId);
         if (mounted) setForm({ name: product.name, slug: product.slug, category_id: String(product.category?.id ?? ""), brand_id: String(product.brand?.id ?? ""), short_description: product.short_description ?? "", description: product.description ?? "", status: product.status ?? "active", featured: Boolean(product.featured), variants: (product.variants ?? []).map(toVariantForm), images: (product.images ?? []).map(toImageForm) });
       } catch (reason) {
         if (mounted) setMessage(toMessage(reason, "Không thể tải sản phẩm."));
@@ -175,7 +179,7 @@ export function ProductForm({ id }: { id?: string }) {
         variants: form.variants.map((variant) => ({ ...(id && variant.id ? { id: variant.id } : {}), sku: variant.sku, name: variant.name, attributes: parseAttributes(variant.attributes), price: Number(variant.price), sale_price: variant.sale_price ? Number(variant.sale_price) : undefined, stock_quantity: Number(variant.stock_quantity), active: variant.active, is_default: variant.is_default })),
         images: form.images.filter((image) => image.path.trim()).map((image, index) => ({ ...(id && image.id ? { id: image.id } : {}), path: image.path, alt_text: image.alt_text, is_primary: image.is_primary, sort_order: Number(image.sort_order || index + 1) })),
       };
-      if (id) await apiPatch(`/admin/products/${id}`, payload); else await apiPost("/admin/products", payload);
+      if (id) await productAdminService.update(id, payload); else await productAdminService.create(payload);
       router.push("/admin/products");
     } catch (reason) {
       if (reason instanceof ApiError) {

@@ -6,9 +6,9 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { EmailVerificationPanel } from "@/components/shop/account/EmailVerificationPanel";
-import { useAuth } from "@/contexts/AuthContext";
-import { useToast } from "@/contexts/ToastContext";
-import { apiDelete, apiPatch, apiUploadForm } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/context/ToastContext";
+import { del, patch, uploadForm } from "@/services/http";
 import type { User } from "@/types/api";
 import { Badge, Button, Input, SectionCard, Skeleton } from "@/components/ui";
 
@@ -35,7 +35,7 @@ export default function ProfilePage() {
     event.preventDefault();
     setSaving(true);
     try {
-      await apiPatch<User>("/account/profile", profileForm);
+      await patch<User>("/account/profile", profileForm);
       await refreshUser();
       toast.success("Đã cập nhật hồ sơ.");
     } catch (reason) {
@@ -50,7 +50,7 @@ export default function ProfilePage() {
     try {
       const payload = new FormData();
       payload.append("avatar", file);
-      await apiUploadForm<User>("/account/avatar", payload);
+      await uploadForm<User>("/account/avatar", payload);
       await refreshUser();
       toast.success("Đã cập nhật ảnh đại diện.");
     } catch (reason) {
@@ -64,7 +64,7 @@ export default function ProfilePage() {
   async function removeAvatar() {
     setAvatarLoading(true);
     try {
-      await apiDelete("/account/avatar");
+      await del("/account/avatar");
       await refreshUser();
       toast.success("Đã xóa ảnh đại diện.");
     } catch (reason) {

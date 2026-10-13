@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { ApiError, apiGetList, apiPost } from "@/lib/api";
+import { ApiError, getList, post } from "@/services/http";
 import type { CustomerNotification } from "@/types/api";
 import { EmptyState, ErrorState } from "@/components/ui";
 
@@ -15,7 +15,7 @@ export default function AccountNotificationsPage() {
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(() => {
-    apiGetList<CustomerNotification>("/account/notifications")
+    getList<CustomerNotification>("/account/notifications")
       .then(setNotifications)
       .catch((reason: Error) => {
         if (reason instanceof ApiError && reason.status === 401) {
@@ -31,12 +31,12 @@ export default function AccountNotificationsPage() {
   }, [load]);
 
   async function markRead(id: number) {
-    await apiPost(`/account/notifications/${id}/read`, {});
+    await post(`/account/notifications/${id}/read`, {});
     load();
   }
 
   async function markAllRead() {
-    await apiPost("/account/notifications/read-all", {});
+    await post("/account/notifications/read-all", {});
     load();
   }
 

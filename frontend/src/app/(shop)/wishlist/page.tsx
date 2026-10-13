@@ -4,7 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { ProductCard } from "@/components/shop/product/ProductCard";
-import { ApiError, apiDelete, apiGet } from "@/lib/api";
+import { ApiError } from "@/services/http";
+import { wishlistService } from "@/services/wishlistService";
 import type { WishlistItem } from "@/types/api";
 import { Button, EmptyState } from "@/components/ui";
 
@@ -14,7 +15,7 @@ export default function WishlistPage() {
   const [message, setMessage] = useState("");
 
   const load = useCallback(() => {
-    apiGet<WishlistItem[]>("/wishlist")
+    wishlistService.getWishlist()
       .then(setItems)
       .catch((reason: Error) => {
         if (reason instanceof ApiError && reason.status === 401) {
@@ -30,7 +31,7 @@ export default function WishlistPage() {
   }, [load]);
 
   async function remove(productId: number) {
-    await apiDelete(`/wishlist/${productId}`);
+    await wishlistService.remove(productId);
     setMessage("Đã xóa khỏi danh sách yêu thích.");
     load();
   }

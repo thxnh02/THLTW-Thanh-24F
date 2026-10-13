@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { EmailVerificationPanel } from "@/components/shop/account/EmailVerificationPanel";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/context/AuthContext";
 import { Button, SectionCard, Skeleton } from "@/components/ui";
 
 export default function VerifyEmailPage() {

@@ -4,9 +4,9 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import { apiGet } from "@/lib/api";
-import { formatDateTime, formatVnd } from "@/lib/format";
-import { orderStatusLabel, orderStatusTone, paymentMethodLabel, paymentStatusLabel } from "@/lib/order-status";
+import { get } from "@/services/http";
+import { formatDateTime, formatVnd } from "@/utils/format";
+import { orderStatusLabel, orderStatusTone, paymentMethodLabel, paymentStatusLabel } from "@/helper/orderStatus";
 import type { Order } from "@/types/api";
 
 export default function AdminOrderDetailPage() {
@@ -15,7 +15,7 @@ export default function AdminOrderDetailPage() {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    apiGet<Order>(`/admin/orders/${params.id}`).then(setOrder).catch((reason: Error) => setMessage(reason.message));
+    get<Order>(`/admin/orders/${params.id}`).then(setOrder).catch((reason: Error) => setMessage(reason.message));
   }, [params.id]);
 
   return (

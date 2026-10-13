@@ -17,10 +17,10 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { Sheet, SheetClose, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { useAuth } from "@/contexts/AuthContext";
-import { useCart } from "@/contexts/CartContext";
-import { useStoreSettings } from "@/contexts/StoreSettingsContext";
-import { apiGetList, apiGetResponse } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
+import { useCart } from "@/context/CartContext";
+import { useStoreSettings } from "@/context/StoreSettingsContext";
+import { accountService } from "@/services/accountService";
 import type { CustomerNotification, User as UserType } from "@/types/api";
 
 const staffRoles = ["admin", "manager", "staff"];
@@ -46,7 +46,7 @@ export function SiteHeader() {
   useEffect(() => {
     if (!user) return;
 
-    apiGetResponse<unknown[]>("/account/notifications?per_page=1")
+    accountService.getNotifications("per_page=1")
       .then(({ meta }) => setUnreadCount(Number(meta.unread_count ?? 0)))
       .catch(() => undefined);
   }, [user]);
@@ -59,7 +59,7 @@ export function SiteHeader() {
 
     setNotificationLoading(true);
     try {
-      setNotifications(await apiGetList<CustomerNotification>("/account/notifications?per_page=4"));
+      setNotifications((await accountService.getNotifications("per_page=4")).data);
     } catch {
       setNotifications([]);
     } finally {

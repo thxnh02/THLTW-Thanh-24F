@@ -7,11 +7,12 @@ import type { LucideIcon } from "lucide-react";
 import { AlertTriangle, ArrowRight, BadgeDollarSign, CheckCircle2, Clock3, PackagePlus, ShoppingBag, Truck, Users } from "lucide-react";
 
 import { ErrorState, PageHeader, SectionCard, Skeleton } from "@/components/ui";
-import { roleLabel } from "@/components/admin/layout/AdminShell";
-import { useAuth } from "@/contexts/AuthContext";
-import { ApiError, apiGet } from "@/lib/api";
+import { roleLabel } from "@/components/admin/layout/AdminHeader";
+import { useAuth } from "@/context/AuthContext";
+import { ApiError } from "@/services/http";
+import { reportAdminService } from "@/services/admin/reportAdminService";
 import { canSee } from "@/lib/admin/adminPermissions";
-import { formatVnd } from "@/lib/format";
+import { formatVnd } from "@/utils/format";
 
 type Dashboard = { revenue_today?: number; revenue_month?: number; total_orders?: number; pending_orders?: number; shipping_orders?: number; completed_orders?: number; total_members?: number; low_stock_products?: number };
 type MetricTone = "teal" | "blue" | "amber" | "indigo" | "emerald" | "violet" | "orange";
@@ -45,7 +46,7 @@ export default function AdminPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    apiGet<Dashboard>("/admin/dashboard").then(setDashboard).catch((reason: Error) => {
+    reportAdminService.dashboard<Dashboard>().then(setDashboard).catch((reason: Error) => {
       if (reason instanceof ApiError && reason.status === 401) router.push("/admin/login");
       else setError("Không thể tải tổng quan cửa hàng. Vui lòng thử lại.");
     });

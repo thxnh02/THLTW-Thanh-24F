@@ -4,9 +4,9 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import { API_BASE_URL, ApiError, apiGet } from "@/lib/api";
-import { formatDateTime, formatVnd } from "@/lib/format";
-import { orderStatusLabel, orderStatusTone, paymentMethodLabel, paymentStatusLabel, paymentStatusTone, type StatusTone } from "@/lib/order-status";
+import { API_BASE_URL, ApiError, get } from "@/services/http";
+import { formatDateTime, formatVnd } from "@/utils/format";
+import { orderStatusLabel, orderStatusTone, paymentMethodLabel, paymentStatusLabel, paymentStatusTone, type StatusTone } from "@/helper/orderStatus";
 import type { Order } from "@/types/api";
 import { Badge, ErrorState, Skeleton } from "@/components/ui";
 
@@ -24,7 +24,7 @@ export default function AccountOrderDetailPage() {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    apiGet<Order>(`/account/orders/${params.code}`)
+    get<Order>(`/account/orders/${params.code}`)
       .then(setOrder)
       .catch((reason: Error) => {
         if (reason instanceof ApiError && reason.status === 401) {

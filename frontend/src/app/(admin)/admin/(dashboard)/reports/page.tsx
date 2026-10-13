@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { API_BASE_URL, ApiError, apiGet } from "@/lib/api";
-import { formatVnd } from "@/lib/format";
+import { API_BASE_URL, ApiError, get } from "@/services/http";
+import { formatVnd } from "@/utils/format";
 
 type ReportPayload = {
   date_from: string;
@@ -31,7 +31,7 @@ export default function AdminReportsPage() {
   const [message, setMessage] = useState("");
 
   const load = useCallback(() => {
-    apiGet<ReportPayload>(`/admin/reports/overview?range=${range}`)
+    get<ReportPayload>(`/admin/reports/overview?range=${range}`)
       .then(setReport)
       .catch((reason: Error) => {
         if (reason instanceof ApiError && reason.status === 401) {

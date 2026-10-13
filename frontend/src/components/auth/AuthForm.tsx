@@ -3,9 +3,10 @@
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { useAuth } from "@/contexts/AuthContext";
-import { useCart } from "@/contexts/CartContext";
-import { API_BASE_URL, apiPost } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
+import { useCart } from "@/context/CartContext";
+import { API_CONFIG } from "@/config/api";
+import { cartService } from "@/services/cartService";
 import { Button, Input as TextInput } from "@/components/ui";
 
 type AuthFormProps = {
@@ -53,7 +54,7 @@ export function AuthForm({ mode, admin = false }: AuthFormProps) {
       }
 
       if (!admin && items.length > 0) {
-        await apiPost("/cart/merge", {
+        await cartService.merge({
           items: items.map((item) => ({
             variant_id: item.variantId,
             quantity: item.quantity,
@@ -66,7 +67,7 @@ export function AuthForm({ mode, admin = false }: AuthFormProps) {
       const verificationUrl = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("verification_url") : null;
       const requestedRedirect = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("redirect") : null;
       const safeRedirect = requestedRedirect && requestedRedirect.startsWith("/") && !requestedRedirect.startsWith("//") ? requestedRedirect : null;
-      if (!admin && mode === "login" && verificationUrl?.startsWith(`${API_BASE_URL}/auth/email/verify/`)) {
+      if (!admin && mode === "login" && verificationUrl?.startsWith(`${API_CONFIG.BASE_URL}/auth/email/verify/`)) {
         router.push(verificationUrl);
       } else if (!admin && mode === "login" && safeRedirect) {
         router.push(safeRedirect);

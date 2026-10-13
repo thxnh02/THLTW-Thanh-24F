@@ -4,9 +4,12 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { Pagination } from "@/components/admin/shared/Pagination";
-import { API_BASE_URL, ApiError, apiGet, apiGetPaginated, apiPatch } from "@/lib/api";
-import { formatDateTime, formatVnd } from "@/lib/format";
-import { orderStatusLabel, orderStatusTone, paymentMethodLabel, paymentStatusLabel } from "@/lib/order-status";
+import { AdminTable } from "@/components/admin/table/AdminTable";
+import { API_CONFIG } from "@/config/api";
+import { ApiError } from "@/lib/apiError";
+import { orderAdminService } from "@/services/admin/orderAdminService";
+import { formatDateTime, formatVnd } from "@/utils/format";
+import { orderStatusLabel, orderStatusTone, paymentMethodLabel, paymentStatusLabel } from "@/helper/orderStatus";
 import type { Order, PaginatedMeta } from "@/types/api";
 
 const nextStatuses: Record<Order["status"], Order["status"][]> = {
@@ -37,7 +40,7 @@ export default function AdminOrdersPage() {
   }, [query, status]);
 
   const loadOrders = useCallback(() => {
-    apiGetPaginated<Order>(`/admin/orders?${searchParams}${searchParams ? "&" : ""}page=${page}`)
+    orderAdminService.list<Order>(`${searchParams}${searchParams ? "&" : ""}page=${page}`)
       .then(({ data, meta: nextMeta }) => { setOrders(data); setMeta(nextMeta); })
       .catch((reason: Error) => {
         if (reason instanceof ApiError && reason.status === 401) {
@@ -53,14 +56,14 @@ export default function AdminOrdersPage() {
   }, [loadOrders]);
 
   async function loadDetail(id: number) {
-    const detail = await apiGet<Order>(`/admin/orders/${id}`);
+    const detail = await orderAdminService.get<Order>(id);
     setSelectedOrder(detail);
     setTracking({ carrier: detail.shipping_carrier ?? "", code: detail.tracking_code ?? "" });
   }
 
   async function updateStatus(order: Order, nextStatus: Order["status"]) {
     setMessage("");
-    const updated = await apiPatch<Order>(`/admin/orders/${order.id}/status`, {
+    const updated = await orderAdminService.updateStatus<Order>(order.id, {
       status: nextStatus,
       shipping_carrier: tracking.carrier || undefined,
       tracking_code: tracking.code || undefined,
@@ -74,7 +77,7 @@ export default function AdminOrdersPage() {
     <main className="mx-auto max-w-7xl px-4 py-8">
       <h1 className="text-3xl font-bold text-slate-950">Quản lý đơn hàng</h1>
       <div className="mt-4 flex justify-end">
-        <a href={`${API_BASE_URL}/admin/orders/export${searchParams ? `?${searchParams}` : ""}`} className="rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold">
+        <a href={`${API_CONFIG.BASE_URL}/admin/orders/export${searchParams ? `?${searchParams}` : ""}`} className="rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold">
           Xuất CSV
         </a>
       </div>
@@ -98,10 +101,10 @@ export default function AdminOrdersPage() {
       {message ? <p className="mt-4 rounded-md bg-slate-100 p-3 text-sm text-slate-700">{message}</p> : null}
 
       <div className="mt-6 grid gap-6 xl:grid-cols-[1fr_420px]">
-        <div className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
-          <table className="w-full border-collapse text-left text-sm">
+        <div>
+          <AdminTable minWidth="680px">
             <thead className="bg-slate-100 text-slate-700">
-              <tr><th className="p-3">Mã đơn</th><th className="p-3">Khách hàng</th><th className="p-3">Trạng thái</th><th className="p-3">Tổng tiền</th><th className="p-3">Thao tác</th></tr>
+              <tr><th scope="col" className="p-3">Mã đơn</th><th scope="col" className="p-3">Khách hàng</th><th scope="col" className="p-3">Trạng thái</th><th scope="col" className="p-3">Tổng tiền</th><th scope="col" className="p-3">Thao tác</th></tr>
             </thead>
             <tbody>
               {orders.map((order) => (
@@ -115,7 +118,7 @@ export default function AdminOrdersPage() {
               ))}
               {orders.length === 0 ? <tr><td className="p-4 text-slate-600" colSpan={5}>Không có đơn hàng.</td></tr> : null}
             </tbody>
-          </table>
+          </AdminTable>
           <Pagination meta={meta} />
         </div>
 
@@ -138,8 +141,8 @@ export default function AdminOrdersPage() {
               </dl>
               {selectedOrder.status === "confirmed" ? <div className="mt-4 grid gap-3 rounded-md bg-slate-50 p-3"><Input label="Đơn vị vận chuyển" value={tracking.carrier} onChange={(value) => setTracking({ ...tracking, carrier: value })} /><Input label="Mã vận đơn" value={tracking.code} onChange={(value) => setTracking({ ...tracking, code: value })} /></div> : null}
               <div className="mt-5 flex flex-wrap gap-2">
-                <a href={`${API_BASE_URL}/admin/orders/${selectedOrder.id}/invoice`} target="_blank" rel="noreferrer" className="rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold">Hóa đơn</a>
-                <a href={`${API_BASE_URL}/admin/orders/${selectedOrder.id}/invoice.pdf`} className="rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold">PDF</a>
+                <a href={`${API_CONFIG.BASE_URL}/admin/orders/${selectedOrder.id}/invoice`} target="_blank" rel="noreferrer" className="rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold">Hóa đơn</a>
+                <a href={`${API_CONFIG.BASE_URL}/admin/orders/${selectedOrder.id}/invoice.pdf`} className="rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold">PDF</a>
                 {nextStatuses[selectedOrder.status].map((nextStatus) => <button key={nextStatus} type="button" onClick={() => updateStatus(selectedOrder, nextStatus)} className="rounded-md bg-slate-950 px-3 py-2 text-sm font-semibold text-white">{orderStatusLabel(nextStatus)}</button>)}
               </div>
               <div className="mt-6 border-t border-slate-200 pt-4"><h3 className="font-semibold text-slate-950">Sản phẩm</h3><div className="mt-3 space-y-3">{selectedOrder.items?.map((item) => <div key={item.id} className="rounded-md bg-slate-50 p-3 text-sm"><p className="font-semibold">{item.product_name}</p><p className="text-slate-600">{item.variant_name} - {item.sku} x {item.quantity}</p></div>)}</div></div>

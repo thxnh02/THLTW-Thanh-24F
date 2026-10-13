@@ -2,9 +2,9 @@
 
 import { FormEvent, useState } from "react";
 
-import { useAuth } from "@/contexts/AuthContext";
-import { useToast } from "@/contexts/ToastContext";
-import { apiPatch, apiPost } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/context/ToastContext";
+import { patch, post } from "@/services/http";
 import { Button, Input, SectionCard } from "@/components/ui";
 
 export default function SecurityPage() {
@@ -22,7 +22,7 @@ export default function SecurityPage() {
     event.preventDefault();
     setSavingPassword(true);
     try {
-      await apiPost("/account/change-password", password);
+      await post("/account/change-password", password);
       setPassword({ current_password: "", password: "", password_confirmation: "" });
       toast.success("Đã đổi mật khẩu. Phiên đăng nhập đã được làm mới.");
     } catch (reason) {
@@ -36,7 +36,7 @@ export default function SecurityPage() {
     event.preventDefault();
     setSavingEmail(true);
     try {
-      await apiPatch("/account/email", email);
+      await patch("/account/email", email);
       setEmail({ email: "", current_password: "" });
       await refreshUser();
       toast.success("Đã đổi email. Hãy xác minh địa chỉ mới trong hộp thư.");
@@ -50,7 +50,7 @@ export default function SecurityPage() {
   async function resendVerification() {
     setResending(true);
     try {
-      await apiPost("/auth/email/verification-notification", {});
+      await post("/auth/email/verification-notification", {});
       toast.success("Đã gửi lại email xác minh.");
     } catch (reason) {
       toast.error(reason instanceof Error ? reason.message : "Không thể gửi email xác minh.");

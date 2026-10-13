@@ -5,12 +5,12 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { Pagination } from "@/components/admin/shared/Pagination";
-import { ApiError, apiGetPaginated, apiPost } from "@/lib/api";
-import { formatVnd } from "@/lib/format";
-import { orderStatusLabel, orderStatusTone, paymentStatusLabel, paymentStatusTone } from "@/lib/order-status";
+import { ApiError, getPaginated, post } from "@/services/http";
+import { formatVnd } from "@/utils/format";
+import { orderStatusLabel, orderStatusTone, paymentStatusLabel, paymentStatusTone } from "@/helper/orderStatus";
 import type { Order, PaginatedMeta } from "@/types/api";
 import { Badge, Button } from "@/components/ui";
-import { useConfirm } from "@/contexts/ConfirmContext";
+import { useConfirm } from "@/context/ConfirmContext";
 
 export default function AccountOrdersPage() {
   const router = useRouter();
@@ -26,7 +26,7 @@ export default function AccountOrdersPage() {
     setLoading(true);
     setMessage("");
 
-    apiGetPaginated<Order>(`/account/orders?page=${encodeURIComponent(page)}`)
+    getPaginated<Order>(`/account/orders?page=${encodeURIComponent(page)}`)
       .then(({ data, meta: nextMeta }) => {
         setOrders(data);
         setMeta(nextMeta);
@@ -53,7 +53,7 @@ export default function AccountOrdersPage() {
   async function cancelOrder(code: string) {
     setMessage("");
     if (!await confirm({ title: "Hủy đơn hàng?", message: "Bạn chỉ nên hủy khi chưa muốn tiếp tục đơn hàng này.", confirmLabel: "Hủy đơn" })) return;
-    await apiPost(`/account/orders/${code}/cancel`, {});
+    await post(`/account/orders/${code}/cancel`, {});
     setMessage("Đã hủy đơn hàng.");
     loadOrders();
   }

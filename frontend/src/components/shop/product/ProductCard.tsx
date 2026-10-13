@@ -6,9 +6,9 @@ import { PackageX, ShoppingCart, Star } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 
 import { Badge, Button } from "@/components/ui";
-import { useCart } from "@/contexts/CartContext";
-import { useToast } from "@/contexts/ToastContext";
-import { effectivePrice, formatVnd } from "@/lib/format";
+import { useCart } from "@/context/CartContext";
+import { useToast } from "@/context/ToastContext";
+import { effectivePrice, formatVnd } from "@/utils/format";
 import type { Product } from "@/types/api";
 
 export function ProductCard({ product }: { product: Product }) {

@@ -10,7 +10,7 @@ import {
   useState,
 } from "react";
 
-import { apiGet, apiPost } from "@/lib/api";
+import { authService } from "@/services/authService";
 import type { AuthPayload, User } from "@/types/api";
 
 type AuthContextValue = {
@@ -42,7 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshUser = useCallback(async () => {
     try {
-      setUser(await apiGet<User>("/auth/me"));
+      setUser(await authService.me());
     } catch {
       setUser(null);
     } finally {
@@ -56,7 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(
     async (email: string, password: string): Promise<User> => {
-      const payload = await apiPost<AuthPayload>("/auth/login", { email, password });
+      const payload = await authService.login({ email, password });
       return storeAuth(payload);
     },
     [storeAuth],
@@ -70,7 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       password: string;
       password_confirmation: string;
     }): Promise<User> => {
-      const response = await apiPost<AuthPayload>("/auth/register", payload);
+      const response = await authService.register(payload);
       return storeAuth(response);
     },
     [storeAuth],
@@ -78,7 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(async () => {
     try {
-      await apiPost("/auth/logout", {});
+      await authService.logout();
     } finally {
       setUser(null);
     }

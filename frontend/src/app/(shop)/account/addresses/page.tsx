@@ -3,10 +3,10 @@
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { ApiError, apiDelete, apiGet, apiPatch, apiPost } from "@/lib/api";
+import { ApiError, del, get, patch, post } from "@/services/http";
 import type { Address } from "@/types/api";
 import { Button, Input as TextInput } from "@/components/ui";
-import { useConfirm } from "@/contexts/ConfirmContext";
+import { useConfirm } from "@/context/ConfirmContext";
 
 type AddressForm = Omit<Address, "id"> & { id?: number };
 
@@ -28,7 +28,7 @@ export default function AccountAddressesPage() {
   const confirm = useConfirm();
 
   const load = useCallback(() => {
-    apiGet<Address[]>("/account/addresses")
+    get<Address[]>("/account/addresses")
       .then(setAddresses)
       .catch((reason: Error) => {
         if (reason instanceof ApiError && reason.status === 401) {
@@ -46,10 +46,10 @@ export default function AccountAddressesPage() {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (form.id) {
-      await apiPatch(`/account/addresses/${form.id}`, form);
+      await patch(`/account/addresses/${form.id}`, form);
     setMessage("Đã cập nhật địa chỉ.");
     } else {
-      await apiPost("/account/addresses", form);
+      await post("/account/addresses", form);
       setMessage("Đã tạo địa chỉ.");
     }
     setForm(emptyForm);
@@ -58,7 +58,7 @@ export default function AccountAddressesPage() {
 
   async function remove(address: Address) {
     if (!await confirm({ title: "Xóa địa chỉ?", message: "Địa chỉ này sẽ bị xóa khỏi tài khoản của bạn.", confirmLabel: "Xóa địa chỉ" })) return;
-    await apiDelete(`/account/addresses/${address.id}`);
+    await del(`/account/addresses/${address.id}`);
     setMessage("Đã xóa địa chỉ.");
     load();
   }

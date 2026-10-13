@@ -6,10 +6,11 @@ import { use, useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Heart, Minus, PackageCheck, Plus, RotateCcw, ShieldCheck, ShoppingCart, Star, Truck } from "lucide-react";
 import { ProductCard } from "@/components/shop/product/ProductCard";
 import { Badge, Button, EmptyState, ErrorState, Input, SectionCard, Select, Skeleton, Tabs, TabsContent, TabsList, TabsTrigger, Textarea } from "@/components/ui";
-import { useCart } from "@/contexts/CartContext";
-import { apiGet, apiPost } from "@/lib/api";
+import { useCart } from "@/context/CartContext";
+import { productService } from "@/services/productService";
+import { wishlistService } from "@/services/wishlistService";
 import type { Product, ProductImage, ProductVariant } from "@/types/api";
-import { formatVnd } from "@/lib/format";
+import { formatVnd } from "@/utils/format";
 
 type ProductPageProps = {
   params: Promise<{ slug: string }>;
@@ -43,7 +44,7 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
   useEffect(() => {
     let active = true;
 
-    void apiGet<Product>(`/products/${slug}`)
+    void productService.getProduct(slug)
       .then((data) => {
         if (!active) return;
         setError("");
@@ -104,7 +105,7 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
     setError("");
     setMessage("");
     try {
-      await apiPost("/wishlist", { product_id: product.id });
+      await wishlistService.add(product.id);
       setMessage("Đã thêm sản phẩm vào danh sách yêu thích.");
     } catch (reason: unknown) {
       setError(reason instanceof Error ? reason.message : "Không thể thêm vào danh sách yêu thích.");
@@ -116,8 +117,8 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
     setError("");
     setMessage("");
     try {
-      await apiPost(`/products/${product.id}/reviews`, { rating: Number(review.rating), content: review.content || undefined });
-      setProduct(await apiGet<Product>(`/products/${slug}`));
+      await productService.submitReview(product.id, { rating: Number(review.rating), content: review.content || undefined });
+      setProduct(await productService.getProduct(slug));
       setReview({ rating: "5", content: "" });
       setMessage("Cảm ơn bạn đã chia sẻ trải nghiệm về sản phẩm.");
     } catch (reason: unknown) {

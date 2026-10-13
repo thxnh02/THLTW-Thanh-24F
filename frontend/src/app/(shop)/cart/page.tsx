@@ -6,9 +6,9 @@ import { ArrowRight, Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { Button, EmptyState, Input, SectionCard } from "@/components/ui";
-import { useCart } from "@/contexts/CartContext";
-import { useConfirm } from "@/contexts/ConfirmContext";
-import { formatVnd } from "@/lib/format";
+import { useCart } from "@/context/CartContext";
+import { useConfirm } from "@/context/ConfirmContext";
+import { formatVnd } from "@/utils/format";
 import type { CartQuote } from "@/types/api";
 
 export default function CartPage() {
