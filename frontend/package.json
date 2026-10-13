@@ -1,6 +1,6 @@
 {
-  "name": "frontend",
-  "version": "0.1.0",
+  "name": "ct-24f-frontend",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -9,26 +9,17 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@radix-ui/react-alert-dialog": "^1.1.24",
-    "@radix-ui/react-dialog": "^1.2.0",
-    "@radix-ui/react-tabs": "^1.1.22",
     "axios": "^1.20.0",
-    "clsx": "^2.1.1",
-    "lucide-react": "^1.52.0",
-    "motion": "^14.0.0",
     "next": "16.3.4",
     "react": "19.2.8",
-    "react-dom": "19.2.8",
-    "tailwind-merge": "^3.7.0"
+    "react-dom": "19.2.8"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
+    "@types/node": "26.6.5",
+    "@types/react": "19.3.0",
     "eslint": "^9",
     "eslint-config-next": "16.3.4",
-    "tailwindcss": "^4",
-    "typescript": "^5"
+    "tailwindcss": "^4"
   }
 }

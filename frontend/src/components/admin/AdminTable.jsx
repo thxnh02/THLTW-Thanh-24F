@@ -1,0 +1,4 @@
+export default function AdminTable({ columns, data, renderActions, loading, emptyMessage = "Chưa có dữ liệu." }) {
+  if (loading) return <p>Đang tải dữ liệu...</p>;
+  return <div className="overflow-x-auto rounded border bg-white"><table className="w-full text-left text-sm"><thead className="bg-slate-100"><tr>{columns.map((column) => <th className="px-4 py-3 font-semibold" key={column.key}>{column.label}</th>)}{renderActions && <th className="px-4 py-3">Thao tác</th>}</tr></thead><tbody>{data.length ? data.map((row) => <tr className="border-t" key={row.id}>{columns.map((column) => <td className="px-4 py-3" key={column.key}>{column.render ? column.render(row) : row[column.key]}</td>)}{renderActions && <td className="px-4 py-3">{renderActions(row)}</td>}</tr>) : <tr><td className="px-4 py-5 text-slate-500" colSpan={columns.length + 1}>{emptyMessage}</td></tr>}</tbody></table></div>;
+}

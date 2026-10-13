@@ -1,64 +1,67 @@
-# THLTW Shop Ecommerce
+# CT_24F — Ecommerce course project
 
-Project mon Thuc hanh lap trinh Web: Laravel REST API + Next.js frontend.
+This branch is a small rebuild aligned with the current Laravel/Next.js classroom scope. It contains JSON APIs for categories, brands and a paginated public product list, plus open (no-auth-yet) admin CRUD for categories and brands.
 
-## Stack
+## Stack and scope
 
-- Backend: Laravel 13, PHP 8.5, MySQL/SQLite for local test
-- Frontend: Next.js 16, React 19, TypeScript, Tailwind CSS 4
-- API prefix: `http://localhost:8000/api/v1`
-- Frontend dev: `http://localhost:3000`
-- Payment: COD ready, VNPay Sandbox integration configurable by env
-- Auth: Laravel Sanctum SPA session/cookie flow
-- Extras: media uploads, order email, printable and PDF invoices, CSV import/export, shipping/tracking, returns/refunds, reports, SEO sitemap/robots, CI
+- Laravel 13, PHP, Eloquent, FormRequest, API Resource, MySQL/MariaDB
+- Next.js, React, JavaScript/JSX, Tailwind CSS and Axios
+- Database: `ecommerce_thltw`
+- Lecturer workflow: **Model → FormRequest → Controller → Resource → Route → Postman test**
 
-## Structure
+Authentication is intentionally not implemented yet because it has not been covered in the current lecturer scope. The admin endpoints are therefore temporarily open for classroom practice only.
 
-- `backend/`: Laravel API, migrations, seeders, tests
-- `frontend/`: Next.js storefront and admin screens
-- `docs/`: setup, database, API, feature and testing notes
+## Run locally (Laragon)
 
-## Quick Start
-
-Backend:
+Create an empty MySQL database named `ecommerce_thltw`.
 
 ```powershell
 cd backend
-composer install
 copy .env.example .env
+composer install
 php artisan key:generate
 php artisan migrate --seed
-php artisan storage:link
-php artisan serve --host=localhost
+php artisan serve
 ```
 
-Frontend:
+The backend `.env.example` is already set to `127.0.0.1`, user `root`, and an empty password for a usual Laragon install.
 
 ```powershell
 cd frontend
-npm install
 copy .env.example .env.local
+npm install
 npm run dev
 ```
 
-Set `NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1` in `frontend/.env.local`.
-Set `NEXT_PUBLIC_SITE_URL=http://localhost:3000` for SEO sitemap/canonical URLs.
+`NEXT_PUBLIC_API_URL` defaults to `http://127.0.0.1:8000/api`.
 
-On Windows, after installing both sets of dependencies, double-click `start-dev.bat` to start the backend and frontend together. If port 8000 or 3000 is busy, it selects the next available port and updates the local environment files.
+## Routes
 
-Optional VNPay sandbox env:
+Public API:
 
-```env
-VNP_TMN_CODE=
-VNP_HASH_SECRET=
-VNP_URL=https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
-VNP_RETURN_URL=http://localhost:8000/api/v1/vnpay/return
-VNP_IPN_URL=http://localhost:8000/api/v1/vnpay/ipn
-```
+- `GET /api/categories`
+- `GET /api/categories/{slug}`
+- `GET /api/brands`
+- `GET /api/products`
+- `GET /api/products?page=2` (exactly 12 products per page)
 
-Development-only demo accounts (do not use these credentials in production):
+Admin API: `GET`, `POST`, `GET /{id}`, `PUT /{id}`, `DELETE /{id}` for both `/api/admin/categories` and `/api/admin/brands`.
 
-- Admin: `admin@example.com` / `Admin@123`
-- Member: `member@example.com` / `Member@123`
+Frontend routes: `/`, `/categories`, `/brands`, `/products`, `/admin`, `/admin/category`, `/admin/brand` and their create/edit pages.
 
-The admin area supports `admin`, `manager`, and `staff` roles with server-side permission checks. CSV import, shipping methods, returns, reports, notifications, and invoice downloads are available from the corresponding admin/account pages.
+## Structure
+
+- `backend/app/Models`: Category, Brand, Product
+- `backend/app/Http/Requests`: category/brand create and update validation
+- `backend/app/Http/Controllers/Api`: public and admin controllers
+- `backend/app/Http/Resources`: controlled JSON response shapes
+- `frontend/src/config/api.js`: endpoint configuration
+- `frontend/src/lib`: public/admin Axios clients
+- `frontend/src/services`: Category, Brand and Product services
+- `frontend/src/components/admin`: Header, SideBar, AdminTable and simple forms
+
+## Not implemented yet
+
+Login, roles, user management, cart, checkout, orders, payments, VNPay, wishlist, reviews, inventory, reports, product administration, variants, media management, promotions and all other advanced ecommerce modules are intentionally out of scope.
+
+See [API testing notes](docs/API_TEST.md) for Postman examples. Always send `Accept: application/json`.
