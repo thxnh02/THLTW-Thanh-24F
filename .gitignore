@@ -4,10 +4,14 @@
 .env.backup
 .env.production
 /node_modules
+/files/
 
 # === Backend (Laravel) ===
 .phpactor.json
 .phpunit.result.cache
+/backend/.agents/
+/backend/.claude/
+/backend/.mcp.json
 /backend/.fleet
 /backend/.idea
 /backend/.nova
