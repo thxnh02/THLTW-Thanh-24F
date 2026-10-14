@@ -48,39 +48,39 @@ export default function ProductForm({ initialData = blank, categories = [], bran
   return (
     <form className="space-y-5" onSubmit={submit}>
       <section aria-labelledby="product-basic-heading" className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-        <div><h2 className="text-lg font-semibold text-slate-950" id="product-basic-heading">Basic info</h2><p className="mt-1 text-sm text-slate-600">Use a clear product name and a stable URL slug.</p></div>
-        <label className="admin-label">Product name<input {...fieldProps("name")} autoComplete="off" className="admin-input" maxLength={180} name="name" required value={form.name} onChange={change} />{fieldError("name")}</label>
-        <label className="admin-label">Slug<input {...fieldProps("slug")} className="admin-input" maxLength={200} name="slug" required value={form.slug} onChange={change} />{fieldError("slug")}</label>
-        <label className="admin-label">Description<textarea {...fieldProps("description")} className="admin-input min-h-28 resize-y" name="description" value={form.description ?? ""} onChange={change} />{fieldError("description")}</label>
+        <h2 className="text-lg font-semibold text-slate-950" id="product-basic-heading">Thông tin cơ bản</h2>
+        <label className="admin-label">Tên sản phẩm<input {...fieldProps("name")} autoComplete="off" className="admin-input" maxLength={180} name="name" required value={form.name} onChange={change} />{fieldError("name")}</label>
+        <label className="admin-label">Đường dẫn<input {...fieldProps("slug")} className="admin-input" maxLength={200} name="slug" required value={form.slug} onChange={change} />{fieldError("slug")}</label>
+        <label className="admin-label">Mô tả<textarea {...fieldProps("description")} className="admin-input min-h-28 resize-y" name="description" value={form.description ?? ""} onChange={change} />{fieldError("description")}</label>
       </section>
 
       <section aria-labelledby="product-classification-heading" className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-        <div><h2 className="text-lg font-semibold text-slate-950" id="product-classification-heading">Classification</h2><p className="mt-1 text-sm text-slate-600">Choose from every available category and brand.</p></div>
+        <h2 className="text-lg font-semibold text-slate-950" id="product-classification-heading">Phân loại</h2>
         <div className="grid gap-4 sm:grid-cols-2">
-          <label className="admin-label">Category<select {...fieldProps("category_id")} className="admin-input" name="category_id" required value={form.category_id} onChange={change}><option value="">Select category</option>{categories.map((category) => <option key={category.id} value={category.id}>{"— ".repeat(categoryDepth(category, categories))}{category.name}</option>)}</select>{fieldError("category_id")}</label>
-          <label className="admin-label">Brand <span className="font-normal text-slate-500">(optional)</span><select {...fieldProps("brand_id")} className="admin-input" name="brand_id" value={form.brand_id} onChange={change}><option value="">No brand</option>{brands.map((brand) => <option key={brand.id} value={brand.id}>{brand.name}</option>)}</select>{fieldError("brand_id")}</label>
+          <label className="admin-label">Danh mục<select {...fieldProps("category_id")} className="admin-input" name="category_id" required value={form.category_id} onChange={change}><option value="">Chọn danh mục</option>{categories.map((category) => <option key={category.id} value={category.id}>{"— ".repeat(categoryDepth(category, categories))}{category.name}</option>)}</select>{fieldError("category_id")}</label>
+          <label className="admin-label">Thương hiệu <span className="font-normal text-slate-500">(không bắt buộc)</span><select {...fieldProps("brand_id")} className="admin-input" name="brand_id" value={form.brand_id} onChange={change}><option value="">Không có thương hiệu</option>{brands.map((brand) => <option key={brand.id} value={brand.id}>{brand.name}</option>)}</select>{fieldError("brand_id")}</label>
         </div>
       </section>
 
       <section aria-labelledby="product-pricing-heading" className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-        <div><h2 className="text-lg font-semibold text-slate-950" id="product-pricing-heading">Pricing and image</h2><p className="mt-1 text-sm text-slate-600">Enter a price with up to two decimal places. Images use a URL/path; uploads are not supported.</p></div>
-        <label className="admin-label">Price<input {...fieldProps("price")} className="admin-input max-w-sm" inputMode="decimal" min="0" name="price" required step="0.01" type="number" value={form.price} onChange={change} />{fieldError("price")}</label>
-        <label className="admin-label">Image URL or path<input {...fieldProps("image")} className="admin-input" maxLength={255} name="image" placeholder="https://… or /storage/products/item.jpg" value={form.image ?? ""} onChange={change} />{fieldError("image")}</label>
+        <h2 className="text-lg font-semibold text-slate-950" id="product-pricing-heading">Giá bán và hình ảnh</h2>
+        <label className="admin-label">Giá sản phẩm<input {...fieldProps("price")} className="admin-input max-w-sm" inputMode="decimal" min="0" name="price" required step="0.01" type="number" value={form.price} onChange={change} />{fieldError("price")}</label>
+        <label className="admin-label">Đường dẫn hình ảnh<input {...fieldProps("image")} className="admin-input" maxLength={255} name="image" value={form.image ?? ""} onChange={change} />{fieldError("image")}</label>
         <div aria-live="polite" className="flex items-center gap-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
-          {previewSource && !previewFailed ? <Image alt={`${form.name || "Product"} preview`} className="h-20 w-20 rounded-lg object-cover" height={80} loading="lazy" src={previewSource} unoptimized width={80} onError={() => setPreviewFailed(true)} /> : <div aria-label="Image placeholder" className="grid h-20 w-20 place-items-center rounded-lg bg-slate-200 text-xs font-semibold text-slate-500" role="img">No image</div>}
-          <div><p className="text-sm font-semibold text-slate-800">Image preview</p><p className="mt-1 text-xs text-slate-500">A missing or invalid URL uses this neutral placeholder.</p></div>
+          {previewSource && !previewFailed ? <Image alt={`${form.name || "Sản phẩm"} preview`} className="h-20 w-20 rounded-lg object-cover" height={80} loading="lazy" src={previewSource} unoptimized width={80} onError={() => setPreviewFailed(true)} /> : <div aria-label="Chưa có hình ảnh" className="grid h-20 w-20 place-items-center rounded-lg bg-slate-200 text-xs font-semibold text-slate-500" role="img">Chưa có ảnh</div>}
+          <p className="text-sm font-semibold text-slate-800">Xem trước hình ảnh</p>
         </div>
       </section>
 
       <section aria-labelledby="product-visibility-heading" className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-        <h2 className="text-lg font-semibold text-slate-950" id="product-visibility-heading">Visibility</h2>
-        <label className="mt-4 flex min-h-11 items-center gap-3 rounded-xl bg-slate-50 p-4 text-sm font-medium text-slate-700"><input {...fieldProps("status")} checked={form.status} className="h-4 w-4 accent-indigo-700" name="status" type="checkbox" onChange={change} /> Show this product on the storefront</label>
+        <h2 className="text-lg font-semibold text-slate-950" id="product-visibility-heading">Hiển thị cửa hàng</h2>
+        <label className="mt-4 flex min-h-11 items-center gap-3 rounded-xl bg-slate-50 p-4 text-sm font-medium text-slate-700"><input {...fieldProps("status")} checked={form.status} className="h-4 w-4 accent-indigo-700" name="status" type="checkbox" onChange={change} /> Hiển thị sản phẩm trên cửa hàng</label>
         {fieldError("status")}
       </section>
 
       <div className="flex flex-wrap gap-3 border-t border-slate-200 pt-5">
-        <Link className="inline-flex min-h-11 items-center rounded-lg border border-slate-300 px-4 text-sm font-semibold text-slate-700 hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2" href={cancelHref}>Cancel</Link>
-        <button className="min-h-11 rounded-lg bg-slate-950 px-5 text-sm font-semibold text-white transition hover:bg-indigo-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-50" disabled={submitting || !categories.length} type="submit">{submitting ? "Saving…" : initialData.id ? "Save product" : "Create product"}</button>
+        <Link className="inline-flex min-h-11 items-center rounded-lg border border-slate-300 px-4 text-sm font-semibold text-slate-700 hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2" href={cancelHref}>Hủy</Link>
+        <button className="min-h-11 rounded-lg bg-slate-950 px-5 text-sm font-semibold text-white transition hover:bg-indigo-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-50" disabled={submitting || !categories.length} type="submit">{submitting ? "Đang lưu…" : initialData.id ? "Lưu sản phẩm" : "Thêm sản phẩm"}</button>
       </div>
     </form>
   );
