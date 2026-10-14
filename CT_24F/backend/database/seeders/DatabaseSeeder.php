@@ -32,17 +32,17 @@ class DatabaseSeeder extends Seeder
         ];
 
         foreach ($catalog as [$name, $slug, $category, $brand, $price]) {
-            Product::updateOrCreate(['slug' => $slug], ['category_id' => $category->id, 'brand_id' => $brand->id, 'name' => $name, 'description' => 'Sản phẩm dữ liệu mẫu dùng để học API và phân trang.', 'price' => $price, 'status' => true]);
+            Product::withTrashed()->firstOrCreate(['slug' => $slug], ['category_id' => $category->id, 'brand_id' => $brand->id, 'name' => $name, 'description' => 'Sản phẩm dữ liệu mẫu dùng để học API và phân trang.', 'price' => $price, 'status' => true]);
         }
     }
 
     private function category(string $slug, array $attributes): Category
     {
-        return Category::updateOrCreate(['slug' => $slug], $attributes);
+        return Category::withTrashed()->firstOrCreate(['slug' => $slug], $attributes);
     }
 
     private function brand(string $slug, string $name, int $sortOrder): Brand
     {
-        return Brand::updateOrCreate(['slug' => $slug], ['name' => $name, 'description' => 'Thương hiệu demo', 'sort_order' => $sortOrder, 'status' => true]);
+        return Brand::withTrashed()->firstOrCreate(['slug' => $slug], ['name' => $name, 'description' => 'Thương hiệu demo', 'sort_order' => $sortOrder, 'status' => true]);
     }
 }

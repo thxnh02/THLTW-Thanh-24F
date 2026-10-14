@@ -68,14 +68,21 @@ class CatalogApiTest extends TestCase
         $this->getJson('/api/products')->assertOk()->assertJsonMissingPath('data.0.category_id')->assertJsonMissingPath('data.0.brand_id')->assertJsonMissingPath('data.0.deleted_at')->assertJsonMissingPath('data.0.status');
     }
 
-    public function test_demo_seeder_is_idempotent(): void
+    public function test_demo_seeder_is_idempotent_and_preserves_edited_demo_records(): void
     {
         $this->seed(DatabaseSeeder::class);
+        Category::where('slug', 'dien-tu')->update(['name' => 'Tên danh mục đã chỉnh sửa']);
+        Brand::where('slug', 'apple')->update(['name' => 'Tên thương hiệu đã chỉnh sửa']);
+        Product::where('slug', 'iphone-15')->update(['name' => 'Tên sản phẩm đã chỉnh sửa', 'price' => 123456]);
+
         $this->seed(DatabaseSeeder::class);
 
         $this->assertDatabaseCount('categories', 5);
         $this->assertDatabaseCount('brands', 3);
         $this->assertDatabaseCount('products', 14);
+        $this->assertDatabaseHas('categories', ['slug' => 'dien-tu', 'name' => 'Tên danh mục đã chỉnh sửa']);
+        $this->assertDatabaseHas('brands', ['slug' => 'apple', 'name' => 'Tên thương hiệu đã chỉnh sửa']);
+        $this->assertDatabaseHas('products', ['slug' => 'iphone-15', 'name' => 'Tên sản phẩm đã chỉnh sửa', 'price' => 123456]);
     }
 
     public function test_admin_category_crud_pagination_validation_and_delete_rules(): void

@@ -1,0 +1,50 @@
+name: CT_24F checks
+
+on:
+  push:
+    branches: [CT_24F]
+  pull_request:
+    branches: [CT_24F]
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: CT_24F/backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, sqlite3, pdo_sqlite
+          coverage: none
+      - uses: actions/cache@v4
+        with:
+          path: CT_24F/backend/vendor
+          key: composer-${{ runner.os }}-${{ hashFiles('CT_24F/backend/composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+      - run: composer install --no-interaction --prefer-dist
+      - run: ./vendor/bin/pint --test
+      - run: php artisan test
+        env:
+          APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: CT_24F/frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: CT_24F/frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
