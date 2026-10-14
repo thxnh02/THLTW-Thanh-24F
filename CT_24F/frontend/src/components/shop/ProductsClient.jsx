@@ -10,17 +10,15 @@ export default function ProductsClient({ initialPage = 1 }) {
   const router = useRouter();
   const [products, setProducts] = useState([]);
   const [meta, setMeta] = useState(null);
-  const [page, setPage] = useState(initialPage);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    productServices.getProducts({ page })
+    productServices.getProducts({ page: initialPage })
       .then((response) => { setProducts(response.data.data ?? []); setMeta(response.data.meta); setError(""); })
       .catch(() => setError("Không tải được sản phẩm. Hãy kiểm tra Laravel API đang chạy."));
-  }, [page]);
+  }, [initialPage]);
 
   const changePage = (target) => {
-    setPage(target);
     router.push(target === 1 ? "/products" : `/products?page=${target}`, { scroll: false });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
