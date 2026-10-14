@@ -153,12 +153,12 @@
 - Consumes: Tasks 5–6.
 - Produces: exact singular routes `/admin/category/...` and `/admin/brand/...`; category parent choices exclude self/descendants and include all pages; delete/restore/force pages show real record identity and only mutate on explicit confirmation.
 
-- [ ] **Step 1: Refactor existing list actions** to link to `[id]/edit`, `[id]/delete`, and `/trash`; remove inline API deletion and `window.confirm`.
-- [ ] **Step 2: Implement dedicated Category/Brand action pages** using the shared loader/confirmation UI; call trashed detail for restore/force, normal detail for soft delete, show 404/409 messages, then redirect to list/trash only after success.
-- [ ] **Step 3: Implement paginated trash pages** using only backend page data, displaying deleted_at distinctly from status and linking to restore/force pages.
-- [ ] **Step 4: Update create/edit forms** with complete category option loading, parent graph filtering, field-level 422 messages, and reliable back/cancel navigation.
-- [ ] **Step 5: Run** `cd frontend; npm.cmd run lint; npm.cmd run build`; confirm all new routes appear and no static `/trash` route is swallowed by `[id]`.
-- [ ] **Step 6: Commit** as `Add category and brand dedicated trash workflows`.
+- [x] **Step 1: Refactor existing list actions** to link to `[id]/edit`, `[id]/delete`, and `/trash`; remove inline API deletion and `window.confirm`.
+- [x] **Step 2: Implement dedicated Category/Brand action pages** using the shared loader/confirmation UI; call trashed detail for restore/force, normal detail for soft delete, show 404/409 messages, then redirect to list/trash only after success.
+- [x] **Step 3: Implement paginated trash pages** using only backend page data, displaying deleted_at distinctly from status and linking to restore/force pages.
+- [x] **Step 4: Update create/edit forms** with complete category option loading, parent graph filtering, field-level 422 messages, and reliable back/cancel navigation.
+- [x] **Step 5: Run** `cd frontend; npm.cmd run lint; npm.cmd run build`; confirm all new routes appear and no static `/trash` route is swallowed by `[id]`.
+- [x] **Step 6: Commit** as `Add category and brand dedicated trash workflows`.
 
 ### Task 8: Product form and complete admin lifecycle pages
 

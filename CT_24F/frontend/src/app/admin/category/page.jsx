@@ -1,59 +1,62 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import AdminTable from "@/components/admin/AdminTable";
+import StatusBadge from "@/components/admin/StatusBadge";
 import Pagination from "@/components/common/Pagination";
-import ConfirmDialog from "@/components/admin/ConfirmDialog";
 import categoryServices from "@/services/categoryServices";
 
 export default function AdminCategoriesPage() {
   const [data, setData] = useState([]);
   const [meta, setMeta] = useState(null);
-  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState(null);
-  const [deleteError, setDeleteError] = useState("");
-  const [deleting, setDeleting] = useState(false);
-  const [notice, setNotice] = useState("");
 
-  const load = (target = page) => {
+  const load = useCallback((page = 1) => {
     setLoading(true);
-    categoryServices.getAdminCategories({ page: target }).then((response) => {
-      setData(response.data.data); setMeta(response.data.meta); setPage(target);
-    }).catch(() => setError("Không tải được danh mục.")).finally(() => setLoading(false));
-  };
+    setError("");
+    categoryServices.getAdminCategories({ page }).then((response) => {
+      setData(response.data.data);
+      setMeta(response.data.meta);
+    }).catch((requestError) => {
+      setError(requestError.response?.data?.message ?? "Could not load categories.");
+    }).finally(() => setLoading(false));
+  }, []);
 
   useEffect(() => {
+    let current = true;
     categoryServices.getAdminCategories({ page: 1 }).then((response) => {
-      setData(response.data.data); setMeta(response.data.meta);
-    }).catch(() => setError("Không tải được danh mục.")).finally(() => setLoading(false));
+      if (!current) return;
+      setData(response.data.data);
+      setMeta(response.data.meta);
+    }).catch((requestError) => {
+      if (current) setError(requestError.response?.data?.message ?? "Could not load categories.");
+    }).finally(() => {
+      if (current) setLoading(false);
+    });
+    return () => { current = false; };
   }, []);
 
   const columns = [
-    { key: "id", label: "ID" }, { key: "name", label: "Tên" }, { key: "slug", label: "Slug" },
-    { key: "parent", label: "Danh mục cha", render: (item) => item.parent?.name ?? "—" },
-    { key: "status", label: "Trạng thái", render: (item) => item.status ? "Hiển thị" : "Ẩn" },
+    { key: "id", label: "ID" },
+    { key: "name", label: "Name" },
+    { key: "slug", label: "Slug" },
+    { key: "parent", label: "Parent", render: (item) => item.parent?.name ?? "—" },
+    { key: "status", label: "Visibility", render: (item) => <StatusBadge status={item.status} /> },
   ];
 
-  const removeCategory = async () => {
-    setDeleting(true); setDeleteError("");
-    try {
-      await categoryServices.deleteCategory(selectedCategory.id);
-      setData((current) => current.filter((item) => item.id !== selectedCategory.id));
-      setMeta((current) => current ? { ...current, total: Math.max(0, current.total - 1) } : current);
-      setNotice(`Đã xóa danh mục “${selectedCategory.name}”.`); setSelectedCategory(null);
-    } catch (requestError) {
-      setDeleteError(requestError.response?.data?.message ?? "Không thể xóa danh mục lúc này.");
-    } finally { setDeleting(false); }
-  };
-
-  return <section>
-    <div className="mb-6 flex flex-wrap items-end justify-between gap-4"><div><p className="eyebrow">Tổ chức cửa hàng</p><h1 className="section-title">Danh mục</h1><p className="mt-2 text-sm text-slate-500">Quản lý cách sản phẩm được sắp xếp và khám phá.</p></div><Link className="rounded-full bg-[#193b34] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#28564d]" href="/admin/category/create">+ Thêm danh mục</Link></div>
-    {notice && <p aria-live="polite" className="mb-4 rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{notice}</p>}{error && <p className="mb-3 rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</p>}
-    <AdminTable columns={columns} data={data} loading={loading} renderActions={(item) => <div className="flex gap-3 whitespace-nowrap"><Link className="font-medium text-[#37665b] hover:underline" href={`/admin/category/${item.id}/edit`}>Sửa</Link><button className="font-medium text-red-600 hover:underline" onClick={() => { setSelectedCategory(item); setDeleteError(""); }} type="button">Xóa</button></div>} />
-    <Pagination meta={meta} onPageChange={load} />
-    {selectedCategory && <ConfirmDialog busy={deleting} error={deleteError} message={`Bạn có chắc muốn xóa “${selectedCategory.name}”? Nếu danh mục đang có sản phẩm hoặc danh mục con, hệ thống sẽ giữ lại và thông báo lý do.`} onCancel={() => setSelectedCategory(null)} onConfirm={removeCategory} title="Xác nhận xóa danh mục" />}
-  </section>;
+  return (
+    <section className="space-y-5">
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <div><p className="text-xs font-bold uppercase tracking-[0.16em] text-indigo-700">Catalog structure</p><h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">Categories</h1><p className="mt-2 max-w-xl text-sm text-slate-600">Keep products organized with a clear parent and child structure.</p></div>
+        <div className="flex flex-wrap gap-2">
+          <Link className="inline-flex min-h-11 items-center rounded-lg border border-slate-300 px-4 text-sm font-semibold text-slate-700 hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2" href="/admin/category/trash">View trash</Link>
+          <Link className="inline-flex min-h-11 items-center rounded-lg bg-slate-950 px-4 text-sm font-semibold text-white hover:bg-indigo-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2" href="/admin/category/create">Add category</Link>
+        </div>
+      </header>
+      <AdminTable columns={columns} data={data} emptyMessage="No categories yet." error={error} loading={loading} onRetry={() => load(meta?.current_page ?? 1)} renderActions={(item) => <div className="flex flex-wrap gap-3 whitespace-nowrap"><Link aria-label={`Edit category ${item.name}`} className="font-semibold text-indigo-700 hover:underline focus-visible:outline focus-visible:outline-2" href={`/admin/category/${item.id}/edit`}>Edit</Link><Link aria-label={`Delete category ${item.name}`} className="font-semibold text-rose-700 hover:underline focus-visible:outline focus-visible:outline-2" href={`/admin/category/${item.id}/delete`}>Delete</Link></div>} />
+      <Pagination meta={meta} onPageChange={load} />
+    </section>
+  );
 }

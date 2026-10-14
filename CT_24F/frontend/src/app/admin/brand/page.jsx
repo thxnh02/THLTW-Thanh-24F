@@ -1,58 +1,62 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import AdminTable from "@/components/admin/AdminTable";
+import StatusBadge from "@/components/admin/StatusBadge";
 import Pagination from "@/components/common/Pagination";
-import ConfirmDialog from "@/components/admin/ConfirmDialog";
 import brandServices from "@/services/brandServices";
 
 export default function AdminBrandsPage() {
   const [data, setData] = useState([]);
   const [meta, setMeta] = useState(null);
-  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [selectedBrand, setSelectedBrand] = useState(null);
-  const [deleteError, setDeleteError] = useState("");
-  const [deleting, setDeleting] = useState(false);
-  const [notice, setNotice] = useState("");
 
-  const load = (target = page) => {
+  const load = useCallback((page = 1) => {
     setLoading(true);
-    brandServices.getAdminBrands({ page: target }).then((response) => {
-      setData(response.data.data); setMeta(response.data.meta); setPage(target);
-    }).catch(() => setError("Không tải được thương hiệu.")).finally(() => setLoading(false));
-  };
+    setError("");
+    brandServices.getAdminBrands({ page }).then((response) => {
+      setData(response.data.data);
+      setMeta(response.data.meta);
+    }).catch((requestError) => {
+      setError(requestError.response?.data?.message ?? "Could not load brands.");
+    }).finally(() => setLoading(false));
+  }, []);
 
   useEffect(() => {
+    let current = true;
     brandServices.getAdminBrands({ page: 1 }).then((response) => {
-      setData(response.data.data); setMeta(response.data.meta);
-    }).catch(() => setError("Không tải được thương hiệu.")).finally(() => setLoading(false));
+      if (!current) return;
+      setData(response.data.data);
+      setMeta(response.data.meta);
+    }).catch((requestError) => {
+      if (current) setError(requestError.response?.data?.message ?? "Could not load brands.");
+    }).finally(() => {
+      if (current) setLoading(false);
+    });
+    return () => { current = false; };
   }, []);
 
   const columns = [
-    { key: "id", label: "ID" }, { key: "name", label: "Tên" }, { key: "slug", label: "Slug" }, { key: "sort_order", label: "Thứ tự" },
-    { key: "status", label: "Trạng thái", render: (item) => item.status ? "Hiển thị" : "Ẩn" },
+    { key: "id", label: "ID" },
+    { key: "name", label: "Name" },
+    { key: "slug", label: "Slug" },
+    { key: "sort_order", label: "Sort order" },
+    { key: "status", label: "Visibility", render: (item) => <StatusBadge status={item.status} /> },
   ];
 
-  const removeBrand = async () => {
-    setDeleting(true); setDeleteError("");
-    try {
-      await brandServices.deleteBrand(selectedBrand.id);
-      setData((current) => current.filter((item) => item.id !== selectedBrand.id));
-      setMeta((current) => current ? { ...current, total: Math.max(0, current.total - 1) } : current);
-      setNotice(`Đã xóa thương hiệu “${selectedBrand.name}”.`); setSelectedBrand(null);
-    } catch (requestError) {
-      setDeleteError(requestError.response?.data?.message ?? "Không thể xóa thương hiệu lúc này.");
-    } finally { setDeleting(false); }
-  };
-
-  return <section>
-    <div className="mb-6 flex flex-wrap items-end justify-between gap-4"><div><p className="eyebrow">Bộ sưu tập thương hiệu</p><h1 className="section-title">Thương hiệu</h1><p className="mt-2 text-sm text-slate-500">Cập nhật thông tin và thứ tự hiển thị thương hiệu.</p></div><Link className="rounded-full bg-[#193b34] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#28564d]" href="/admin/brand/create">+ Thêm thương hiệu</Link></div>
-    {notice && <p aria-live="polite" className="mb-4 rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{notice}</p>}{error && <p className="mb-3 rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</p>}
-    <AdminTable columns={columns} data={data} loading={loading} renderActions={(item) => <div className="flex gap-3 whitespace-nowrap"><Link className="font-medium text-[#37665b] hover:underline" href={`/admin/brand/${item.id}/edit`}>Sửa</Link><button className="font-medium text-red-600 hover:underline" onClick={() => { setSelectedBrand(item); setDeleteError(""); }} type="button">Xóa</button></div>} />
-    <Pagination meta={meta} onPageChange={load} />
-    {selectedBrand && <ConfirmDialog busy={deleting} error={deleteError} message={`Bạn có chắc muốn xóa thương hiệu “${selectedBrand.name}”? Nếu thương hiệu đang có sản phẩm, hệ thống sẽ giữ lại và thông báo lý do.`} onCancel={() => setSelectedBrand(null)} onConfirm={removeBrand} title="Xác nhận xóa thương hiệu" />}
-  </section>;
+  return (
+    <section className="space-y-5">
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <div><p className="text-xs font-bold uppercase tracking-[0.16em] text-indigo-700">Catalog partners</p><h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">Brands</h1><p className="mt-2 max-w-xl text-sm text-slate-600">Maintain brand details and visibility across the storefront.</p></div>
+        <div className="flex flex-wrap gap-2">
+          <Link className="inline-flex min-h-11 items-center rounded-lg border border-slate-300 px-4 text-sm font-semibold text-slate-700 hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2" href="/admin/brand/trash">View trash</Link>
+          <Link className="inline-flex min-h-11 items-center rounded-lg bg-slate-950 px-4 text-sm font-semibold text-white hover:bg-indigo-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2" href="/admin/brand/create">Add brand</Link>
+        </div>
+      </header>
+      <AdminTable columns={columns} data={data} emptyMessage="No brands yet." error={error} loading={loading} onRetry={() => load(meta?.current_page ?? 1)} renderActions={(item) => <div className="flex flex-wrap gap-3 whitespace-nowrap"><Link aria-label={`Edit brand ${item.name}`} className="font-semibold text-indigo-700 hover:underline focus-visible:outline focus-visible:outline-2" href={`/admin/brand/${item.id}/edit`}>Edit</Link><Link aria-label={`Delete brand ${item.name}`} className="font-semibold text-rose-700 hover:underline focus-visible:outline focus-visible:outline-2" href={`/admin/brand/${item.id}/delete`}>Delete</Link></div>} />
+      <Pagination meta={meta} onPageChange={load} />
+    </section>
+  );
 }
