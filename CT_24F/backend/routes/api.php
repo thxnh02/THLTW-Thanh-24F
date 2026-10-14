@@ -26,5 +26,9 @@ Route::prefix('admin')->group(function (): void {
     Route::post('brands/{id}/restore', [AdminBrandController::class, 'restore'])->whereNumber('id');
     Route::delete('brands/{id}/force', [AdminBrandController::class, 'forceDestroy'])->whereNumber('id');
     Route::apiResource('brands', AdminBrandController::class)->whereNumber('brand');
-    Route::post('products', [AdminProductController::class, 'store']);
+    Route::get('products/trash', [AdminProductController::class, 'trash']);
+    Route::get('products/trash/{id}', [AdminProductController::class, 'trashedShow'])->whereNumber('id');
+    Route::post('products/{id}/restore', [AdminProductController::class, 'restore'])->whereNumber('id');
+    Route::delete('products/{id}/force', [AdminProductController::class, 'forceDestroy'])->whereNumber('id');
+    Route::apiResource('products', AdminProductController::class)->whereNumber('product');
 });

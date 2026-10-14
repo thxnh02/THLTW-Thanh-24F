@@ -100,12 +100,12 @@
 - Consumes: Task 1 model lifecycle and Tasks 2–3 route/options conventions.
 - Produces: paginated admin product CRUD and lifecycle API under `/api/admin/products`; admin resources eager-load category/brand; public `/api/products` remains 12/page.
 
-- [ ] **Step 1: Add failing tests** named `test_admin_product_crud_validation_and_slug_is_globally_unique`, `test_admin_product_trash_restore_and_force_delete_lifecycle`, `test_product_restore_requires_live_category_and_brand`, and `test_public_products_exclude_unavailable_relations_and_paginate_twelve`. Assert category required/live, optional brand must be live, decimal range/precision, update ignores only self, admin index includes status false but excludes trash, relation guards return correct status, public list is 12/page, hidden/trashed category or brand products are excluded, and nullable brand remains supported.
-- [ ] **Step 2: Run** `cd backend; php artisan test --filter=product` and confirm new cases fail before implementation.
-- [ ] **Step 3: Implement Product requests/controller/routes** using `StoreProductRequest` and `UpdateProductRequest`, standard Resource CRUD, trash endpoints before dynamic routes, `onlyTrashed()` lifecycle lookup, category/brand existence rules scoped to `deleted_at IS NULL`, and relationship-aware restore guards. Preserve schema fields only; do not clear FKs on delete.
-- [ ] **Step 4: Implement public filtering** with `status=true`, active category, and either null brand or active brand; leave `paginate(12)` and public resource shape intact.
-- [ ] **Step 5: Run** `php artisan test --filter=product`; all API lifecycle, validation, visibility, and pagination assertions must pass.
-- [ ] **Step 6: Commit** as `Complete product admin CRUD and trash API`.
+- [x] **Step 1: Add failing tests** named `test_admin_product_crud_validation_and_slug_is_globally_unique`, `test_admin_product_trash_restore_and_force_delete_lifecycle`, `test_product_restore_requires_live_category_and_brand`, and `test_public_products_exclude_unavailable_relations_and_paginate_twelve`. Assert category required/live, optional brand must be live, decimal range/precision, update ignores only self, admin index includes status false but excludes trash, relation guards return correct status, public list is 12/page, hidden/trashed category or brand products are excluded, and nullable brand remains supported.
+- [x] **Step 2: Run** `cd backend; php artisan test --filter=product` and confirm new cases fail before implementation.
+- [x] **Step 3: Implement Product requests/controller/routes** using `StoreProductRequest` and `UpdateProductRequest`, standard Resource CRUD, trash endpoints before dynamic routes, `onlyTrashed()` lifecycle lookup, category/brand existence rules scoped to `deleted_at IS NULL`, and relationship-aware restore guards. Preserve schema fields only; do not clear FKs on delete.
+- [x] **Step 4: Implement public filtering** with `status=true`, active category, and either null brand or active brand; leave `paginate(12)` and public resource shape intact.
+- [x] **Step 5: Run** `php artisan test --filter=product`; all API lifecycle, validation, visibility, and pagination assertions must pass.
+- [x] **Step 6: Commit** as `Complete product admin CRUD and trash API`.
 
 ### Task 5: Frontend API configuration and complete option loading
 

@@ -238,6 +238,92 @@ class CatalogApiTest extends TestCase
         $this->deleteJson("/api/admin/brands/{$historicBrand->id}/force")->assertStatus(409);
     }
 
+    public function test_admin_product_crud_validation_and_slug_is_globally_unique(): void
+    {
+        $category = $this->category('admin-product-category', false);
+        $brand = $this->brand('admin-product-brand', false);
+        $payload = ['category_id' => $category->id, 'brand_id' => $brand->id, 'name' => 'Admin Product', 'slug' => 'admin-product', 'price' => '1299.90', 'status' => false];
+        $created = $this->postJson('/api/admin/products', $payload)->assertCreated()->assertJsonPath('data.status', false)->assertJsonPath('data.deleted_at', null)->assertJsonPath('data.category.id', $category->id)->assertJsonPath('data.brand.id', $brand->id);
+        $id = $created->json('data.id');
+
+        $this->getJson('/api/admin/products')->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('meta.per_page', 10);
+        $this->getJson("/api/admin/products/{$id}")->assertOk()->assertJsonPath('data.slug', 'admin-product');
+        $this->putJson("/api/admin/products/{$id}", [...$payload, 'name' => 'Updated Admin Product'])->assertOk()->assertJsonPath('data.name', 'Updated Admin Product');
+        $this->postJson('/api/admin/products', [...$payload, 'slug' => 'invalid-precision', 'price' => '100.999'])->assertUnprocessable()->assertJsonValidationErrors('price');
+        $this->postJson('/api/admin/products', [...$payload, 'slug' => 'too-expensive', 'price' => '10000000000.00'])->assertUnprocessable()->assertJsonValidationErrors('price');
+        $this->postJson('/api/admin/products', [...$payload, 'slug' => 'missing-category', 'category_id' => 9999])->assertUnprocessable()->assertJsonValidationErrors('category_id');
+
+        $other = Product::create(['category_id' => $category->id, 'name' => 'Other Product', 'slug' => 'other-product', 'price' => 1000, 'status' => true]);
+        $this->putJson("/api/admin/products/{$id}", [...$payload, 'slug' => $other->slug])->assertUnprocessable()->assertJsonValidationErrors('slug');
+
+        $trashed = Product::create(['category_id' => $category->id, 'name' => 'Trashed Slug Product', 'slug' => 'reserved-product-slug', 'price' => 1000, 'status' => true]);
+        $trashed->delete();
+        $this->postJson('/api/admin/products', [...$payload, 'slug' => $trashed->slug])->assertUnprocessable()->assertJsonValidationErrors('slug');
+    }
+
+    public function test_admin_product_trash_restore_and_force_delete_lifecycle(): void
+    {
+        $category = $this->category('product-lifecycle-category');
+        $product = Product::create(['category_id' => $category->id, 'name' => 'Lifecycle Product', 'slug' => 'lifecycle-product', 'price' => 1000, 'status' => true]);
+
+        $this->deleteJson('/api/admin/products/9999')->assertNotFound();
+        $this->deleteJson("/api/admin/products/{$product->id}")->assertOk();
+        $this->getJson("/api/admin/products/{$product->id}")->assertNotFound();
+        $this->getJson('/api/admin/products')->assertOk()->assertJsonMissing(['id' => $product->id]);
+        $this->getJson('/api/admin/products/trash')->assertOk()->assertJsonFragment(['id' => $product->id]);
+        $this->getJson("/api/admin/products/trash/{$product->id}")->assertOk()->assertJsonPath('data.deleted_at', fn ($value) => $value !== null);
+
+        $this->postJson("/api/admin/products/{$product->id}/restore")->assertOk();
+        $this->getJson("/api/admin/products/{$product->id}")->assertOk();
+        $this->deleteJson("/api/admin/products/{$product->id}")->assertOk();
+        $this->deleteJson("/api/admin/products/{$product->id}/force")->assertOk();
+        $this->getJson("/api/admin/products/trash/{$product->id}")->assertNotFound();
+    }
+
+    public function test_product_restore_requires_live_category_and_brand(): void
+    {
+        $category = $this->category('trashed-product-parent');
+        $brand = $this->brand('trashed-product-brand');
+        $categoryProduct = Product::create(['category_id' => $category->id, 'brand_id' => $brand->id, 'name' => 'Trashed Category Product', 'slug' => 'trashed-category-product', 'price' => 1000, 'status' => true]);
+        $categoryProduct->delete();
+        $category->delete();
+        $this->postJson("/api/admin/products/{$categoryProduct->id}/restore")->assertStatus(409);
+
+        $this->postJson("/api/admin/categories/{$category->id}/restore")->assertOk();
+        $this->postJson("/api/admin/products/{$categoryProduct->id}/restore")->assertOk();
+
+        $brandProduct = Product::create(['category_id' => $category->id, 'brand_id' => $brand->id, 'name' => 'Trashed Brand Product', 'slug' => 'trashed-brand-restore-product', 'price' => 1000, 'status' => true]);
+        $brandProduct->delete();
+        $brand->delete();
+        $this->postJson("/api/admin/products/{$brandProduct->id}/restore")->assertStatus(409);
+    }
+
+    public function test_public_products_exclude_unavailable_relations_and_paginate_twelve(): void
+    {
+        $visibleCategory = $this->category('public-visible-category');
+        $hiddenCategory = $this->category('public-hidden-category', false);
+        $trashedCategory = $this->category('public-trashed-category');
+        $visibleBrand = $this->brand('public-visible-brand');
+        $hiddenBrand = $this->brand('public-hidden-brand', false);
+        $trashedBrand = $this->brand('public-trashed-brand');
+
+        foreach (range(1, 13) as $number) {
+            Product::create(['category_id' => $visibleCategory->id, 'brand_id' => $visibleBrand->id, 'name' => "Public {$number}", 'slug' => "public-{$number}", 'price' => 1000, 'status' => true]);
+        }
+        Product::create(['category_id' => $visibleCategory->id, 'name' => 'No Brand', 'slug' => 'no-brand', 'price' => 1000, 'status' => true]);
+        Product::create(['category_id' => $hiddenCategory->id, 'name' => 'Hidden Category Product', 'slug' => 'hidden-category-product', 'price' => 1000, 'status' => true]);
+        Product::create(['category_id' => $visibleCategory->id, 'brand_id' => $hiddenBrand->id, 'name' => 'Hidden Brand Product', 'slug' => 'hidden-brand-product-public', 'price' => 1000, 'status' => true]);
+        Product::create(['category_id' => $visibleCategory->id, 'name' => 'Inactive Product', 'slug' => 'inactive-product', 'price' => 1000, 'status' => false]);
+        $categoryProduct = Product::create(['category_id' => $trashedCategory->id, 'name' => 'Trashed Category Relation', 'slug' => 'trashed-category-relation', 'price' => 1000, 'status' => true]);
+        $brandProduct = Product::create(['category_id' => $visibleCategory->id, 'brand_id' => $trashedBrand->id, 'name' => 'Trashed Brand Relation', 'slug' => 'trashed-brand-relation', 'price' => 1000, 'status' => true]);
+        $trashedCategory->delete();
+        $trashedBrand->delete();
+
+        $first = $this->getJson('/api/products')->assertOk()->assertJsonCount(12, 'data')->assertJsonPath('meta.per_page', 12);
+        $this->getJson('/api/products?page=2')->assertOk()->assertJsonCount(2, 'data');
+        $first->assertJsonMissing(['slug' => 'hidden-category-product'])->assertJsonMissing(['slug' => 'hidden-brand-product-public'])->assertJsonMissing(['slug' => 'inactive-product'])->assertJsonMissing(['slug' => $categoryProduct->slug])->assertJsonMissing(['slug' => $brandProduct->slug])->assertJsonFragment(['slug' => 'no-brand']);
+    }
+
     private function category(string $slug, bool $status = true, ?int $parentId = null): Category
     {
         return Category::create(['parent_id' => $parentId, 'name' => ucfirst($slug), 'slug' => $slug, 'status' => $status]);
