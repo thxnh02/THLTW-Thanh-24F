@@ -39,6 +39,35 @@ class CatalogApiTest extends TestCase
         $this->getJson('/api/products?page=2')->assertOk()->assertJsonCount(2, 'data');
     }
 
+    public function test_soft_deleted_category_brand_and_product_are_hidden_from_default_queries(): void
+    {
+        $category = $this->category('soft-delete-category');
+        $brand = $this->brand('soft-delete-brand');
+        $product = Product::create(['category_id' => $category->id, 'brand_id' => $brand->id, 'name' => 'Soft Delete Product', 'slug' => 'soft-delete-product', 'price' => 1000, 'status' => true]);
+
+        $product->delete();
+        $category->delete();
+        $brand->delete();
+
+        $this->assertNull(Category::find($category->id));
+        $this->assertNull(Brand::find($brand->id));
+        $this->assertNull(Product::find($product->id));
+        $this->assertNotNull(Category::onlyTrashed()->find($category->id));
+        $this->assertNotNull(Brand::onlyTrashed()->find($brand->id));
+        $this->assertNotNull(Product::onlyTrashed()->find($product->id));
+    }
+
+    public function test_admin_resources_include_deleted_at_without_changing_public_product_schema(): void
+    {
+        $category = $this->category('resource-category');
+        $brand = $this->brand('resource-brand');
+        $product = Product::create(['category_id' => $category->id, 'brand_id' => $brand->id, 'name' => 'Resource Product', 'slug' => 'resource-product', 'price' => 1000, 'status' => true]);
+
+        $this->getJson("/api/admin/categories/{$category->id}")->assertOk()->assertJsonPath('data.deleted_at', null);
+        $this->getJson("/api/admin/brands/{$brand->id}")->assertOk()->assertJsonPath('data.deleted_at', null);
+        $this->getJson('/api/products')->assertOk()->assertJsonMissingPath('data.0.deleted_at')->assertJsonMissingPath('data.0.status');
+    }
+
     public function test_demo_seeder_is_idempotent(): void
     {
         $this->seed(DatabaseSeeder::class);
