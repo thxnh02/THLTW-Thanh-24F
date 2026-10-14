@@ -198,6 +198,46 @@ class CatalogApiTest extends TestCase
         $this->deleteJson("/api/admin/brands/{$inUse->id}")->assertStatus(409);
     }
 
+    public function test_admin_brand_crud_and_trash_lifecycle(): void
+    {
+        foreach (range(1, 12) as $number) {
+            $this->brand("lifecycle-brand-{$number}", $number !== 1);
+        }
+        $trashed = Brand::where('slug', 'lifecycle-brand-12')->firstOrFail();
+        $trashed->delete();
+
+        $this->getJson('/api/admin/brands')->assertOk()->assertJsonCount(10, 'data')->assertJsonFragment(['id' => 1, 'status' => false]);
+        $this->getJson('/api/admin/brands/options')->assertOk()->assertJsonCount(11, 'data')->assertJsonMissing(['id' => $trashed->id]);
+        $this->postJson('/api/admin/brands', ['name' => 'Reserved Brand', 'slug' => $trashed->slug, 'status' => true])->assertUnprocessable()->assertJsonValidationErrors('slug');
+        $this->postJson('/api/admin/brands/1/restore')->assertNotFound();
+
+        $this->getJson('/api/admin/brands/1')->assertOk();
+        $this->getJson('/api/admin/brands/12')->assertNotFound();
+        $this->getJson('/api/admin/brands/trash')->assertOk()->assertJsonFragment(['id' => $trashed->id]);
+        $this->getJson("/api/admin/brands/trash/{$trashed->id}")->assertOk()->assertJsonPath('data.deleted_at', fn ($value) => $value !== null);
+        $this->postJson("/api/admin/brands/{$trashed->id}/restore")->assertOk();
+        $this->assertNotNull(Brand::find($trashed->id));
+
+        $permanent = $this->brand('permanent-brand');
+        $this->deleteJson("/api/admin/brands/{$permanent->id}")->assertOk();
+        $this->deleteJson("/api/admin/brands/{$permanent->id}/force")->assertOk();
+        $this->getJson("/api/admin/brands/trash/{$permanent->id}")->assertNotFound();
+    }
+
+    public function test_brand_deletion_guards_include_trashed_products(): void
+    {
+        $category = $this->category('brand-guard-category');
+        $hiddenBrand = $this->brand('brand-with-hidden-product');
+        Product::create(['category_id' => $category->id, 'brand_id' => $hiddenBrand->id, 'name' => 'Hidden Brand Product', 'slug' => 'hidden-brand-product', 'price' => 1000, 'status' => false]);
+        $this->deleteJson("/api/admin/brands/{$hiddenBrand->id}")->assertStatus(409);
+
+        $historicBrand = $this->brand('brand-with-trashed-product');
+        $product = Product::create(['category_id' => $category->id, 'brand_id' => $historicBrand->id, 'name' => 'Trashed Brand Product', 'slug' => 'trashed-brand-product', 'price' => 1000, 'status' => true]);
+        $product->delete();
+        $this->deleteJson("/api/admin/brands/{$historicBrand->id}")->assertOk();
+        $this->deleteJson("/api/admin/brands/{$historicBrand->id}/force")->assertStatus(409);
+    }
+
     private function category(string $slug, bool $status = true, ?int $parentId = null): Category
     {
         return Category::create(['parent_id' => $parentId, 'name' => ucfirst($slug), 'slug' => $slug, 'status' => $status]);

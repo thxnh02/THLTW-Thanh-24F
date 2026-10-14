@@ -82,11 +82,11 @@
 - Consumes: Task 1 SoftDeletes and Task 2 route/response conventions.
 - Produces: complete `/api/admin/brands` resource lifecycle plus `trash`, `trashedShow`, `restore`, `forceDestroy`, and all-record `options` returning `{id,name}`.
 
-- [ ] **Step 1: Add failing tests** named `test_admin_brand_crud_and_trash_lifecycle` and `test_brand_deletion_guards_include_trashed_products`. Cover normal/trashed detail separation, reserved trashed slugs, list pagination at 10, restore only from trash, 409 for soft-delete with an active product, and 409 for force-delete with any active or trashed product.
-- [ ] **Step 2: Run** `cd backend; php artisan test --filter=brand` and confirm lifecycle tests fail before implementation.
-- [ ] **Step 3: Implement Brand routes/controller/options** with static routes before `apiResource`; use onlyTrashed for trash actions, keep hidden brands in normal admin list, soft-delete only when no active products refer to them, and force-delete only when no product including trashed rows refers to them.
-- [ ] **Step 4: Run** `php artisan test --filter=brand`; all lifecycle and dependency assertions must pass.
-- [ ] **Step 5: Commit** as `Add brand trash lifecycle and dependency guards`.
+- [x] **Step 1: Add failing tests** named `test_admin_brand_crud_and_trash_lifecycle` and `test_brand_deletion_guards_include_trashed_products`. Cover normal/trashed detail separation, reserved trashed slugs, list pagination at 10, restore only from trash, 409 for soft-delete with an active product, and 409 for force-delete with any active or trashed product.
+- [x] **Step 2: Run** `cd backend; php artisan test --filter=brand` and confirm lifecycle tests fail before implementation.
+- [x] **Step 3: Implement Brand routes/controller/options** with static routes before `apiResource`; use onlyTrashed for trash actions, keep hidden brands in normal admin list, soft-delete only when no active products refer to them, and force-delete only when no product including trashed rows refers to them.
+- [x] **Step 4: Run** `php artisan test --filter=brand`; all lifecycle and dependency assertions must pass.
+- [x] **Step 5: Commit** as `Add brand trash lifecycle and dependency guards`.
 
 ### Task 4: Product admin CRUD/trash and public availability rules
 

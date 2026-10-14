@@ -20,6 +20,11 @@ Route::prefix('admin')->group(function (): void {
     Route::post('categories/{id}/restore', [AdminCategoryController::class, 'restore'])->whereNumber('id');
     Route::delete('categories/{id}/force', [AdminCategoryController::class, 'forceDestroy'])->whereNumber('id');
     Route::apiResource('categories', AdminCategoryController::class)->whereNumber('category');
-    Route::apiResource('brands', AdminBrandController::class);
+    Route::get('brands/trash', [AdminBrandController::class, 'trash']);
+    Route::get('brands/trash/{id}', [AdminBrandController::class, 'trashedShow'])->whereNumber('id');
+    Route::get('brands/options', [AdminBrandController::class, 'options']);
+    Route::post('brands/{id}/restore', [AdminBrandController::class, 'restore'])->whereNumber('id');
+    Route::delete('brands/{id}/force', [AdminBrandController::class, 'forceDestroy'])->whereNumber('id');
+    Route::apiResource('brands', AdminBrandController::class)->whereNumber('brand');
     Route::post('products', [AdminProductController::class, 'store']);
 });
