@@ -1,13 +1,40 @@
 "use client";
 
-export default function ConfirmDialog({ title, message, error, busy, onCancel, onConfirm }) {
-  return <div className="fixed inset-0 z-50 grid place-items-center bg-[#10231f]/45 p-4 backdrop-blur-[2px]" onMouseDown={(event) => { if (event.target === event.currentTarget && !busy) onCancel(); }}>
-    <section aria-labelledby="confirm-title" aria-modal="true" className="w-full max-w-md rounded-[1.5rem] border border-white/70 bg-white p-6 shadow-2xl" role="alertdialog">
-      <span className="grid h-11 w-11 place-items-center rounded-2xl bg-red-50 text-lg text-red-600">!</span>
-      <h2 className="mt-4 text-lg font-semibold text-slate-900" id="confirm-title">{title}</h2>
-      <p className="mt-2 text-sm leading-6 text-slate-500">{message}</p>
-      {error && <p className="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
-      <div className="mt-6 flex justify-end gap-2"><button className="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50 disabled:opacity-50" disabled={busy} onClick={onCancel} type="button">Giữ lại</button><button className="rounded-full bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700 disabled:opacity-50" disabled={busy} onClick={onConfirm} type="button">{busy ? "Đang xóa..." : "Xác nhận xóa"}</button></div>
-    </section>
-  </div>;
+import { useEffect, useRef, useState } from "react";
+
+export default function ConfirmDialog({ record, title, actionLabel, description, onConfirm, onDismiss, onComplete }) {
+  const dialogRef = useRef(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (record && dialog && !dialog.open) dialog.showModal();
+    if (!record && dialog?.open) dialog.close();
+  }, [record]);
+
+  const confirm = async () => {
+    if (submitting) return;
+    setSubmitting(true);
+    setError("");
+    try {
+      await onConfirm(record);
+      dialogRef.current?.close();
+      onComplete?.();
+      onDismiss();
+    } catch (requestError) {
+      setError(requestError?.response?.data?.message ?? "Không thể thực hiện thao tác. Vui lòng thử lại.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return <dialog aria-labelledby="confirm-dialog-title" className="m-auto w-[min(92vw,30rem)] rounded-2xl p-0 text-slate-900 shadow-2xl backdrop:bg-slate-950/50" onCancel={(event) => { event.preventDefault(); if (!submitting) onDismiss(); }} onClick={(event) => { if (event.target === dialogRef.current && !submitting) onDismiss(); }} onClose={onDismiss} ref={dialogRef}>
+    {record && <div className="space-y-5 p-6 sm:p-7">
+      <div><p className="text-xs font-bold uppercase tracking-[.15em] text-rose-700">Xác nhận thao tác</p><h2 className="mt-2 text-xl font-semibold" id="confirm-dialog-title">{title}</h2></div>
+      <p className="text-sm leading-6 text-slate-600">{description} <span className="font-semibold text-slate-900">{record.name}</span>?</p>
+      {error && <p className="rounded-lg bg-rose-50 p-3 text-sm text-rose-800" role="alert">{error}</p>}
+      <div className="flex justify-end gap-3"><button autoFocus className="min-h-11 rounded-lg border border-slate-300 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50" disabled={submitting} onClick={onDismiss} type="button">Hủy</button><button className="min-h-11 rounded-lg bg-rose-700 px-4 text-sm font-semibold text-white hover:bg-rose-800 disabled:opacity-50" disabled={submitting} onClick={confirm} type="button">{submitting ? "Đang xử lý…" : actionLabel}</button></div>
+    </div>}
+  </dialog>;
 }

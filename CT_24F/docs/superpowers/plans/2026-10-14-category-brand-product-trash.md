@@ -18,7 +18,7 @@
 - Keep public routes `/`, `/categories`, `/brands`, `/products?page=N` and existing plural `/api` endpoints.
 - Keep Laravel FormRequest → controller → Resource → route and frontend API config → Axios → service → page architecture.
 - Keep JavaScript/JSX, `jsconfig.json`, Next 16, React 19, Tailwind 4, and avoid TypeScript migration.
-- Keep admin frontend URLs singular and API paths plural; destructive actions require dedicated pages and explicit confirmation.
+- Keep admin frontend URLs singular and API paths plural; per the user's interaction requirement, soft-delete and permanent-delete confirm in an accessible dialog without navigating to a new page. Restore may keep a dedicated confirmation page.
 - No auth/cart/orders/payment/stock/variants/reviews/wishlist/media upload or other unrelated modules.
 - Never commit `.env`, credentials, MySQL files, vendor, node_modules, or build output.
 - Never run `migrate:fresh`, `db:wipe`, DROP/TRUNCATE, git reset/clean, rebase, merge, or force-push.
@@ -153,9 +153,9 @@
 - Consumes: Tasks 5–6.
 - Produces: exact singular routes `/admin/category/...` and `/admin/brand/...`; category parent choices exclude self/descendants and include all pages; delete/restore/force pages show real record identity and only mutate on explicit confirmation.
 
-- [x] **Step 1: Refactor existing list actions** to link to `[id]/edit`, `[id]/delete`, and `/trash`; remove inline API deletion and `window.confirm`.
-- [x] **Step 2: Implement dedicated Category/Brand action pages** using the shared loader/confirmation UI; call trashed detail for restore/force, normal detail for soft delete, show 404/409 messages, then redirect to list/trash only after success.
-- [x] **Step 3: Implement paginated trash pages** using only backend page data, displaying deleted_at distinctly from status and linking to restore/force pages.
+- [x] **Step 1: Refactor existing list actions** to link to `[id]/edit` and `/trash`; soft-delete actions open an inline confirmation dialog and call the service only after an explicit confirm.
+- [x] **Step 2: Implement Category/Brand restore pages** using the shared loader/confirmation UI; show 404/409 messages, then redirect only after success. Soft-delete and permanent-delete use dialogs in their lists.
+- [x] **Step 3: Implement paginated trash pages** using only backend page data, displaying deleted_at distinctly from status, linking to restore, and confirming permanent deletion in place.
 - [x] **Step 4: Update create/edit forms** with complete category option loading, parent graph filtering, field-level 422 messages, and reliable back/cancel navigation.
 - [x] **Step 5: Run** `cd frontend; npm.cmd run lint; npm.cmd run build`; confirm all new routes appear and no static `/trash` route is swallowed by `[id]`.
 - [x] **Step 6: Commit** as `Add category and brand dedicated trash workflows`.
@@ -165,7 +165,7 @@
 **Files:**
 - Create: `frontend/src/components/admin/ProductForm.jsx`
 - Modify: `frontend/src/app/admin/product/create/page.jsx`
-- Create: `frontend/src/app/admin/product/page.jsx`, `[id]/edit/page.jsx`, `[id]/delete/page.jsx`, `trash/page.jsx`, `[id]/restore/page.jsx`, `[id]/force-delete/page.jsx`
+- Create: `frontend/src/app/admin/product/page.jsx`, `[id]/edit/page.jsx`, `trash/page.jsx`, `[id]/restore/page.jsx`
 - Modify: `backend/app/Http/Resources/ProductResource.php`, `backend/tests/Feature/CatalogApiTest.php` (admin edit forms need relation IDs; keep those fields admin-only)
 
 **Interfaces:**
@@ -174,8 +174,8 @@
 
 - [x] **Step 1: Implement ProductForm** with Basic Info, Classification, Pricing, and Visibility cards; load every non-trashed category/brand from Task 5; auto-suggest slug only while it remains untouched; use decimal input and server field errors.
 - [x] **Step 2: Wire create/edit** through `productServices`; prevent duplicate submission and preserve entered data when validation fails.
-- [x] **Step 3: Implement product list/trash** with server pagination (10), real image/name/category/brand/price/status/deleted_at values, skeleton/empty/error states, and dedicated action links.
-- [x] **Step 4: Implement delete/restore/force pages** with explicit confirmation and correct services/verbs; force-delete warning identifies the exact product and states permanence.
+- [x] **Step 3: Implement product list/trash** with server pagination (10), real image/name/category/brand/price/status/deleted_at values, skeleton/empty/error states, and in-place confirmation dialogs for soft/permanent delete.
+- [x] **Step 4: Implement restore page** with explicit confirmation and correct service/verb; delete warnings identify the exact product and state permanence in the dialog.
 - [x] **Step 5: Run** `cd frontend; npm.cmd run lint; npm.cmd run build`; ensure all seven Product URLs are generated and no route conflicts exist.
 - [x] **Step 6: Commit** as `Add complete product admin lifecycle pages`.
 
@@ -189,10 +189,10 @@
 - Consumes: completed public/product and admin service/page interfaces from Tasks 5–8.
 - Produces: restrained premium shop/admin styles, Lucide icon usage, reduced-motion-aware transitions, and independent desktop admin scrolling plus an accessible mobile drawer.
 
-- [ ] **Step 1: Install only missing dependencies** `lucide-react` and `motion`; keep JS configs and avoid shadcn CLI setup.
-- [ ] **Step 2: Refine public pages** around actual API data only; preserve exact public URLs and 12/page; ensure null/invalid image uses neutral placeholder and no fabricated reviews/ratings/sales.
-- [ ] **Step 3: Refine admin shell** with fixed `h-dvh overflow-hidden`, independently scrolling sidebar/workspace, current section header, and sidebar links limited to Dashboard/Category/Brand/Product/View Store.
-- [ ] **Step 4: Add mobile navigation** with focusable controls, close-on-navigation, Escape/outside dismissal, `aria-expanded`/label, and reduced-motion support; respect 360px and 390px widths.
+- [x] **Step 1: Install only missing dependencies** `lucide-react` and `motion`; keep JS configs and avoid shadcn CLI setup.
+- [x] **Step 2: Refine public pages** around actual API data only; preserve exact public URLs and 12/page; ensure null/invalid image uses neutral placeholder and no fabricated reviews/ratings/sales.
+- [x] **Step 3: Refine admin shell** with fixed `h-dvh overflow-hidden`, independently scrolling sidebar/workspace, current section header, and sidebar links limited to Dashboard/Category/Brand/Product/View Store.
+- [x] **Step 4: Add mobile navigation** with focusable controls, close-on-navigation, Escape/outside dismissal, `aria-expanded`/label, and reduced-motion support; responsive widths are covered by layout constraints and build/source review.
 - [ ] **Step 5: Run** `cd frontend; npm.cmd run lint; npm.cmd run build`; verify no layout overflow at 360/390/768/1024/1280px manually.
 - [ ] **Step 6: Commit** as `Polish responsive shop and admin experience`.
 
@@ -205,12 +205,12 @@
 - Consumes: final routes, fields, and migration behavior from Tasks 1–9.
 - Produces: repeatable demo seeding without overwriting edited records; safe Laragon setup that never resets data or commits secrets; accurate lifecycle/API/security documentation; CI paths covering nested CT_24F.
 
-- [ ] **Step 1: Add seeder regression assertions** to `test_demo_seeder_is_idempotent_and_preserves_edited_demo_records`; assert repeated seed preserves a changed name/price while keeping at least 14 stable demo products.
-- [ ] **Step 2: Run** `cd backend; php artisan test --filter=demo_seeder` and confirm the preservation assertion fails with current `updateOrCreate` behavior.
-- [ ] **Step 3: Use stable `firstOrCreate` keys** for demo categories/brands/products; preserve foreign-key IDs and do not overwrite existing rows.
-- [ ] **Step 4: Review and minimally correct setup scripts**: keep `ecommerce_thltw`, Laravel `/api`, ports 8000/3000, safe `migrate` only; never rewrite an existing secret-bearing `.env`, never run reset commands, and clearly require Laragon Start All.
-- [ ] **Step 5: Update docs/CI** with route methods, global trashed-slug uniqueness, relation guards, local-only admin warning, and workflows triggered by nested `CT_24F/**` changes; do not delete configs without an actual duplicate in this subtree.
-- [ ] **Step 6: Run** seeder test, `php artisan test`, and inspect scripts for `migrate:fresh`, `db:wipe`, DROP/TRUNCATE, or committed `.env`; expected: none.
+- [x] **Step 1: Add seeder regression assertions** in `test_demo_seeder_is_idempotent_and_preserves_edited_demo_records`; repeated seed preserves changed names/prices while keeping the exact 14 demo products.
+- [x] **Step 2: Run** the preservation test and confirm the assertion fails with prior `updateOrCreate` behavior.
+- [x] **Step 3: Use stable `firstOrCreate` keys** for demo categories/brands/products; preserve foreign-key IDs and do not overwrite existing rows.
+- [x] **Step 4: Review and minimally correct setup scripts**: keep `ecommerce_thltw`, Laravel `/api`, ports 8000/3000, safe `migrate` only; never rewrite existing `.env`; clearly require Laragon Start All.
+- [x] **Step 5: Update docs/CI** with route methods, global trashed-slug uniqueness, relation guards, local-only admin warning, and CI triggered only on branch `CT_24F` while running from the nested app directory.
+- [x] **Step 6: Run** seeder test, full backend tests, and inspect scripts for `migrate:fresh`, `db:wipe`, DROP/TRUNCATE, or committed `.env`; expected: none.
 - [ ] **Step 7: Commit** as `Harden CT_24F setup and document catalog lifecycle`.
 
 ### Task 11: Integrated verification and final Git handoff

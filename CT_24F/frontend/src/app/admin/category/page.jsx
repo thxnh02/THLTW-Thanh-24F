@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import AdminTable from "@/components/admin/AdminTable";
+import ConfirmDialog from "@/components/admin/ConfirmDialog";
 import StatusBadge from "@/components/admin/StatusBadge";
 import Pagination from "@/components/common/Pagination";
 import categoryServices from "@/services/categoryServices";
@@ -12,6 +13,7 @@ export default function AdminCategoriesPage() {
   const [meta, setMeta] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [confirming, setConfirming] = useState(null);
 
   const load = useCallback((page = 1) => {
     setLoading(true);
@@ -55,7 +57,8 @@ export default function AdminCategoriesPage() {
           <Link className="inline-flex min-h-11 items-center rounded-lg bg-slate-950 px-4 text-sm font-semibold text-white hover:bg-indigo-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2" href="/admin/category/create">Add category</Link>
         </div>
       </header>
-      <AdminTable columns={columns} data={data} emptyMessage="No categories yet." error={error} loading={loading} onRetry={() => load(meta?.current_page ?? 1)} renderActions={(item) => <div className="flex flex-wrap gap-3 whitespace-nowrap"><Link aria-label={`Edit category ${item.name}`} className="font-semibold text-indigo-700 hover:underline focus-visible:outline focus-visible:outline-2" href={`/admin/category/${item.id}/edit`}>Edit</Link><Link aria-label={`Delete category ${item.name}`} className="font-semibold text-rose-700 hover:underline focus-visible:outline focus-visible:outline-2" href={`/admin/category/${item.id}/delete`}>Delete</Link></div>} />
+      <AdminTable columns={columns} data={data} emptyMessage="No categories yet." error={error} loading={loading} onRetry={() => load(meta?.current_page ?? 1)} renderActions={(item) => <div className="flex flex-wrap gap-3 whitespace-nowrap"><Link aria-label={`Edit category ${item.name}`} className="font-semibold text-indigo-700 hover:underline focus-visible:outline focus-visible:outline-2" href={`/admin/category/${item.id}/edit`}>Edit</Link><button aria-label={`Delete category ${item.name}`} className="font-semibold text-rose-700 hover:underline focus-visible:outline focus-visible:outline-2" onClick={() => setConfirming(item)} type="button">Delete</button></div>} />
+      <ConfirmDialog actionLabel="Chuyển vào thùng rác" description="Bạn có chắc muốn xóa danh mục" onComplete={() => load(meta?.current_page ?? 1)} onConfirm={(item) => categoryServices.deleteCategory(item.id)} onDismiss={() => setConfirming(null)} record={confirming} title="Xóa danh mục này?" />
       <Pagination meta={meta} onPageChange={load} />
     </section>
   );

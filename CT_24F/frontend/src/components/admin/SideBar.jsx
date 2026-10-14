@@ -1,7 +1,33 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { Boxes, Building2, LayoutDashboard, Package, Store } from "lucide-react";
 
-const links = [{ href: "/admin", label: "Tổng quan", icon: "⌂" }, { href: "/admin/product/create", label: "Thêm sản phẩm", icon: "+" }, { href: "/admin/category", label: "Danh mục", icon: "▦" }, { href: "/admin/brand", label: "Thương hiệu", icon: "✳" }];
+const links = [
+  { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/admin/category", label: "Category", icon: Boxes },
+  { href: "/admin/brand", label: "Brand", icon: Building2 },
+  { href: "/admin/product", label: "Product", icon: Package },
+  { href: "/", label: "View Store", icon: Store },
+];
 
-export default function SideBar() {
-  return <aside className="flex min-h-screen w-64 shrink-0 flex-col bg-[#142f2c] px-4 py-6 text-white max-md:w-16 max-md:px-2"><Link href="/admin" className="mb-9 flex items-center gap-3 px-2"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-[#d1edda] font-serif text-xl italic text-[#142f2c]">C</span><span className="max-md:hidden"><span className="block text-sm font-bold tracking-[.12em]">CT_24F</span><span className="text-[9px] tracking-[.15em] text-white/50">ADMIN STUDIO</span></span></Link><p className="mb-3 px-3 text-[9px] font-semibold uppercase tracking-[.2em] text-white/35 max-md:hidden">Không gian quản lý</p><nav className="space-y-1.5">{links.map((link) => <Link className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-white/70 transition hover:bg-white/10 hover:text-white" href={link.href} key={link.href}><span className="grid h-6 w-6 place-items-center rounded-lg bg-white/10 text-sm">{link.icon}</span><span className="max-md:hidden">{link.label}</span></Link>)}</nav><div className="mt-auto rounded-2xl border border-white/10 bg-white/5 p-4 text-xs leading-5 text-white/55 max-md:hidden">Không gian quản trị cửa hàng<br /><span className="text-[#b8e0c7]">Gọn gàng, dễ theo dõi.</span></div></aside>;
+export default function SideBar({ mobile = false, onNavigate }) {
+  const pathname = usePathname() ?? "/admin";
+  return <div className={`flex h-full min-h-0 flex-col overflow-y-auto overscroll-contain bg-[#101a2b] text-white ${mobile ? "px-4 py-5" : "px-4 py-6"}`}>
+    <Link aria-label="CT_24F admin dashboard" className="mb-8 flex items-center gap-3 rounded-xl px-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-300" href="/admin" onClick={onNavigate}>
+      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-indigo-400 font-serif text-xl font-semibold text-slate-950">C</span>
+      <span><span className="block text-sm font-bold tracking-[.12em]">CT_24F</span><span className="mt-0.5 block text-[9px] font-medium tracking-[.18em] text-slate-400">CATALOG ADMIN</span></span>
+    </Link>
+    <p className="mb-3 px-3 text-[10px] font-semibold uppercase tracking-[.16em] text-slate-500">Workspace</p>
+    <nav aria-label="Admin sections" className="space-y-1">
+      {links.map(({ href, label, icon: Icon }) => {
+        const active = href === "/admin" ? pathname === href : href !== "/" && pathname.startsWith(href);
+        return <Link aria-current={active ? "page" : undefined} className={`flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-300 ${active ? "bg-indigo-400/15 text-indigo-200 ring-1 ring-inset ring-indigo-300/20" : "text-slate-300 hover:bg-white/8 hover:text-white"}`} href={href} key={href} onClick={onNavigate}>
+          <Icon aria-hidden="true" size={18} strokeWidth={1.8} /><span>{label}</span>
+        </Link>;
+      })}
+    </nav>
+    <div className="mt-auto rounded-xl border border-white/10 bg-white/[.04] p-4 text-xs leading-5 text-slate-400">Catalog management<br /><span className="text-indigo-200">Category · Brand · Product</span></div>
+  </div>;
 }
