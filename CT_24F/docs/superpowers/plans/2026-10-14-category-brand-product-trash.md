@@ -151,7 +151,7 @@
 
 **Interfaces:**
 - Consumes: Tasks 5–6.
-- Produces: exact singular routes `/admin/category/...` and `/admin/brand/...`; category parent choices exclude self/descendants and include all pages; delete/restore/force pages show real record identity and only mutate on explicit confirmation.
+- Produces: exact singular routes `/admin/category/...` and `/admin/brand/...`; category parent choices exclude self/descendants and include all pages; delete/force dialogs and the restore page show real record identity and mutate only on explicit confirmation.
 
 - [x] **Step 1: Refactor existing list actions** to link to `[id]/edit` and `/trash`; soft-delete actions open an inline confirmation dialog and call the service only after an explicit confirm.
 - [x] **Step 2: Implement Category/Brand restore pages** using the shared loader/confirmation UI; show 404/409 messages, then redirect only after success. Soft-delete and permanent-delete use dialogs in their lists.
