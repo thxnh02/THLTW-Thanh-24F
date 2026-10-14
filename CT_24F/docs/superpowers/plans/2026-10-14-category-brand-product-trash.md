@@ -135,10 +135,10 @@
 - Consumes: Task 5 service contracts.
 - Produces: reusable semantic table, form states, status badges, explicit confirmation page, and trash list shell; actions navigate to pages and never mutate from row click.
 
-- [ ] **Step 1: Define component props** in code comments/exports: `AdminTable({columns,data,loading,error,emptyMessage,renderActions})`, `StatusBadge({status,deletedAt})`, `ConfirmActionPage({load,recordLabel,warning,submit,backHref,successHref})`, and `TrashTable({columns,data,meta,loading,error,renderActions})`.
-- [ ] **Step 2: Implement semantic/accessibility behavior**: `scope="col"`, local overflow-x, 40–44px actions, visible focus, loading/empty/error, disabled submit, exact server message display, and accessible names for icon-only controls.
-- [ ] **Step 3: Run** `cd frontend; npm.cmd run lint`; require zero lint errors.
-- [ ] **Step 4: Commit** as `Add reusable accessible admin lifecycle components`.
+- [x] **Step 1: Define component props** in code comments/exports: `AdminTable({columns,data,loading,error,emptyMessage,renderActions})`, `StatusBadge({status,deletedAt})`, `ConfirmActionPage({load,recordLabel,warning,submit,backHref,successHref})`, and `TrashTable({columns,data,meta,loading,error,renderActions})`.
+- [x] **Step 2: Implement semantic/accessibility behavior**: `scope="col"`, local overflow-x, 40–44px actions, visible focus, loading/empty/error, disabled submit, exact server message display, and accessible names for icon-only controls.
+- [x] **Step 3: Run** `cd frontend; npm.cmd run lint`; require zero lint errors.
+- [x] **Step 4: Commit** as `Add reusable accessible admin lifecycle components`.
 
 ### Task 7: Category and Brand dedicated CRUD/trash pages
 
