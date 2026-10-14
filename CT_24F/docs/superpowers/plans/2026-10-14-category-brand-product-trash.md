@@ -64,11 +64,11 @@
 - Consumes: Task 1 SoftDeletes and admin lifecycle Resource field.
 - Produces: `index`, `store`, `show`, `update`, `destroy`, `trash`, `trashedShow`, `restore`, `forceDestroy`, and `options` for `/api/admin/categories`; regular/trash pages paginate 10; options return every non-trashed `{id,name,parent_id}` row.
 
-- [ ] **Step 1: Add failing tests** named `test_admin_category_crud_and_options_exclude_trashed_parent_choices`, `test_category_soft_delete_checks_active_dependencies`, `test_category_trash_restore_and_force_delete_lifecycle`, and `test_category_restore_and_update_reject_invalid_parent_graph`. Assert hidden rows remain on the normal list, trashed slugs still return 422, active relations block soft delete with 409, trashed relations block force delete with 409, trashed rows 404 on normal show, restore requires a live parent, and multi-level cycles fail validation.
-- [ ] **Step 2: Run those tests** with `cd backend; php artisan test --filter=category` and confirm they fail for missing lifecycle routes/rules.
-- [ ] **Step 3: Implement Category endpoints** with static `GET /trash`, `GET /trash/{id}`, and `GET /options` registered before `apiResource`; add numeric route constraints and `POST /{id}/restore`, `DELETE /{id}/force`. Keep create/update FormRequests, validate non-trashed parents and globally unique slugs, reject ancestor cycles, soft-delete only without active products/children, and force-delete only with no products/children including trashed rows.
-- [ ] **Step 4: Run category tests** with `php artisan test --filter=category`; all assertions above must pass with 200/201/404/409/422 as specified.
-- [ ] **Step 5: Commit** as `Add category trash lifecycle and hierarchy guards`.
+- [x] **Step 1: Add failing tests** named `test_admin_category_crud_and_options_exclude_trashed_parent_choices`, `test_category_soft_delete_checks_active_dependencies`, `test_category_trash_restore_and_force_delete_lifecycle`, and `test_category_restore_and_update_reject_invalid_parent_graph`. Assert hidden rows remain on the normal list, trashed slugs still return 422, active relations block soft delete with 409, trashed relations block force delete with 409, trashed rows 404 on normal show, restore requires a live parent, and multi-level cycles fail validation.
+- [x] **Step 2: Run those tests** with `cd backend; php artisan test --filter=category` and confirm they fail for missing lifecycle routes/rules.
+- [x] **Step 3: Implement Category endpoints** with static `GET /trash`, `GET /trash/{id}`, and `GET /options` registered before `apiResource`; add numeric route constraints and `POST /{id}/restore`, `DELETE /{id}/force`. Keep create/update FormRequests, validate non-trashed parents and globally unique slugs, reject ancestor cycles, soft-delete only without active products/children, and force-delete only with no products/children including trashed rows.
+- [x] **Step 4: Run category tests** with `php artisan test --filter=category`; all assertions above must pass with 200/201/404/409/422 as specified.
+- [x] **Step 5: Commit** as `Add category trash lifecycle and hierarchy guards`.
 
 ### Task 3: Brand CRUD and trash API
 

@@ -102,6 +102,80 @@ class CatalogApiTest extends TestCase
         $this->deleteJson("/api/admin/categories/{$inUse->id}")->assertStatus(409);
     }
 
+    public function test_admin_category_crud_and_options_exclude_trashed_parent_choices(): void
+    {
+        foreach (range(1, 12) as $number) {
+            $this->category("option-category-{$number}", $number !== 1);
+        }
+        $trashed = Category::where('slug', 'option-category-12')->firstOrFail();
+        $trashed->delete();
+
+        $this->getJson('/api/admin/categories')->assertOk()->assertJsonCount(10, 'data')->assertJsonFragment(['id' => 1, 'status' => false]);
+        $this->getJson('/api/admin/categories/options')->assertOk()->assertJsonCount(11, 'data')->assertJsonMissing(['id' => $trashed->id]);
+        $this->postJson('/api/admin/categories', ['parent_id' => $trashed->id, 'name' => 'Invalid Child', 'slug' => 'invalid-child', 'status' => true])->assertUnprocessable()->assertJsonValidationErrors('parent_id');
+        $this->postJson('/api/admin/categories', ['name' => 'Reserved Slug', 'slug' => $trashed->slug, 'status' => true])->assertUnprocessable()->assertJsonValidationErrors('slug');
+    }
+
+    public function test_category_soft_delete_checks_active_dependencies(): void
+    {
+        $parent = $this->category('blocked-parent');
+        $this->category('blocked-child', false, $parent->id);
+        $this->deleteJson("/api/admin/categories/{$parent->id}")->assertStatus(409);
+
+        $category = $this->category('hidden-product-category');
+        Product::create(['category_id' => $category->id, 'name' => 'Hidden Product', 'slug' => 'hidden-product', 'price' => 1000, 'status' => false]);
+        $this->deleteJson("/api/admin/categories/{$category->id}")->assertStatus(409);
+
+        $trashedProductCategory = $this->category('trashed-product-category');
+        $product = Product::create(['category_id' => $trashedProductCategory->id, 'name' => 'Trashed Product', 'slug' => 'trashed-product', 'price' => 1000, 'status' => true]);
+        $product->delete();
+        $this->deleteJson("/api/admin/categories/{$trashedProductCategory->id}")->assertOk();
+    }
+
+    public function test_category_trash_restore_and_force_delete_lifecycle(): void
+    {
+        $category = $this->category('lifecycle-category');
+        $this->deleteJson("/api/admin/categories/{$category->id}")->assertOk();
+        $this->getJson("/api/admin/categories/{$category->id}")->assertNotFound();
+        $this->getJson('/api/admin/categories/trash')->assertOk()->assertJsonFragment(['id' => $category->id]);
+        $this->getJson("/api/admin/categories/trash/{$category->id}")->assertOk()->assertJsonPath('data.deleted_at', fn ($value) => $value !== null);
+        $this->postJson("/api/admin/categories/{$category->id}/restore")->assertOk();
+        $this->assertNotNull(Category::find($category->id));
+
+        $withHistory = $this->category('force-blocked-category');
+        $product = Product::create(['category_id' => $withHistory->id, 'name' => 'Historic Product', 'slug' => 'historic-product', 'price' => 1000, 'status' => true]);
+        $product->delete();
+        $this->deleteJson("/api/admin/categories/{$withHistory->id}")->assertOk();
+        $this->deleteJson("/api/admin/categories/{$withHistory->id}/force")->assertStatus(409);
+
+        $withChildHistory = $this->category('force-child-parent');
+        $child = $this->category('force-child-history', true, $withChildHistory->id);
+        $child->delete();
+        $this->deleteJson("/api/admin/categories/{$withChildHistory->id}")->assertOk();
+        $this->deleteJson("/api/admin/categories/{$withChildHistory->id}/force")->assertStatus(409);
+
+        $permanent = $this->category('permanent-category');
+        $this->deleteJson("/api/admin/categories/{$permanent->id}")->assertOk();
+        $this->deleteJson("/api/admin/categories/{$permanent->id}/force")->assertOk();
+        $this->getJson("/api/admin/categories/trash/{$permanent->id}")->assertNotFound();
+    }
+
+    public function test_category_restore_and_update_reject_invalid_parent_graph(): void
+    {
+        $root = $this->category('cycle-root');
+        $child = $this->category('cycle-child', true, $root->id);
+        $leaf = $this->category('cycle-leaf', true, $child->id);
+
+        $this->putJson("/api/admin/categories/{$root->id}", ['parent_id' => $leaf->id, 'name' => $root->name, 'slug' => $root->slug, 'status' => true])->assertUnprocessable()->assertJsonValidationErrors('parent_id');
+        $this->putJson("/api/admin/categories/{$child->id}", ['parent_id' => $child->id, 'name' => $child->name, 'slug' => $child->slug, 'status' => true])->assertUnprocessable()->assertJsonValidationErrors('parent_id');
+
+        $child->delete();
+        $root->delete();
+        $this->postJson("/api/admin/categories/{$child->id}/restore")->assertStatus(409);
+        $this->postJson("/api/admin/categories/{$root->id}/restore")->assertOk();
+        $this->postJson("/api/admin/categories/{$child->id}/restore")->assertOk();
+    }
+
     public function test_admin_brand_crud_pagination_validation_and_delete_rules(): void
     {
         foreach (range(1, 11) as $number) {
