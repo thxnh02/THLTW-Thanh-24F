@@ -118,11 +118,11 @@
 - Consumes: Tasks 2–4 endpoint contracts.
 - Produces: centralized endpoint constants for all public/admin CRUD/trash/restore/force operations; service methods for each action and all-record select options.
 
-- [ ] **Step 1: Add/extend failing options assertions** to create more than 10 non-trashed categories/brands, then assert the options endpoints return all of them and none trashed.
-- [ ] **Step 2: Run** `cd backend; php artisan test --filter=options` and confirm failures if an options endpoint or all-record response is missing.
-- [ ] **Step 3: Implement service methods** `getAdminCategoryOptions()`, `getAdminBrandOptions()`, and Product methods `getAdminProducts`, `getAdminProduct`, `createProduct`, `updateProduct`, `deleteProduct`, `getProductTrash`, `getTrashedProduct`, `restoreProduct`, `forceDeleteProduct`; add matching Category/Brand lifecycle methods and endpoint constants. Page components must not call Axios directly.
-- [ ] **Step 4: Run** backend option tests and `cd frontend; npm.cmd run lint`; all option results must exceed page size and lint must pass.
-- [ ] **Step 5: Commit** as `Centralize catalog lifecycle API services`.
+- [x] **Step 1: Add/extend failing options assertions** to create more than 10 non-trashed categories/brands, then assert the options endpoints return all of them and none trashed.
+- [x] **Step 2: Run** `cd backend; php artisan test --filter=options` and confirm failures if an options endpoint or all-record response is missing.
+- [x] **Step 3: Implement service methods** `getAdminCategoryOptions()`, `getAdminBrandOptions()`, and Product methods `getAdminProducts`, `getAdminProduct`, `createProduct`, `updateProduct`, `deleteProduct`, `getProductTrash`, `getTrashedProduct`, `restoreProduct`, `forceDeleteProduct`; add matching Category/Brand lifecycle methods and endpoint constants. Page components must not call Axios directly.
+- [x] **Step 4: Run** backend option tests and `cd frontend; npm.cmd run lint`; all option results must exceed page size and lint must pass.
+- [x] **Step 5: Commit** as `Centralize catalog lifecycle API services`.
 
 ### Task 6: Shared accessible admin lifecycle primitives
 
