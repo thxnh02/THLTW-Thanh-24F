@@ -65,7 +65,7 @@ class CatalogApiTest extends TestCase
 
         $this->getJson("/api/admin/categories/{$category->id}")->assertOk()->assertJsonPath('data.deleted_at', null);
         $this->getJson("/api/admin/brands/{$brand->id}")->assertOk()->assertJsonPath('data.deleted_at', null);
-        $this->getJson('/api/products')->assertOk()->assertJsonMissingPath('data.0.deleted_at')->assertJsonMissingPath('data.0.status');
+        $this->getJson('/api/products')->assertOk()->assertJsonMissingPath('data.0.category_id')->assertJsonMissingPath('data.0.brand_id')->assertJsonMissingPath('data.0.deleted_at')->assertJsonMissingPath('data.0.status');
     }
 
     public function test_demo_seeder_is_idempotent(): void
@@ -243,7 +243,7 @@ class CatalogApiTest extends TestCase
         $category = $this->category('admin-product-category', false);
         $brand = $this->brand('admin-product-brand', false);
         $payload = ['category_id' => $category->id, 'brand_id' => $brand->id, 'name' => 'Admin Product', 'slug' => 'admin-product', 'price' => '1299.90', 'status' => false];
-        $created = $this->postJson('/api/admin/products', $payload)->assertCreated()->assertJsonPath('data.status', false)->assertJsonPath('data.deleted_at', null)->assertJsonPath('data.category.id', $category->id)->assertJsonPath('data.brand.id', $brand->id);
+        $created = $this->postJson('/api/admin/products', $payload)->assertCreated()->assertJsonPath('data.status', false)->assertJsonPath('data.deleted_at', null)->assertJsonPath('data.category_id', $category->id)->assertJsonPath('data.brand_id', $brand->id)->assertJsonPath('data.category.id', $category->id)->assertJsonPath('data.brand.id', $brand->id);
         $id = $created->json('data.id');
 
         $this->getJson('/api/admin/products')->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('meta.per_page', 10);

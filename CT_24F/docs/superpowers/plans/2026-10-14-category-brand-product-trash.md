@@ -166,17 +166,18 @@
 - Create: `frontend/src/components/admin/ProductForm.jsx`
 - Modify: `frontend/src/app/admin/product/create/page.jsx`
 - Create: `frontend/src/app/admin/product/page.jsx`, `[id]/edit/page.jsx`, `[id]/delete/page.jsx`, `trash/page.jsx`, `[id]/restore/page.jsx`, `[id]/force-delete/page.jsx`
+- Modify: `backend/app/Http/Resources/ProductResource.php`, `backend/tests/Feature/CatalogApiTest.php` (admin edit forms need relation IDs; keep those fields admin-only)
 
 **Interfaces:**
 - Consumes: Tasks 5–7.
 - Produces: exact `/admin/product/...` routes and a schema-aligned create/edit form with category/brand options, optional real image preview/fallback, validation, and no fake uploads.
 
-- [ ] **Step 1: Implement ProductForm** with Basic Info, Classification, Pricing, and Visibility cards; load every non-trashed category/brand from Task 5; auto-suggest slug only while it remains untouched; use decimal input and server field errors.
-- [ ] **Step 2: Wire create/edit** through `productServices`; prevent duplicate submission and preserve entered data when validation fails.
-- [ ] **Step 3: Implement product list/trash** with server pagination (10), real image/name/category/brand/price/status/deleted_at values, skeleton/empty/error states, and dedicated action links.
-- [ ] **Step 4: Implement delete/restore/force pages** with explicit confirmation and correct services/verbs; force-delete warning identifies the exact product and states permanence.
-- [ ] **Step 5: Run** `cd frontend; npm.cmd run lint; npm.cmd run build`; ensure all seven Product URLs are generated and no route conflicts exist.
-- [ ] **Step 6: Commit** as `Add complete product admin lifecycle pages`.
+- [x] **Step 1: Implement ProductForm** with Basic Info, Classification, Pricing, and Visibility cards; load every non-trashed category/brand from Task 5; auto-suggest slug only while it remains untouched; use decimal input and server field errors.
+- [x] **Step 2: Wire create/edit** through `productServices`; prevent duplicate submission and preserve entered data when validation fails.
+- [x] **Step 3: Implement product list/trash** with server pagination (10), real image/name/category/brand/price/status/deleted_at values, skeleton/empty/error states, and dedicated action links.
+- [x] **Step 4: Implement delete/restore/force pages** with explicit confirmation and correct services/verbs; force-delete warning identifies the exact product and states permanence.
+- [x] **Step 5: Run** `cd frontend; npm.cmd run lint; npm.cmd run build`; ensure all seven Product URLs are generated and no route conflicts exist.
+- [x] **Step 6: Commit** as `Add complete product admin lifecycle pages`.
 
 ### Task 9: Shop/admin visual system and responsive navigation
 
