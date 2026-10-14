@@ -13,11 +13,11 @@ class Product extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $fillable = ['category_id', 'brand_id', 'name', 'slug', 'description', 'image', 'price', 'status'];
+    protected $fillable = ['category_id', 'brand_id', 'name', 'slug', 'description', 'image', 'price', 'sale_price', 'status'];
 
     protected function casts(): array
     {
-        return ['category_id' => 'integer', 'brand_id' => 'integer', 'price' => 'decimal:2', 'status' => 'boolean'];
+        return ['category_id' => 'integer', 'brand_id' => 'integer', 'price' => 'decimal:2', 'sale_price' => 'decimal:2', 'status' => 'boolean'];
     }
 
     public function category(): BelongsTo

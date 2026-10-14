@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import BrandForm from "@/components/admin/BrandForm";
 import brandServices from "@/services/brandServices";
 
+// Trang /admin/brand/[id]/edit: sửa thương hiệu đã có theo ID trên URL.
 export default function EditBrandPage() {
   const { id } = useParams();
   const router = useRouter();
@@ -14,6 +15,7 @@ export default function EditBrandPage() {
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
 
+  // Tải dữ liệu thương hiệu cũ để điền vào BrandForm.
   useEffect(() => {
     let current = true;
     brandServices.getAdminBrand(id).then((response) => {
@@ -26,6 +28,7 @@ export default function EditBrandPage() {
     return () => { current = false; };
   }, [id]);
 
+  // Nhận dữ liệu từ BrandForm và gọi API cập nhật thương hiệu.
   const save = async (data) => {
     setSubmitting(true);
     setErrors({});

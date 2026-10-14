@@ -7,6 +7,7 @@ import brandServices from "@/services/brandServices";
 import categoryServices from "@/services/categoryServices";
 import productServices from "@/services/productServices";
 
+// Trang /admin/product/create: hiển thị form thêm sản phẩm và xử lý kết quả lưu.
 export default function CreateProductPage() {
   const router = useRouter();
   const [categories, setCategories] = useState([]);
@@ -16,6 +17,7 @@ export default function CreateProductPage() {
   const [optionsLoading, setOptionsLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
+  // Tải danh mục và thương hiệu để chọn khi nhập sản phẩm mới.
   useEffect(() => {
     let current = true;
     Promise.all([categoryServices.getAdminCategoryOptions(), brandServices.getAdminBrandOptions()]).then(([categoryResponse, brandResponse]) => {
@@ -30,7 +32,7 @@ export default function CreateProductPage() {
     return () => { current = false; };
   }, []);
 
-  // Submit the ProductForm payload through the admin API, then return to the product list.
+  // Hàm save của trang thêm sản phẩm: nhận dữ liệu từ ProductForm, gọi API tạo mới rồi trở về danh sách.
   const save = async (data) => {
     setSubmitting(true);
     setErrors({});
@@ -46,5 +48,6 @@ export default function CreateProductPage() {
     }
   };
 
+  // onSubmit={save} nối nút Lưu trong ProductForm với hàm save ở trang này.
   return <section className="mx-auto max-w-4xl space-y-5"><header><p className="text-xs font-bold uppercase tracking-[0.16em] text-indigo-700">Danh mục cửa hàng</p><h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">Thêm sản phẩm</h1><p className="mt-2 text-sm text-slate-600">Nhập thông tin sản phẩm để hiển thị trên cửa hàng.</p></header>{requestError && <p className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800" role="alert">{requestError}</p>}{optionsLoading ? <p aria-live="polite" className="animate-pulse rounded-lg bg-white p-5 text-sm text-slate-500">Đang tải danh mục và thương hiệu…</p> : <ProductForm brands={brands} categories={categories} errors={errors} onSubmit={save} submitting={submitting} />}</section>;
 }

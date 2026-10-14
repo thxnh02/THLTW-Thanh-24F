@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
+// Hộp thoại xác nhận dùng cho khôi phục/xóa; requireAcknowledgement buộc tích trước khi xóa vĩnh viễn.
 export default function ConfirmDialog({
   record,
   title,
@@ -29,6 +30,7 @@ export default function ConfirmDialog({
     if (!record && dialog?.open) dialog.close();
   }, [record]);
 
+  // Chỉ gọi onConfirm sau khi người dùng xác nhận, rồi báo kết quả qua onComplete.
   const confirm = async () => {
     if (submitting || (requireAcknowledgement && !acknowledged)) return;
     setSubmitting(true);

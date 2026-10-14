@@ -98,7 +98,7 @@ class CatalogApiTest extends TestCase
         $this->getJson("/api/admin/categories/{$id}")->assertOk()->assertJsonPath('data.slug', 'new');
         $this->getJson('/api/admin/categories/9999')->assertNotFound();
         $this->putJson("/api/admin/categories/{$id}", ['name' => 'Updated', 'slug' => 'updated', 'sort_order' => 2, 'status' => false])->assertOk()->assertJsonPath('data.slug', 'updated');
-        $this->putJson("/api/admin/categories/{$id}", ['name' => 'Updated', 'slug' => 'category-1', 'status' => true])->assertUnprocessable()->assertJsonValidationErrors('slug');
+        $this->putJson("/api/admin/categories/{$id}", ['name' => 'Updated', 'slug' => 'category-1', 'status' => true])->assertOk()->assertJsonPath('data.slug', 'category-1-2');
         $this->deleteJson("/api/admin/categories/{$id}")->assertOk();
 
         $parent = $this->category('parent');
@@ -120,7 +120,7 @@ class CatalogApiTest extends TestCase
         $this->getJson('/api/admin/categories')->assertOk()->assertJsonCount(10, 'data')->assertJsonFragment(['id' => 1, 'status' => false]);
         $this->getJson('/api/admin/categories/options')->assertOk()->assertJsonCount(11, 'data')->assertJsonMissing(['id' => $trashed->id]);
         $this->postJson('/api/admin/categories', ['parent_id' => $trashed->id, 'name' => 'Invalid Child', 'slug' => 'invalid-child', 'status' => true])->assertUnprocessable()->assertJsonValidationErrors('parent_id');
-        $this->postJson('/api/admin/categories', ['name' => 'Reserved Slug', 'slug' => $trashed->slug, 'status' => true])->assertUnprocessable()->assertJsonValidationErrors('slug');
+        $this->postJson('/api/admin/categories', ['name' => 'Reserved Slug', 'slug' => $trashed->slug, 'status' => true])->assertCreated()->assertJsonPath('data.slug', 'option-category-12-2');
     }
 
     public function test_category_soft_delete_checks_active_dependencies(): void
@@ -196,7 +196,7 @@ class CatalogApiTest extends TestCase
         $this->getJson("/api/admin/brands/{$id}")->assertOk()->assertJsonPath('data.slug', 'new-brand');
         $this->getJson('/api/admin/brands/9999')->assertNotFound();
         $this->putJson("/api/admin/brands/{$id}", ['name' => 'Updated', 'slug' => 'updated-brand', 'sort_order' => 2, 'status' => false])->assertOk()->assertJsonPath('data.slug', 'updated-brand');
-        $this->putJson("/api/admin/brands/{$id}", ['name' => 'Updated', 'slug' => 'brand-1', 'status' => true])->assertUnprocessable()->assertJsonValidationErrors('slug');
+        $this->putJson("/api/admin/brands/{$id}", ['name' => 'Updated', 'slug' => 'brand-1', 'status' => true])->assertOk()->assertJsonPath('data.slug', 'brand-1-2');
         $this->deleteJson("/api/admin/brands/{$id}")->assertOk();
 
         $inUse = $this->brand('in-use');
@@ -215,7 +215,7 @@ class CatalogApiTest extends TestCase
 
         $this->getJson('/api/admin/brands')->assertOk()->assertJsonCount(10, 'data')->assertJsonFragment(['id' => 1, 'status' => false]);
         $this->getJson('/api/admin/brands/options')->assertOk()->assertJsonCount(11, 'data')->assertJsonMissing(['id' => $trashed->id]);
-        $this->postJson('/api/admin/brands', ['name' => 'Reserved Brand', 'slug' => $trashed->slug, 'status' => true])->assertUnprocessable()->assertJsonValidationErrors('slug');
+        $this->postJson('/api/admin/brands', ['name' => 'Reserved Brand', 'slug' => $trashed->slug, 'status' => true])->assertCreated()->assertJsonPath('data.slug', 'lifecycle-brand-12-2');
         $this->postJson('/api/admin/brands/1/restore')->assertNotFound();
 
         $this->getJson('/api/admin/brands/1')->assertOk();
@@ -245,7 +245,7 @@ class CatalogApiTest extends TestCase
         $this->deleteJson("/api/admin/brands/{$historicBrand->id}/force")->assertStatus(409);
     }
 
-    public function test_admin_product_crud_validation_and_slug_is_globally_unique(): void
+    public function test_admin_product_crud_validation_and_duplicate_slugs_get_unique_suffixes(): void
     {
         $category = $this->category('admin-product-category', false);
         $brand = $this->brand('admin-product-brand', false);
@@ -261,11 +261,109 @@ class CatalogApiTest extends TestCase
         $this->postJson('/api/admin/products', [...$payload, 'slug' => 'missing-category', 'category_id' => 9999])->assertUnprocessable()->assertJsonValidationErrors('category_id');
 
         $other = Product::create(['category_id' => $category->id, 'name' => 'Other Product', 'slug' => 'other-product', 'price' => 1000, 'status' => true]);
-        $this->putJson("/api/admin/products/{$id}", [...$payload, 'slug' => $other->slug])->assertUnprocessable()->assertJsonValidationErrors('slug');
+        $this->putJson("/api/admin/products/{$id}", [...$payload, 'slug' => $other->slug])->assertOk()->assertJsonPath('data.slug', 'other-product-2');
 
         $trashed = Product::create(['category_id' => $category->id, 'name' => 'Trashed Slug Product', 'slug' => 'reserved-product-slug', 'price' => 1000, 'status' => true]);
         $trashed->delete();
-        $this->postJson('/api/admin/products', [...$payload, 'slug' => $trashed->slug])->assertUnprocessable()->assertJsonValidationErrors('slug');
+        $this->postJson('/api/admin/products', [...$payload, 'name' => 'Another Product', 'slug' => $trashed->slug])->assertCreated()->assertJsonPath('data.slug', 'reserved-product-slug-2');
+    }
+
+    public function test_distinct_names_can_share_a_requested_slug_and_editing_keeps_its_own_slug(): void
+    {
+        $categoryPayload = ['name' => 'Same Category', 'slug' => 'same-category', 'status' => true];
+        $firstCategory = $this->postJson('/api/admin/categories', $categoryPayload)->assertCreated()->assertJsonPath('data.slug', 'same-category');
+        $this->postJson('/api/admin/categories', [...$categoryPayload, 'name' => 'Second Category'])->assertCreated()->assertJsonPath('data.slug', 'same-category-2');
+        $this->postJson('/api/admin/categories', [...$categoryPayload, 'name' => 'Third Category'])->assertCreated()->assertJsonPath('data.slug', 'same-category-3');
+        $categoryId = $firstCategory->json('data.id');
+        $this->putJson("/api/admin/categories/{$categoryId}", $categoryPayload)->assertOk()->assertJsonPath('data.slug', 'same-category');
+
+        $brandPayload = ['name' => 'Same Brand', 'slug' => 'same-brand', 'status' => true];
+        $firstBrand = $this->postJson('/api/admin/brands', $brandPayload)->assertCreated()->assertJsonPath('data.slug', 'same-brand');
+        $this->postJson('/api/admin/brands', [...$brandPayload, 'name' => 'Second Brand'])->assertCreated()->assertJsonPath('data.slug', 'same-brand-2');
+        $this->postJson('/api/admin/brands', [...$brandPayload, 'name' => 'Third Brand'])->assertCreated()->assertJsonPath('data.slug', 'same-brand-3');
+        $this->putJson("/api/admin/brands/{$firstBrand->json('data.id')}", $brandPayload)->assertOk()->assertJsonPath('data.slug', 'same-brand');
+
+        $productPayload = ['category_id' => $categoryId, 'name' => 'Same Product', 'slug' => 'same-product', 'price' => 1000, 'status' => true];
+        $firstProduct = $this->postJson('/api/admin/products', $productPayload)->assertCreated()->assertJsonPath('data.slug', 'same-product');
+        $this->postJson('/api/admin/products', [...$productPayload, 'name' => 'Second Product'])->assertCreated()->assertJsonPath('data.slug', 'same-product-2');
+        $this->postJson('/api/admin/products', [...$productPayload, 'name' => 'Third Product'])->assertCreated()->assertJsonPath('data.slug', 'same-product-3');
+        $this->putJson("/api/admin/products/{$firstProduct->json('data.id')}", $productPayload)->assertOk()->assertJsonPath('data.slug', 'same-product');
+    }
+
+    public function test_backend_normalizes_vietnamese_slug_and_keeps_suffix_inside_length_limit(): void
+    {
+        $this->postJson('/api/admin/categories', ['name' => 'Điện thoại', 'slug' => 'Điện thoại', 'status' => true])
+            ->assertCreated()->assertJsonPath('data.slug', 'dien-thoai');
+
+        $longSlug = str_repeat('a', 170);
+        $this->postJson('/api/admin/categories', ['name' => 'Long name again', 'slug' => $longSlug, 'status' => true])
+            ->assertCreated()->assertJsonPath('data.slug', $longSlug);
+        $this->postJson('/api/admin/categories', ['name' => 'Long name', 'slug' => $longSlug, 'status' => true])
+            ->assertCreated()->assertJsonPath('data.slug', str_repeat('a', 168).'-2');
+    }
+
+    public function test_catalog_names_are_unique_on_create_and_edit_including_trashed_rows(): void
+    {
+        $category = $this->category('camera');
+        $otherCategory = $this->category('other-category');
+        $this->postJson('/api/admin/categories', ['name' => ' camera ', 'slug' => 'new-category', 'status' => true])
+            ->assertUnprocessable()->assertJsonValidationErrors('name');
+        $this->putJson("/api/admin/categories/{$otherCategory->id}", ['name' => 'CAMERA', 'slug' => 'other-category', 'status' => true])
+            ->assertUnprocessable()->assertJsonValidationErrors('name');
+        $this->putJson("/api/admin/categories/{$category->id}", ['name' => ' Camera ', 'slug' => 'camera', 'status' => true])
+            ->assertOk()->assertJsonPath('data.name', 'Camera');
+        $category->delete();
+        $this->postJson('/api/admin/categories', ['name' => 'Camera', 'slug' => 'new-category', 'status' => true])
+            ->assertUnprocessable()->assertJsonValidationErrors('name');
+
+        $brand = $this->brand('pixel');
+        $otherBrand = $this->brand('other-brand');
+        $this->postJson('/api/admin/brands', ['name' => ' PIXEL ', 'slug' => 'new-brand', 'status' => true])
+            ->assertUnprocessable()->assertJsonValidationErrors('name');
+        $this->putJson("/api/admin/brands/{$otherBrand->id}", ['name' => 'Pixel', 'slug' => 'other-brand', 'status' => true])
+            ->assertUnprocessable()->assertJsonValidationErrors('name');
+        $this->putJson("/api/admin/brands/{$brand->id}", ['name' => 'Pixel', 'slug' => 'pixel', 'status' => true])
+            ->assertOk();
+        $brand->delete();
+        $this->postJson('/api/admin/brands', ['name' => 'Pixel', 'slug' => 'new-brand', 'status' => true])
+            ->assertUnprocessable()->assertJsonValidationErrors('name');
+        $this->brand('điện-thoại')->update(['name' => 'Điện thoại']);
+        $this->postJson('/api/admin/brands', ['name' => 'điện thoại', 'slug' => 'another-phone-brand', 'status' => true])
+            ->assertUnprocessable()->assertJsonValidationErrors('name');
+
+        $liveCategory = $this->category('live-category');
+        $product = Product::create(['category_id' => $liveCategory->id, 'name' => 'Headphones', 'slug' => 'headphones', 'price' => 1000, 'status' => true]);
+        $otherProduct = Product::create(['category_id' => $liveCategory->id, 'name' => 'Speakers', 'slug' => 'speakers', 'price' => 1000, 'status' => true]);
+        $productPayload = ['category_id' => $liveCategory->id, 'name' => ' headphones ', 'slug' => 'new-product', 'price' => 1000, 'status' => true];
+        $this->postJson('/api/admin/products', $productPayload)->assertUnprocessable()->assertJsonValidationErrors('name');
+        $this->putJson("/api/admin/products/{$otherProduct->id}", [...$productPayload, 'name' => 'HEADPHONES', 'slug' => 'speakers'])
+            ->assertUnprocessable()->assertJsonValidationErrors('name');
+        $this->putJson("/api/admin/products/{$product->id}", [...$productPayload, 'name' => ' Headphones ', 'slug' => 'headphones'])
+            ->assertOk()->assertJsonPath('data.name', 'Headphones');
+        $product->delete();
+        $this->postJson('/api/admin/products', $productPayload)->assertUnprocessable()->assertJsonValidationErrors('name');
+    }
+
+    public function test_sale_price_is_optional_lower_than_original_and_visible_in_public_api(): void
+    {
+        $category = $this->category('sale-category');
+        $payload = ['category_id' => $category->id, 'name' => 'Sale Item', 'slug' => 'sale-item', 'price' => 1000, 'sale_price' => 750, 'status' => true];
+        $created = $this->postJson('/api/admin/products', $payload)
+            ->assertCreated()->assertJsonPath('data.price', '1000.00')->assertJsonPath('data.sale_price', '750.00');
+        $id = $created->json('data.id');
+        $this->assertDatabaseHas('products', ['id' => $id, 'sale_price' => 750]);
+        $this->getJson('/api/products')->assertOk()->assertJsonPath('data.0.sale_price', '750.00');
+
+        foreach ([1000, 1200, -1, '750.999'] as $invalidSalePrice) {
+            $this->putJson("/api/admin/products/{$id}", [...$payload, 'sale_price' => $invalidSalePrice])
+                ->assertUnprocessable()->assertJsonValidationErrors('sale_price');
+        }
+
+        $this->putJson("/api/admin/products/{$id}", [...$payload, 'sale_price' => null])
+            ->assertOk()->assertJsonPath('data.sale_price', null);
+        $this->assertDatabaseHas('products', ['id' => $id, 'sale_price' => null]);
+        $this->postJson('/api/admin/products', [...$payload, 'name' => 'No Sale Item', 'slug' => 'no-sale-item', 'sale_price' => null])
+            ->assertCreated()->assertJsonPath('data.sale_price', null);
     }
 
     public function test_admin_product_trash_restore_and_force_delete_lifecycle(): void

@@ -5,12 +5,14 @@ import { useRouter } from "next/navigation";
 import BrandForm from "@/components/admin/BrandForm";
 import brandServices from "@/services/brandServices";
 
+// Trang /admin/brand/create: hiển thị form thêm thương hiệu.
 export default function CreateBrandPage() {
   const router = useRouter();
   const [errors, setErrors] = useState({});
   const [requestError, setRequestError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  // Nhận dữ liệu từ BrandForm, gọi API tạo thương hiệu rồi về trang danh sách.
   const save = async (data) => {
     setSubmitting(true);
     setErrors({});

@@ -8,6 +8,7 @@ import TrashTable from "@/components/admin/TrashTable";
 import { runBulkTrashAction } from "@/lib/adminTrashActions.mjs";
 import productServices from "@/services/productServices";
 
+// Trang /admin/product/trash: khôi phục hoặc xóa vĩnh viễn sản phẩm đã xóa mềm.
 export default function ProductTrashPage() {
   const [data, setData] = useState([]);
   const [meta, setMeta] = useState(null);
@@ -20,6 +21,7 @@ export default function ProductTrashPage() {
   const [restoreConfirming, setRestoreConfirming] = useState(null);
   const [notice, setNotice] = useState("");
 
+  // Lấy một trang sản phẩm trong thùng rác và thông tin phân trang.
   const load = useCallback((page = 1) => {
     setLoading(true);
     setError("");
@@ -36,6 +38,7 @@ export default function ProductTrashPage() {
     setSelectedIds([]);
     load(page);
   };
+  // Cập nhật bảng sau thao tác hàng loạt; mục thất bại vẫn được giữ chọn.
   const applyBulkOutcome = (outcome, action) => {
     const succeededIds = new Set(outcome.succeeded.map((item) => String(item.id)));
     setData((current) => current.filter((item) => !succeededIds.has(String(item.id))));
@@ -44,6 +47,7 @@ export default function ProductTrashPage() {
     setNotice(`${outcome.succeeded.length} mục ${action}; ${outcome.failed.length} mục thất bại. Các mục thất bại vẫn được chọn.`);
     if (data.length <= outcome.succeeded.length && (meta?.current_page ?? 1) > 1) load(meta.current_page - 1);
   };
+  // Khôi phục các sản phẩm đã tích chọn.
   const restoreSelected = async () => {
     if (!selectedItems.length || bulkBusy) return;
     setBulkBusy(true);
@@ -51,6 +55,7 @@ export default function ProductTrashPage() {
     applyBulkOutcome(outcome, "đã khôi phục");
     setBulkBusy(false);
   };
+  // Mở hộp thoại xác nhận trước khi xóa vĩnh viễn các mục đã chọn.
   const deleteSelected = () => {
     if (selectedItems.length) setBulkConfirming({ items: selectedItems, name: `${selectedItems.length} sản phẩm` });
   };
@@ -73,7 +78,7 @@ export default function ProductTrashPage() {
     { key: "name", label: "Sản phẩm", render: (item) => <span><span className="block font-semibold text-slate-900">{item.name}</span><span className="block text-xs text-slate-500">{item.slug}</span></span> },
     { key: "category", label: "Danh mục", render: (item) => item.category?.name ?? "—" },
     { key: "brand", label: "Thương hiệu", render: (item) => item.brand?.name ?? "—" },
-    { key: "price", label: "Giá", render: (item) => new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 2 }).format(Number(item.price)) },
+    { key: "price", label: "Giá bán", render: (item) => <span><span className="block font-semibold text-slate-900">{new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 2 }).format(Number(item.sale_price ?? item.price))}</span>{item.sale_price != null && <span className="block text-xs text-slate-400 line-through">{new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 2 }).format(Number(item.price))}</span>}</span> },
     { key: "status", label: "Hiển thị trước khi xóa", render: (item) => <StatusBadge status={item.status} /> },
     { key: "deleted_at", label: "Ngày xóa", render: (item) => item.deleted_at ? new Date(item.deleted_at).toLocaleString("vi-VN") : "—" },
   ];

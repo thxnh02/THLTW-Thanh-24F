@@ -4,19 +4,13 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import AdminTable from "@/components/admin/AdminTable";
 import AdminRowActions from "@/components/admin/AdminRowActions";
+import AdminCatalogThumbnail from "@/components/admin/AdminCatalogThumbnail";
 import ConfirmDialog from "@/components/admin/ConfirmDialog";
 import StatusBadge from "@/components/admin/StatusBadge";
 import Pagination from "@/components/common/Pagination";
 import productServices from "@/services/productServices";
 
-function ProductThumbnail({ product }) {
-  const [failed, setFailed] = useState(false);
-  if (!product.image || failed) return <span aria-label="Không có ảnh sản phẩm" className="grid h-11 w-11 place-items-center rounded-lg bg-slate-100 text-[10px] font-semibold text-slate-500" role="img">Không ảnh</span>;
-  // The product schema stores a URL/path, not an upload managed by Next Image.
-  // eslint-disable-next-line @next/next/no-img-element
-  return <img alt="" className="h-11 w-11 rounded-lg object-cover" loading="lazy" src={product.image} onError={() => setFailed(true)} />;
-}
-
+// Trang /admin/product: danh sách sản phẩm, phân trang và xác nhận chuyển vào thùng rác.
 export default function AdminProductsPage() {
   const [data, setData] = useState([]);
   const [meta, setMeta] = useState(null);
@@ -24,6 +18,7 @@ export default function AdminProductsPage() {
   const [error, setError] = useState("");
   const [confirming, setConfirming] = useState(null);
 
+  // Lấy một trang sản phẩm từ API; dùng lại sau khi xóa hoặc đổi trang.
   const load = useCallback((page = 1) => {
     setLoading(true);
     setError("");
@@ -49,11 +44,12 @@ export default function AdminProductsPage() {
     return () => { current = false; };
   }, []);
 
+  // Cấu hình các cột mà AdminTable sẽ hiển thị.
   const columns = [
-    { key: "product", label: "Sản phẩm", render: (item) => <div className="flex min-w-48 items-center gap-3"><ProductThumbnail product={item} /><span className="min-w-0"><span className="block truncate font-semibold text-slate-900">{item.name}</span><span className="block truncate text-xs text-slate-500">{item.slug}</span></span></div> },
+    { key: "product", label: "Sản phẩm", render: (item) => <div className="flex min-w-48 items-center gap-3"><AdminCatalogThumbnail label="sản phẩm" src={item.image} /><span className="min-w-0"><span className="block truncate font-semibold text-slate-900">{item.name}</span><span className="block truncate text-xs text-slate-500">{item.slug}</span></span></div> },
     { key: "category", label: "Danh mục", render: (item) => item.category?.name ?? "—" },
     { key: "brand", label: "Thương hiệu", render: (item) => item.brand?.name ?? "—" },
-    { key: "price", label: "Giá", render: (item) => new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 2 }).format(Number(item.price)) },
+    { key: "price", label: "Giá bán", render: (item) => <span><span className="block font-semibold text-slate-900">{new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 2 }).format(Number(item.sale_price ?? item.price))}</span>{item.sale_price != null && <span className="block text-xs text-slate-400 line-through">{new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 2 }).format(Number(item.price))}</span>}</span> },
     { key: "status", label: "Hiển thị", render: (item) => <StatusBadge status={item.status} /> },
   ];
 

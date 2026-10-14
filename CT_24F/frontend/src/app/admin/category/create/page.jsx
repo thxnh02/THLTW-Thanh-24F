@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import CategoryForm from "@/components/admin/CategoryForm";
 import categoryServices from "@/services/categoryServices";
 
+// Trang /admin/category/create: thêm danh mục mới, có thể chọn danh mục cha.
 export default function CreateCategoryPage() {
   const router = useRouter();
   const [categories, setCategories] = useState([]);
@@ -13,6 +14,7 @@ export default function CreateCategoryPage() {
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
 
+  // Lấy danh mục hiện có để điền danh sách lựa chọn danh mục cha.
   useEffect(() => {
     categoryServices.getAdminCategoryOptions().then((response) => {
       setCategories(response.data.data);
@@ -21,6 +23,7 @@ export default function CreateCategoryPage() {
     }).finally(() => setOptionsLoading(false));
   }, []);
 
+  // Nhận dữ liệu từ CategoryForm, gọi API tạo danh mục rồi về trang danh sách.
   const save = async (data) => {
     setSubmitting(true);
     setErrors({});

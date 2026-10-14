@@ -1,5 +1,5 @@
 /**
- * Accessible paginated table primitive.
+ * Bảng dùng chung cho danh sách quản trị; trang cha tự gọi API và truyền dữ liệu/phân trang vào.
  * @param {{columns: Array<{key: string, label: string, render?: (row: object) => React.ReactNode}>, data: object[], loading?: boolean, error?: string|Error, emptyMessage?: string, renderActions?: (row: object) => React.ReactNode, onRetry?: () => void}} props
  */
 export default function AdminTable({
@@ -19,6 +19,7 @@ export default function AdminTable({
   const selected = new Set((selectedIds ?? []).map(String));
   const allVisibleSelected = data.length > 0 && data.every((row) => selected.has(String(row.id)));
 
+  // Chỉ chọn hoặc bỏ chọn các dòng đang hiện trên trang hiện tại.
   const selectVisibleRows = (checked) => {
     const visibleIds = new Set(data.map((row) => String(row.id)));
     const nextSelection = checked

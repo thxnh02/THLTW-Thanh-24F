@@ -1,5 +1,6 @@
 import AdminTable from "@/components/admin/AdminTable";
 
+/** Bảng thùng rác dùng chung: hiển thị dòng đã xóa, ô chọn nhiều mục và phân trang. */
 /** @param {{columns: Array, data: object[], meta?: {current_page?: number, last_page?: number, total?: number}, loading?: boolean, error?: string|Error, emptyMessage?: string, renderActions?: (row: object) => React.ReactNode, onPageChange?: (page: number) => void, onRetry?: () => void}} props */
 export default function TrashTable({
   columns,

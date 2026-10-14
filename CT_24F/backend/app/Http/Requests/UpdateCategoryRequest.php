@@ -2,23 +2,34 @@
 
 namespace App\Http\Requests;
 
+use App\Http\Requests\Concerns\ResolvesCatalogSlug;
 use App\Models\Category;
+use App\Rules\UniqueCatalogName;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
 class UpdateCategoryRequest extends FormRequest
 {
+    use ResolvesCatalogSlug;
+
     public function authorize(): bool
     {
         return true;
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $category = $this->route('category');
+        $this->normalizeCatalogName();
+        $this->resolveCatalogSlug(Category::class, 170, $category instanceof Category ? $category->id : null);
     }
 
     public function rules(): array
     {
         $category = $this->route('category');
 
-        return ['parent_id' => ['nullable', 'integer', Rule::exists('categories', 'id')->whereNull('deleted_at'), Rule::notIn([$category?->id])], 'name' => ['required', 'string', 'max:150'], 'slug' => ['required', 'string', 'max:170', Rule::unique('categories', 'slug')->ignore($category)], 'description' => ['nullable', 'string'], 'image' => ['nullable', 'string', 'max:255'], 'sort_order' => ['nullable', 'integer', 'min:0'], 'status' => ['required', 'boolean']];
+        return ['parent_id' => ['nullable', 'integer', Rule::exists('categories', 'id')->whereNull('deleted_at'), Rule::notIn([$category?->id])], 'name' => ['required', 'string', 'max:150', new UniqueCatalogName(Category::class, $category instanceof Category ? $category->id : null)], 'slug' => ['required', 'string', 'max:170', Rule::unique('categories', 'slug')->ignore($category)], 'description' => ['nullable', 'string'], 'image' => ['nullable', 'string', 'max:255'], 'image_file' => ['nullable', 'file', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:2048'], 'sort_order' => ['nullable', 'integer', 'min:0'], 'status' => ['required', 'boolean']];
     }
 
     public function after(): array

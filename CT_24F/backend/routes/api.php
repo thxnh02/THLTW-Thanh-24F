@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\Admin\AdminBrandController;
 use App\Http\Controllers\Api\Admin\AdminCategoryController;
 use App\Http\Controllers\Api\Admin\AdminProductController;
 use App\Http\Controllers\Api\BrandController;
+use App\Http\Controllers\Api\CatalogImageController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\ProductController;
 use Illuminate\Support\Facades\Route;
@@ -12,6 +13,7 @@ Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/categories/{slug}', [CategoryController::class, 'show']);
 Route::get('/brands', [BrandController::class, 'index']);
 Route::get('/products', [ProductController::class, 'index']);
+Route::get('/catalog-images/{catalogImage}', [CatalogImageController::class, 'show'])->whereNumber('catalogImage');
 
 // Admin catalog APIs: apiResource supplies list/show/create/update/soft-delete routes;
 // the explicit routes below it handle trash, restore, and permanent deletion.

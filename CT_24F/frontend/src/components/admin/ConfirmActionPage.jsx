@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 /**
- * Dedicated confirmation screen. `submit` is only called after the explicit button press.
+ * Trang xác nhận dùng cho các đường dẫn khôi phục riêng; `submit` chỉ chạy khi bấm nút xác nhận.
  * @param {{load: () => Promise<object>, recordLabel: (record: object) => string, warning: string, submit: (record: object) => Promise<object>, backHref: string, successHref?: string, title?: string, actionLabel?: string}} props
  */
 export default function ConfirmActionPage({
@@ -37,6 +37,7 @@ export default function ConfirmActionPage({
     return () => { current = false; };
   }, [load]);
 
+  // Gọi API khôi phục/xử lý bản ghi, sau đó hiển thị kết quả hoặc chuyển trang.
   const confirm = async () => {
     if (!record || submitting) return;
     setSubmitting(true);

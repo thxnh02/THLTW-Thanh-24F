@@ -9,8 +9,11 @@ use App\Http\Resources\ProductResource;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
+use App\Services\CatalogImageService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 
 class AdminProductController extends Controller
 {
@@ -21,9 +24,14 @@ class AdminProductController extends Controller
     }
 
     /** POST /api/admin/products */
-    public function store(StoreProductRequest $request): JsonResponse
+    public function store(StoreProductRequest $request, CatalogImageService $images): JsonResponse
     {
-        $product = Product::create($request->validated());
+        $product = DB::transaction(function () use ($request, $images): Product {
+            $product = Product::create(Arr::except($request->validated(), ['image_file']));
+            $images->sync($product, 'image', $request->file('image_file'));
+
+            return $product;
+        });
 
         return (new ProductResource($product->load(['category', 'brand'])))->response()->setStatusCode(201);
     }
@@ -35,9 +43,12 @@ class AdminProductController extends Controller
     }
 
     /** PUT/PATCH /api/admin/products/{product} */
-    public function update(UpdateProductRequest $request, Product $product): ProductResource
+    public function update(UpdateProductRequest $request, Product $product, CatalogImageService $images): ProductResource
     {
-        $product->update($request->validated());
+        DB::transaction(function () use ($request, $product, $images): void {
+            $product->update(Arr::except($request->validated(), ['image_file']));
+            $images->sync($product, 'image', $request->file('image_file'));
+        });
 
         return new ProductResource($product->fresh()->load(['category', 'brand']));
     }
@@ -80,10 +91,13 @@ class AdminProductController extends Controller
     }
 
     /** DELETE /api/admin/products/{id}/force — permanently remove a trashed product. */
-    public function forceDestroy(int $id): JsonResponse
+    public function forceDestroy(int $id, CatalogImageService $images): JsonResponse
     {
         $product = Product::onlyTrashed()->findOrFail($id);
-        $product->forceDelete();
+        DB::transaction(function () use ($product, $images): void {
+            $images->deleteFor($product);
+            $product->forceDelete();
+        });
 
         return response()->json(['message' => 'Đã xóa vĩnh viễn sản phẩm.']);
     }

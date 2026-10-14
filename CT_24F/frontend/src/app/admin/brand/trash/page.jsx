@@ -8,6 +8,7 @@ import TrashTable from "@/components/admin/TrashTable";
 import { runBulkTrashAction } from "@/lib/adminTrashActions.mjs";
 import brandServices from "@/services/brandServices";
 
+// Trang /admin/brand/trash: khôi phục hoặc xóa vĩnh viễn thương hiệu đã xóa mềm.
 export default function BrandTrashPage() {
   const [data, setData] = useState([]);
   const [meta, setMeta] = useState(null);
@@ -19,6 +20,7 @@ export default function BrandTrashPage() {
   const [notice, setNotice] = useState("");
   const [bulkBusy, setBulkBusy] = useState(false);
 
+  // Lấy một trang thương hiệu trong thùng rác và thông tin phân trang.
   const load = useCallback((page = 1) => {
     setLoading(true);
     setError("");
@@ -35,6 +37,7 @@ export default function BrandTrashPage() {
     setSelectedIds([]);
     load(page);
   };
+  // Cập nhật bảng sau thao tác hàng loạt; mục thất bại vẫn được giữ chọn.
   const applyBulkOutcome = (outcome, action) => {
     const succeededIds = new Set(outcome.succeeded.map((item) => String(item.id)));
     setData((current) => current.filter((item) => !succeededIds.has(String(item.id))));
@@ -43,6 +46,7 @@ export default function BrandTrashPage() {
     setNotice(`${outcome.succeeded.length} mục ${action}; ${outcome.failed.length} mục thất bại. Các mục thất bại vẫn được chọn.`);
     if (data.length <= outcome.succeeded.length && (meta?.current_page ?? 1) > 1) load(meta.current_page - 1);
   };
+  // Khôi phục các thương hiệu đã tích chọn.
   const restoreSelected = async () => {
     if (!selectedItems.length || bulkBusy) return;
     setBulkBusy(true);
@@ -50,6 +54,7 @@ export default function BrandTrashPage() {
     applyBulkOutcome(outcome, "đã khôi phục");
     setBulkBusy(false);
   };
+  // Mở hộp thoại xác nhận trước khi xóa vĩnh viễn các mục đã chọn.
   const deleteSelected = () => {
     if (selectedItems.length) setBulkConfirming({ items: selectedItems, name: `${selectedItems.length} thương hiệu` });
   };

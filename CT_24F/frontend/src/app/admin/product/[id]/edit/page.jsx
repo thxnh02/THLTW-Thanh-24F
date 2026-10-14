@@ -7,6 +7,7 @@ import brandServices from "@/services/brandServices";
 import categoryServices from "@/services/categoryServices";
 import productServices from "@/services/productServices";
 
+// Trang /admin/product/[id]/edit: sửa sản phẩm đã có theo ID trên URL.
 export default function EditProductPage() {
   const { id } = useParams();
   const router = useRouter();
@@ -18,6 +19,7 @@ export default function EditProductPage() {
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
 
+  // Tải sản phẩm hiện tại và các lựa chọn danh mục, thương hiệu vào form.
   useEffect(() => {
     let current = true;
     Promise.all([productServices.getAdminProduct(id), categoryServices.getAdminCategoryOptions(), brandServices.getAdminBrandOptions()]).then(([productResponse, categoryResponse, brandResponse]) => {
@@ -33,6 +35,7 @@ export default function EditProductPage() {
     return () => { current = false; };
   }, [id]);
 
+  // Khác trang thêm: save() ở đây gọi API cập nhật sản phẩm theo ID.
   const save = async (data) => {
     setSubmitting(true);
     setErrors({});

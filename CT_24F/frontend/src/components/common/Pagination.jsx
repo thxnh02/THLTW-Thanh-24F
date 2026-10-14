@@ -1,3 +1,4 @@
+// Nhận meta phân trang từ API; bấm Trước/Sau sẽ gọi load(page) của trang cha.
 export default function Pagination({ meta, onPageChange }) {
   if (!meta || meta.last_page <= 1) return null;
   return <nav aria-label="Phân trang" className="mt-4 flex flex-wrap items-center gap-3">

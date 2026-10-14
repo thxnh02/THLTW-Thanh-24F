@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import CategoryForm from "@/components/admin/CategoryForm";
 import categoryServices from "@/services/categoryServices";
 
+// Trang /admin/category/[id]/edit: sửa danh mục đã có theo ID trên URL.
 export default function EditCategoryPage() {
   const { id } = useParams();
   const router = useRouter();
@@ -15,6 +16,7 @@ export default function EditCategoryPage() {
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
 
+  // Tải danh mục cần sửa và danh sách danh mục cha có thể chọn.
   useEffect(() => {
     let current = true;
     Promise.all([categoryServices.getAdminCategory(id), categoryServices.getAdminCategoryOptions()]).then(([one, options]) => {
@@ -29,6 +31,7 @@ export default function EditCategoryPage() {
     return () => { current = false; };
   }, [id]);
 
+  // Nhận dữ liệu từ CategoryForm và gọi API cập nhật danh mục.
   const save = async (data) => {
     setSubmitting(true);
     setErrors({});

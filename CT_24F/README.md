@@ -4,6 +4,8 @@ Dự án cửa hàng công nghệ với Laravel JSON API và giao diện Next.js
 
 Phiên bản hiện tại chưa có đăng nhập, giỏ hàng, đặt hàng hoặc thanh toán.
 
+Các API quản trị (kể cả tải ảnh lên) hiện chưa có xác thực; chỉ chạy trong môi trường cục bộ cho tới khi bổ sung đăng nhập và phân quyền.
+
 ## Cài lần đầu với Laragon
 
 1. Mở Laragon và bấm **Start All**.
@@ -57,6 +59,7 @@ npm run dev
 - Cửa hàng: `/`, `/categories`, `/brands`, `/products`
 - Quản trị: `/admin/category`, `/admin/brand`, `/admin/product`; mỗi mục có trang danh sách, thêm, sửa và thùng rác
 - Xóa trong danh sách có hộp thoại xác nhận; thùng rác hỗ trợ khôi phục và xóa vĩnh viễn, với ô tích xác nhận trước khi xóa vĩnh viễn
+- Form thêm/sửa sản phẩm, danh mục và thương hiệu cho phép tải ảnh hoặc logo từ máy (tối đa 2 MB), xem trước và xóa ảnh; nội dung ảnh được lưu trong MySQL
 - Axios: `config/api.js` → service → axios client → Laravel API
 
 Xem thêm [database](docs/DATABASE.md), [kiểm thử API](docs/API_TEST.md) và [cấu trúc frontend](docs/FRONTEND_ARCHITECTURE.md).

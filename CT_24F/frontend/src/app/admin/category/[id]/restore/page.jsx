@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import ConfirmActionPage from "@/components/admin/ConfirmActionPage";
 import categoryServices from "@/services/categoryServices";
 
+// Trang xác nhận khôi phục một danh mục từ thùng rác.
 export default function RestoreCategoryPage() {
   const { id } = useParams();
   const load = useCallback(() => categoryServices.getTrashedCategory(id), [id]);

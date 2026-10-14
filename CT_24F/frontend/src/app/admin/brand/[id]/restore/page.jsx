@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import ConfirmActionPage from "@/components/admin/ConfirmActionPage";
 import brandServices from "@/services/brandServices";
 
+// Trang xác nhận khôi phục một thương hiệu từ thùng rác.
 export default function RestoreBrandPage() {
   const { id } = useParams();
   const load = useCallback(() => brandServices.getTrashedBrand(id), [id]);

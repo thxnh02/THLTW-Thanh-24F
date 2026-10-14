@@ -4,11 +4,13 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import AdminTable from "@/components/admin/AdminTable";
 import AdminRowActions from "@/components/admin/AdminRowActions";
+import AdminCatalogThumbnail from "@/components/admin/AdminCatalogThumbnail";
 import ConfirmDialog from "@/components/admin/ConfirmDialog";
 import StatusBadge from "@/components/admin/StatusBadge";
 import Pagination from "@/components/common/Pagination";
 import categoryServices from "@/services/categoryServices";
 
+// Trang /admin/category: danh sách danh mục, phân trang và xác nhận chuyển vào thùng rác.
 export default function AdminCategoriesPage() {
   const [data, setData] = useState([]);
   const [meta, setMeta] = useState(null);
@@ -16,6 +18,7 @@ export default function AdminCategoriesPage() {
   const [error, setError] = useState("");
   const [confirming, setConfirming] = useState(null);
 
+  // Lấy một trang danh mục từ API; dùng lại sau khi xóa hoặc đổi trang.
   const load = useCallback((page = 1) => {
     setLoading(true);
     setError("");
@@ -41,9 +44,10 @@ export default function AdminCategoriesPage() {
     return () => { current = false; };
   }, []);
 
+  // Cấu hình các cột mà AdminTable sẽ hiển thị.
   const columns = [
     { key: "id", label: "ID" },
-    { key: "name", label: "Tên danh mục" },
+    { key: "name", label: "Tên danh mục", render: (item) => <div className="flex min-w-44 items-center gap-3"><AdminCatalogThumbnail label="danh mục" src={item.image} /><span className="font-semibold text-slate-900">{item.name}</span></div> },
     { key: "slug", label: "Đường dẫn" },
     { key: "parent", label: "Danh mục cha", render: (item) => item.parent?.name ?? "—" },
     { key: "status", label: "Hiển thị", render: (item) => <StatusBadge status={item.status} /> },

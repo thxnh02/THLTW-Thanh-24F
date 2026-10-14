@@ -1,14 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { useState } from "react";
+import AdminImageField from "@/components/admin/AdminImageField";
+import AdminSlugField from "@/components/admin/AdminSlugField";
+import { slugify } from "@/lib/slugify.mjs";
 
-const blank = { name: "", slug: "", category_id: "", brand_id: "", price: "", image: "", description: "", status: true };
-
-function slugify(value) {
-  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[đĐ]/g, "d").toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-}
+const blank = { name: "", slug: "", category_id: "", brand_id: "", price: "", sale_price: "", image: "", image_file: null, description: "", status: true };
 
 function categoryDepth(category, categories) {
   const byId = new Map(categories.map((item) => [Number(item.id), item]));
@@ -25,33 +23,35 @@ function categoryDepth(category, categories) {
   return depth;
 }
 
+// Form nhập liệu dùng chung cho trang thêm và sửa; trang cha quyết định gọi API nào qua onSubmit.
 export default function ProductForm({ initialData = blank, categories = [], brands = [], errors = {}, onSubmit, submitting = false, cancelHref = "/admin/product" }) {
-  const [form, setForm] = useState(() => ({ ...blank, ...initialData, category_id: initialData.category_id ?? "", brand_id: initialData.brand_id ?? "", price: initialData.price ?? "" }));
-  const [slugTouched, setSlugTouched] = useState(Boolean(initialData.slug));
-  const [previewFailed, setPreviewFailed] = useState(false);
+  const [form, setForm] = useState(() => ({ ...blank, ...initialData, category_id: initialData.category_id ?? "", brand_id: initialData.brand_id ?? "", price: initialData.price ?? "", sale_price: initialData.sale_price ?? "" }));
+  const [slugManual, setSlugManual] = useState(false);
 
   const message = (name) => errors[name]?.[0];
   const change = (event) => {
     const { name, value, type, checked } = event.target;
-    setForm((current) => ({ ...current, [name]: type === "checkbox" ? checked : value, ...(name === "name" && !slugTouched ? { slug: slugify(value) } : {}) }));
-    if (name === "slug") setSlugTouched(true);
-    if (name === "image") setPreviewFailed(false);
+    setForm((current) => ({ ...current, [name]: type === "checkbox" ? checked : value, ...(name === "name" && !slugManual ? { slug: slugify(value) } : {}) }));
+    if (name === "slug") setSlugManual(Boolean(value.trim()));
   };
-  // Normalize browser form values; the page-level onSubmit handler owns the API request.
+  const resetSlug = () => {
+    setForm((current) => ({ ...current, slug: slugify(current.name) }));
+    setSlugManual(false);
+  };
+  // Khi bấm Lưu: đổi giá/ID về kiểu số rồi chuyển dữ liệu cho save() ở trang thêm hoặc trang sửa.
   const submit = (event) => {
     event.preventDefault();
-    onSubmit({ ...form, category_id: Number(form.category_id), brand_id: form.brand_id ? Number(form.brand_id) : null, price: Number(form.price), status: Boolean(form.status) });
+    onSubmit({ ...form, category_id: Number(form.category_id), brand_id: form.brand_id ? Number(form.brand_id) : null, price: Number(form.price), sale_price: form.sale_price === "" ? null : Number(form.sale_price), status: Boolean(form.status) });
   };
   const fieldProps = (name) => ({ "aria-describedby": message(name) ? `${name}-error` : undefined, "aria-invalid": Boolean(message(name)) });
   const fieldError = (name) => message(name) && <small className="mt-1 block text-rose-700" id={`${name}-error`} role="alert">{message(name)}</small>;
-  const previewSource = /^(https?:\/\/|\/)/i.test(form.image.trim()) ? form.image.trim() : "";
 
   return (
     <form className="space-y-5" onSubmit={submit}>
       <section aria-labelledby="product-basic-heading" className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
         <h2 className="text-lg font-semibold text-slate-950" id="product-basic-heading">Thông tin cơ bản</h2>
         <label className="admin-label">Tên sản phẩm<input {...fieldProps("name")} autoComplete="off" className="admin-input" maxLength={180} name="name" required value={form.name} onChange={change} />{fieldError("name")}</label>
-        <label className="admin-label">Đường dẫn<input {...fieldProps("slug")} className="admin-input" maxLength={200} name="slug" required value={form.slug} onChange={change} />{fieldError("slug")}</label>
+        <AdminSlugField error={message("slug")} manual={slugManual} maxLength={200} value={form.slug} onChange={change} onReset={resetSlug} />
         <label className="admin-label">Mô tả<textarea {...fieldProps("description")} className="admin-input min-h-28 resize-y" name="description" value={form.description ?? ""} onChange={change} />{fieldError("description")}</label>
       </section>
 
@@ -65,12 +65,12 @@ export default function ProductForm({ initialData = blank, categories = [], bran
 
       <section aria-labelledby="product-pricing-heading" className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
         <h2 className="text-lg font-semibold text-slate-950" id="product-pricing-heading">Giá bán và hình ảnh</h2>
-        <label className="admin-label">Giá sản phẩm<input {...fieldProps("price")} className="admin-input max-w-sm" inputMode="decimal" min="0" name="price" required step="0.01" type="number" value={form.price} onChange={change} />{fieldError("price")}</label>
-        <label className="admin-label">Đường dẫn hình ảnh<input {...fieldProps("image")} className="admin-input" maxLength={255} name="image" value={form.image ?? ""} onChange={change} />{fieldError("image")}</label>
-        <div aria-live="polite" className="flex items-center gap-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
-          {previewSource && !previewFailed ? <Image alt={`Xem trước ${form.name || "sản phẩm"}`} className="h-20 w-20 rounded-lg object-cover" height={80} loading="lazy" src={previewSource} unoptimized width={80} onError={() => setPreviewFailed(true)} /> : <div aria-label="Chưa có hình ảnh" className="grid h-20 w-20 place-items-center rounded-lg bg-slate-200 text-xs font-semibold text-slate-500" role="img">Chưa có ảnh</div>}
-          <p className="text-sm font-semibold text-slate-800">Xem trước hình ảnh</p>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <label className="admin-label">Giá gốc<input {...fieldProps("price")} className="admin-input" inputMode="decimal" min="0" name="price" required step="0.01" type="number" value={form.price} onChange={change} />{fieldError("price")}</label>
+          <label className="admin-label">Giá khuyến mãi <span className="font-normal text-slate-500">(không bắt buộc)</span><input {...fieldProps("sale_price")} className="admin-input" inputMode="decimal" min="0" name="sale_price" step="0.01" type="number" value={form.sale_price} onChange={change} />{fieldError("sale_price")}</label>
         </div>
+        <p className="text-xs text-slate-500">Để trống nếu không giảm giá. Giá khuyến mãi phải thấp hơn giá gốc.</p>
+        <AdminImageField errors={errors} file={form.image_file} fileName="image_file" label="Ảnh sản phẩm" name="image" value={form.image} onFileChange={(file) => setForm((current) => ({ ...current, image_file: file }))} onUrlChange={(image) => setForm((current) => ({ ...current, image }))} />
       </section>
 
       <section aria-labelledby="product-visibility-heading" className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">

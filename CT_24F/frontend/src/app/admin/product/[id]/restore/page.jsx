@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import ConfirmActionPage from "@/components/admin/ConfirmActionPage";
 import productServices from "@/services/productServices";
 
+// Đường dẫn khôi phục sản phẩm riêng; trong bảng thùng rác hiện dùng hộp thoại xác nhận tại chỗ.
 export default function RestoreProductPage() {
   const { id } = useParams();
   const load = useCallback(() => productServices.getTrashedProduct(id), [id]);

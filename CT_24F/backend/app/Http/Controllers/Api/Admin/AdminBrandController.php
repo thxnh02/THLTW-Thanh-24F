@@ -7,8 +7,11 @@ use App\Http\Requests\StoreBrandRequest;
 use App\Http\Requests\UpdateBrandRequest;
 use App\Http\Resources\BrandResource;
 use App\Models\Brand;
+use App\Services\CatalogImageService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 
 class AdminBrandController extends Controller
 {
@@ -37,9 +40,14 @@ class AdminBrandController extends Controller
     }
 
     /** POST /api/admin/brands — validate and create a brand (201). */
-    public function store(StoreBrandRequest $request): JsonResponse
+    public function store(StoreBrandRequest $request, CatalogImageService $images): JsonResponse
     {
-        $brand = Brand::create($request->validated());
+        $brand = DB::transaction(function () use ($request, $images): Brand {
+            $brand = Brand::create(Arr::except($request->validated(), ['logo_file']));
+            $images->sync($brand, 'logo', $request->file('logo_file'));
+
+            return $brand;
+        });
 
         return (new BrandResource($brand))->response()->setStatusCode(201);
     }
@@ -51,9 +59,12 @@ class AdminBrandController extends Controller
     }
 
     /** PUT/PATCH /api/admin/brands/{brand} — validate and update a brand. */
-    public function update(UpdateBrandRequest $request, Brand $brand): BrandResource
+    public function update(UpdateBrandRequest $request, Brand $brand, CatalogImageService $images): BrandResource
     {
-        $brand->update($request->validated());
+        DB::transaction(function () use ($request, $brand, $images): void {
+            $brand->update(Arr::except($request->validated(), ['logo_file']));
+            $images->sync($brand, 'logo', $request->file('logo_file'));
+        });
 
         return new BrandResource($brand->fresh());
     }
@@ -79,7 +90,7 @@ class AdminBrandController extends Controller
     }
 
     /** DELETE /api/admin/brands/{id}/force — permanently delete if no product history depends on it. */
-    public function forceDestroy(int $id): JsonResponse
+    public function forceDestroy(int $id, CatalogImageService $images): JsonResponse
     {
         $brand = Brand::onlyTrashed()->findOrFail($id);
 
@@ -87,7 +98,10 @@ class AdminBrandController extends Controller
             return response()->json(['message' => 'Thương hiệu này có lịch sử sản phẩm nên không thể xóa vĩnh viễn.'], 409);
         }
 
-        $brand->forceDelete();
+        DB::transaction(function () use ($brand, $images): void {
+            $images->deleteFor($brand);
+            $brand->forceDelete();
+        });
 
         return response()->json(['message' => 'Đã xóa vĩnh viễn thương hiệu.']);
     }

@@ -7,8 +7,11 @@ use App\Http\Requests\StoreCategoryRequest;
 use App\Http\Requests\UpdateCategoryRequest;
 use App\Http\Resources\CategoryResource;
 use App\Models\Category;
+use App\Services\CatalogImageService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 
 class AdminCategoryController extends Controller
 {
@@ -37,9 +40,14 @@ class AdminCategoryController extends Controller
     }
 
     /** POST /api/admin/categories — validate and create a category (201). */
-    public function store(StoreCategoryRequest $request): JsonResponse
+    public function store(StoreCategoryRequest $request, CatalogImageService $images): JsonResponse
     {
-        $category = Category::create($request->validated());
+        $category = DB::transaction(function () use ($request, $images): Category {
+            $category = Category::create(Arr::except($request->validated(), ['image_file']));
+            $images->sync($category, 'image', $request->file('image_file'));
+
+            return $category;
+        });
 
         return (new CategoryResource($category))->response()->setStatusCode(201);
     }
@@ -51,9 +59,12 @@ class AdminCategoryController extends Controller
     }
 
     /** PUT/PATCH /api/admin/categories/{category} — validate and update a category. */
-    public function update(UpdateCategoryRequest $request, Category $category): CategoryResource
+    public function update(UpdateCategoryRequest $request, Category $category, CatalogImageService $images): CategoryResource
     {
-        $category->update($request->validated());
+        DB::transaction(function () use ($request, $category, $images): void {
+            $category->update(Arr::except($request->validated(), ['image_file']));
+            $images->sync($category, 'image', $request->file('image_file'));
+        });
 
         return new CategoryResource($category->fresh()->load('parent'));
     }
@@ -87,7 +98,7 @@ class AdminCategoryController extends Controller
     }
 
     /** DELETE /api/admin/categories/{id}/force — permanently delete when no history depends on it. */
-    public function forceDestroy(int $id): JsonResponse
+    public function forceDestroy(int $id, CatalogImageService $images): JsonResponse
     {
         $category = Category::onlyTrashed()->findOrFail($id);
 
@@ -98,7 +109,10 @@ class AdminCategoryController extends Controller
             return response()->json(['message' => 'Danh mục này có lịch sử danh mục con nên không thể xóa vĩnh viễn.'], 409);
         }
 
-        $category->forceDelete();
+        DB::transaction(function () use ($category, $images): void {
+            $images->deleteFor($category);
+            $category->forceDelete();
+        });
 
         return response()->json(['message' => 'Đã xóa vĩnh viễn danh mục.']);
     }
