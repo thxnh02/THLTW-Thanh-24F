@@ -10,5 +10,5 @@ export default function RestoreCategoryPage() {
   const load = useCallback(() => categoryServices.getTrashedCategory(id), [id]);
   const submit = useCallback(() => categoryServices.restoreCategory(id), [id]);
 
-  return <ConfirmActionPage actionLabel="Restore category" backHref="/admin/category/trash" load={load} recordLabel={(record) => `${record.name} · ${record.slug}`} submit={submit} successHref="/admin/category" title="Restore this category?" warning="The category will return to the admin catalog. Its parent category must already be restored." />;
+  return <ConfirmActionPage actionLabel="Khôi phục danh mục" backHref="/admin/category/trash" load={load} recordLabel={(record) => `${record.name} · ${record.slug}`} submit={submit} successHref="/admin/category" title="Khôi phục danh mục này?" warning="Danh mục sẽ trở lại trang quản trị. Cần khôi phục danh mục cha trước nếu danh mục cha đang ở trong thùng rác." />;
 }

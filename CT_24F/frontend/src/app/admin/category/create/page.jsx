@@ -17,7 +17,7 @@ export default function CreateCategoryPage() {
     categoryServices.getAdminCategoryOptions().then((response) => {
       setCategories(response.data.data);
     }).catch((requestError) => {
-      setLoadError(requestError.response?.data?.message ?? "Parent category choices could not be loaded.");
+      setLoadError(requestError.response?.data?.message ?? "Không thể tải danh mục cha.");
     }).finally(() => setOptionsLoading(false));
   }, []);
 
@@ -29,11 +29,11 @@ export default function CreateCategoryPage() {
       router.push("/admin/category");
     } catch (requestError) {
       setErrors(requestError.response?.data?.errors ?? {});
-      setLoadError(requestError.response?.data?.message ?? "The category could not be saved.");
+      setLoadError(requestError.response?.data?.message ?? "Không thể lưu danh mục.");
     } finally {
       setSubmitting(false);
     }
   };
 
-  return <section className="mx-auto max-w-3xl space-y-5"><header><p className="text-xs font-bold uppercase tracking-[0.16em] text-indigo-700">Category</p><h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">Create category</h1><p className="mt-2 text-sm text-slate-600">Add a category and optionally place it under a parent.</p></header>{loadError && <p className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800" role="alert">{loadError}</p>}{optionsLoading ? <p aria-live="polite" className="animate-pulse rounded-lg bg-white p-5 text-sm text-slate-500">Loading parent categories…</p> : <CategoryForm categories={categories} errors={errors} onSubmit={save} submitting={submitting} />}</section>;
+  return <section className="mx-auto max-w-3xl space-y-5"><header><p className="text-xs font-bold uppercase tracking-[0.16em] text-indigo-700">Danh mục</p><h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">Thêm danh mục</h1><p className="mt-2 text-sm text-slate-600">Thêm danh mục mới và chọn danh mục cha nếu cần.</p></header>{loadError && <p className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800" role="alert">{loadError}</p>}{optionsLoading ? <p aria-live="polite" className="animate-pulse rounded-lg bg-white p-5 text-sm text-slate-500">Đang tải danh mục cha…</p> : <CategoryForm categories={categories} errors={errors} onSubmit={save} submitting={submitting} />}</section>;
 }

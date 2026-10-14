@@ -1,6 +1,8 @@
-# CT_24F - Course ecommerce API
+# CT_24F – Cửa hàng công nghệ
 
-Project nhỏ theo phạm vi bài học hiện tại: Laravel JSON API, Next.js, Axios, danh mục, thương hiệu và danh sách sản phẩm có phân trang. Không có đăng nhập, giỏ hàng, đơn hàng hay thanh toán.
+Dự án cửa hàng công nghệ với Laravel JSON API và giao diện Next.js. Khách truy cập có thể xem danh mục, thương hiệu và sản phẩm. Trang quản trị hỗ trợ danh sách có phân trang, thêm, sửa, chuyển vào thùng rác, khôi phục và xóa vĩnh viễn cho cả ba loại dữ liệu. Frontend gọi API qua Axios.
+
+Phiên bản hiện tại chưa có đăng nhập, giỏ hàng, đặt hàng hoặc thanh toán.
 
 ## Cài lần đầu với Laragon
 
@@ -8,7 +10,7 @@ Project nhỏ theo phạm vi bài học hiện tại: Laravel JSON API, Next.js,
 2. Nhấp đúp `setup-mysql.bat`.
 3. Nhấp đúp `start-dev.bat`.
 
-`setup-mysql.bat` chỉ tạo/cấu hình `.env` từ mẫu khi file chưa tồn tại; `.env` sẵn có được giữ nguyên và phải trỏ tới MySQL `127.0.0.1:3306`, database `ecommerce_thltw`, user `root`. Script sẽ dừng trước khi tạo database/chạy migration nếu cấu hình hiện tại khác. Sau đó script tạo database nếu chưa có và chạy migration/seed, không xóa database, bảng hay dữ liệu hiện có.
+`setup-mysql.bat` tạo `.env` từ mẫu khi chưa có, kiểm tra cấu hình MySQL, rồi tạo database `ecommerce_thltw` nếu cần và chạy migration/seed. Script giữ nguyên `.env` đã có, không xóa database, bảng hay dữ liệu hiện có.
 
 ## Chạy hằng ngày
 
@@ -20,7 +22,7 @@ API: `http://127.0.0.1:8000/api`
 
 Nếu port `8000` hoặc `3000` đang được dùng, đóng tiến trình đang dùng port đó rồi chạy lại script.
 
-## Lệnh thủ công để học
+## Chạy bằng lệnh
 
 ```powershell
 cd backend
@@ -45,16 +47,16 @@ npm run dev
 - `GET /api/categories/{slug}`
 - `GET /api/brands`
 - `GET /api/products?page=2` — chính xác 12 sản phẩm mỗi trang
-- Admin CRUD có phân trang và thùng rác: `/api/admin/categories`, `/api/admin/brands`, `/api/admin/products`
-- Admin có thể khôi phục hoặc xóa vĩnh viễn bản ghi trong thùng rác; xóa vĩnh viễn bị chặn khi còn dữ liệu liên quan.
-
-Luồng theo bài học: **Model → FormRequest → Controller → Resource → Route → Test**.
+- Admin CRUD có phân trang: `/api/admin/categories`, `/api/admin/brands`, `/api/admin/products`
+- Thùng rác: `/api/admin/{categories|brands|products}/trash`
+- Khôi phục: `POST /api/admin/{categories|brands|products}/{id}/restore`
+- Xóa vĩnh viễn: `DELETE /api/admin/{categories|brands|products}/{id}/force`
 
 ## Frontend
 
-- Shop: `/categories`, `/brands`, `/products`
-- Admin danh mục, thương hiệu và sản phẩm: trang danh sách, thêm, sửa, thùng rác, khôi phục và xác nhận trước khi xóa.
-- Khu vực quản trị hiện chưa có đăng nhập/phân quyền; chỉ chạy trong môi trường học tập cục bộ, không đưa lên môi trường công khai.
+- Cửa hàng: `/`, `/categories`, `/brands`, `/products`
+- Quản trị: `/admin/category`, `/admin/brand`, `/admin/product`; mỗi mục có trang danh sách, thêm, sửa và thùng rác
+- Xóa trong danh sách có hộp thoại xác nhận; thùng rác hỗ trợ khôi phục và xóa vĩnh viễn, với ô tích xác nhận trước khi xóa vĩnh viễn
 - Axios: `config/api.js` → service → axios client → Laravel API
 
 Xem thêm [database](docs/DATABASE.md), [kiểm thử API](docs/API_TEST.md) và [cấu trúc frontend](docs/FRONTEND_ARCHITECTURE.md).

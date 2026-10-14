@@ -2,6 +2,7 @@ import API_CONFIG from "@/config/api";
 import axiosClient from "@/lib/axiosClient";
 import axiosAdmin from "@/lib/axiosAdmin";
 
+// Storefront reads use axiosClient; admin catalog CRUD and trash use axiosAdmin.
 const productServices = {
   getProducts: (params) => axiosClient.get(API_CONFIG.ENDPOINTS.PRODUCTS.INDEX, { params }),
   getAdminProducts: (params) => axiosAdmin.get(API_CONFIG.ENDPOINTS.PRODUCTS.ADMIN_INDEX, { params }),

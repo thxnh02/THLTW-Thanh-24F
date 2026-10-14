@@ -53,8 +53,8 @@ export default function AdminShell({ children }) {
     </div>
     <AnimatePresence>
       {drawerOpen && <motion.div animate={{ opacity: 1 }} className="fixed inset-0 z-50 bg-slate-950/55 md:hidden" exit={{ opacity: 0 }} initial={{ opacity: 0 }} onMouseDown={(event) => { if (event.target === event.currentTarget) setDrawerOpen(false); }} transition={transition}>
-        <motion.aside animate={{ x: 0 }} aria-label="Admin navigation" aria-modal="true" className="h-full w-[min(86vw,20rem)] overflow-y-auto bg-[#101a2b] shadow-2xl" exit={{ x: "-100%" }} id="admin-mobile-drawer" initial={{ x: "-100%" }} ref={drawerRef} role="dialog" transition={transition}>
-          <div className="flex items-center justify-between border-b border-white/10 px-5 py-4"><p className="text-xs font-semibold uppercase tracking-[.16em] text-slate-300">Navigation</p><button aria-label="Close navigation menu" className="grid h-11 w-11 place-items-center rounded-lg text-white hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2" onClick={() => setDrawerOpen(false)} ref={closeButtonRef} type="button">×</button></div>
+        <motion.aside animate={{ x: 0 }} aria-label="Điều hướng quản trị" aria-modal="true" className="h-full w-[min(86vw,20rem)] overflow-y-auto bg-[#101a2b] shadow-2xl" exit={{ x: "-100%" }} id="admin-mobile-drawer" initial={{ x: "-100%" }} ref={drawerRef} role="dialog" transition={transition}>
+          <div className="flex items-center justify-between border-b border-white/10 px-5 py-4"><p className="text-xs font-semibold uppercase tracking-[.16em] text-slate-300">Điều hướng</p><button aria-label="Đóng menu điều hướng" className="grid h-11 w-11 place-items-center rounded-lg text-white hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2" onClick={() => setDrawerOpen(false)} ref={closeButtonRef} type="button">×</button></div>
           <SideBar mobile onNavigate={() => setDrawerOpen(false)} />
         </motion.aside>
       </motion.div>}

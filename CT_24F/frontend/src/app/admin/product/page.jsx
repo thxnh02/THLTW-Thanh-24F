@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import AdminTable from "@/components/admin/AdminTable";
+import AdminRowActions from "@/components/admin/AdminRowActions";
 import ConfirmDialog from "@/components/admin/ConfirmDialog";
 import StatusBadge from "@/components/admin/StatusBadge";
 import Pagination from "@/components/common/Pagination";
@@ -57,8 +58,8 @@ export default function AdminProductsPage() {
   ];
 
   return <section className="space-y-5">
-    <header className="flex flex-wrap items-end justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[0.16em] text-indigo-700">Quản lý hàng hóa</p><h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">Sản phẩm</h1><p className="mt-2 text-sm text-slate-600">Xem và quản lý sản phẩm, giá bán cùng trạng thái hiển thị.</p></div><div className="flex flex-wrap gap-2"><Link className="inline-flex min-h-11 items-center rounded-lg border border-slate-300 px-4 text-sm font-semibold text-slate-700 hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2" href="/admin/product/trash">Thùng rác</Link><Link className="inline-flex min-h-11 items-center rounded-lg bg-slate-950 px-4 text-sm font-semibold text-white hover:bg-indigo-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2" href="/admin/product/create">Thêm sản phẩm</Link></div></header>
-    <AdminTable columns={columns} data={data} emptyMessage="Chưa có sản phẩm nào." error={error} loading={loading} onRetry={() => load(meta?.current_page ?? 1)} renderActions={(item) => <div className="flex flex-wrap gap-3 whitespace-nowrap"><Link aria-label={`Sửa sản phẩm ${item.name}`} className="font-semibold text-indigo-700 hover:underline" href={`/admin/product/${item.id}/edit`}>Sửa</Link><button aria-label={`Xóa sản phẩm ${item.name}`} className="font-semibold text-rose-700 hover:underline" onClick={() => setConfirming(item)} type="button">Xóa</button></div>} />
+    <header className="flex flex-wrap items-end justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[0.16em] text-indigo-700">Quản lý hàng hóa</p><h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">Sản phẩm</h1><p className="mt-2 text-sm text-slate-600">Xem và quản lý sản phẩm, giá bán cùng trạng thái hiển thị.</p></div><div className="flex flex-wrap gap-2"><Link className="inline-flex min-h-11 items-center rounded-lg bg-amber-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-amber-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600" href="/admin/product/trash">Mở thùng rác</Link><Link className="inline-flex min-h-11 items-center rounded-lg bg-slate-950 px-4 text-sm font-semibold text-white hover:bg-indigo-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2" href="/admin/product/create">Thêm sản phẩm</Link></div></header>
+    <AdminTable columns={columns} data={data} emptyMessage="Chưa có sản phẩm nào." error={error} loading={loading} onRetry={() => load(meta?.current_page ?? 1)} renderActions={(item) => <AdminRowActions editHref={`/admin/product/${item.id}/edit`} itemName={`sản phẩm ${item.name}`} onDelete={() => setConfirming(item)} />} />
     <ConfirmDialog actionLabel="Chuyển vào thùng rác" description="Bạn có chắc muốn xóa sản phẩm" onComplete={() => load(meta?.current_page ?? 1)} onConfirm={(item) => productServices.deleteProduct(item.id)} onDismiss={() => setConfirming(null)} record={confirming} title="Xóa sản phẩm này?" />
     <Pagination meta={meta} onPageChange={load} />
   </section>;

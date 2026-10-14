@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/** Category hierarchy, product relation, and soft-delete behavior for the catalog. */
 class Category extends Model
 {
     use HasFactory, SoftDeletes;

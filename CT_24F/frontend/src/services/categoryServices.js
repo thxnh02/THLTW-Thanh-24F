@@ -2,6 +2,7 @@ import API_CONFIG from "@/config/api";
 import axiosAdmin from "@/lib/axiosAdmin";
 import axiosClient from "@/lib/axiosClient";
 
+// Storefront reads use axiosClient; admin catalog CRUD, options, and trash use axiosAdmin.
 const categoryServices = {
   getCategories: () => axiosClient.get(API_CONFIG.ENDPOINTS.CATEGORIES.INDEX),
   getCategoryBySlug: (slug) => axiosClient.get(API_CONFIG.ENDPOINTS.CATEGORIES.SHOW_BY_SLUG(slug)),

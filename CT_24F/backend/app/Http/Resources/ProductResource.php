@@ -5,6 +5,7 @@ namespace App\Http\Resources;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
+/** Product JSON shape shared by storefront reads and admin catalog endpoints. */
 class ProductResource extends JsonResource
 {
     public function toArray(Request $request): array

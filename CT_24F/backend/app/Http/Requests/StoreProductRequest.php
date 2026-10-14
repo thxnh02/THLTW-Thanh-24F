@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
+/** Validation boundary for POST /api/admin/products before AdminProductController::store(). */
 class StoreProductRequest extends FormRequest
 {
     public function authorize(): bool

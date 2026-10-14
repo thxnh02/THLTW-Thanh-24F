@@ -36,7 +36,7 @@ class UpdateCategoryRequest extends FormRequest
 
             while ($parent !== null) {
                 if ($parent->is($category)) {
-                    $validator->errors()->add('parent_id', 'A category cannot be moved beneath one of its descendants.');
+                    $validator->errors()->add('parent_id', 'Không thể đặt danh mục làm con của một danh mục con thuộc chính nó.');
 
                     return;
                 }

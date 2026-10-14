@@ -11,7 +11,7 @@ DB_USERNAME=root
 DB_PASSWORD=
 ```
 
-Chạy `setup-mysql.bat` sau khi Laragon Start All. Script chỉ khởi tạo `.env` khi chưa có; nếu `.env` hiện hữu không trỏ tới cấu hình MySQL bên trên, script sẽ dừng trước khi tạo database hoặc migrate. Khi hợp lệ, script chỉ dùng `CREATE DATABASE IF NOT EXISTS`, `php artisan migrate` và `php artisan db:seed`; không dùng `DROP DATABASE` hay `migrate:fresh`.
+Chạy `setup-mysql.bat` sau khi Laragon Start All. Script chỉ dùng `CREATE DATABASE IF NOT EXISTS`, `php artisan migrate` và `php artisan db:seed`; không dùng `DROP DATABASE` hay `migrate:fresh`.
 
 ## Bảng trong phạm vi hiện tại
 
@@ -19,4 +19,6 @@ Chạy `setup-mysql.bat` sau khi Laragon Start All. Script chỉ khởi tạo `.
 - `brands`: thông tin thương hiệu hiển thị công khai.
 - `products`: `category_id` liên kết `categories.id`; `brand_id` có thể rỗng và liên kết `brands.id`.
 
-Seeder dùng `slug` cố định và `firstOrCreate`, nên chạy `php artisan db:seed` nhiều lần không tạo trùng dữ liệu mẫu cũng không ghi đè nội dung đã chỉnh sửa. Seeder tìm cả bản ghi đã xóa mềm để không tạo xung đột slug. Có 14 sản phẩm để kiểm tra trang thứ hai.
+Cả ba bảng dùng `deleted_at` để chuyển bản ghi vào thùng rác trước khi xóa vĩnh viễn. Việc khôi phục sản phẩm yêu cầu danh mục và thương hiệu liên quan đang khả dụng.
+
+Seeder dùng `slug` cố định và `updateOrCreate`, nên chạy `php artisan db:seed` nhiều lần không tạo trùng dữ liệu khởi tạo. Có 14 sản phẩm để kiểm tra phân trang.

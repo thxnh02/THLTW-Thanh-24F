@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Complete the server-backed CRUD and trash lifecycle for categories, brands, and products while preserving the CT_24F course architecture and existing MySQL data.
+**Goal:** Complete the server-backed CRUD and trash lifecycle for categories, brands, and products while preserving the CT_24F application architecture and existing MySQL data.
 
 **Architecture:** Add forward-only Laravel soft-delete migrations and keep lifecycle rules in FormRequests/controllers/resources. Then add paginated API/service support and dedicated Next.js pages, sharing only simple form/action/table primitives. Finish with the premium responsive shop/admin polish, safe setup/docs cleanup, and full verification.
 
@@ -22,7 +22,7 @@
 - No auth/cart/orders/payment/stock/variants/reviews/wishlist/media upload or other unrelated modules.
 - Never commit `.env`, credentials, MySQL files, vendor, node_modules, or build output.
 - Never run `migrate:fresh`, `db:wipe`, DROP/TRUNCATE, git reset/clean, rebase, merge, or force-push.
-- Keep normal admin APIs open only for trusted local coursework; document that they are unsafe to expose publicly without authentication.
+- Keep normal admin APIs open only for trusted local development; document that they are unsafe to expose publicly without authentication.
 - Commit implementation work locally to `CT_24F`; push only after all verification and final review are green.
 
 ## Review Focus
@@ -196,18 +196,18 @@
 - [ ] **Step 5: Run** `cd frontend; npm.cmd run lint; npm.cmd run build`; verify no layout overflow at 360/390/768/1024/1280px manually.
 - [ ] **Step 6: Commit** as `Polish responsive shop and admin experience`.
 
-### Task 10: Seeder, Laragon scripts, CI, and course documentation
+### Task 10: Seeder, Laragon scripts, CI, and project documentation
 
 **Files:**
 - Modify if audit confirms needed: `backend/database/seeders/DatabaseSeeder.php`, `setup-mysql.bat`, `start-dev.bat`, `.github/workflows/ci.yml`, root/backend/frontend READMEs, `docs/API_TEST.md`, `docs/DATABASE.md`, `docs/FRONTEND_ARCHITECTURE.md`
 
 **Interfaces:**
 - Consumes: final routes, fields, and migration behavior from Tasks 1–9.
-- Produces: repeatable demo seeding without overwriting edited records; safe Laragon setup that never resets data or commits secrets; accurate lifecycle/API/security documentation; CI paths covering nested CT_24F.
+- Produces: repeatable catalog seeding without overwriting edited records; safe Laragon setup that never resets data or commits secrets; accurate lifecycle/API/security documentation; CI paths covering nested CT_24F.
 
-- [x] **Step 1: Add seeder regression assertions** in `test_demo_seeder_is_idempotent_and_preserves_edited_demo_records`; repeated seed preserves changed names/prices while keeping the exact 14 demo products.
+- [x] **Step 1: Add seeder regression assertions** in `test_catalog_seeder_is_idempotent_and_preserves_edited_records`; repeated seed preserves changed names/prices while keeping the exact 14 starter products.
 - [x] **Step 2: Run** the preservation test and confirm the assertion fails with prior `updateOrCreate` behavior.
-- [x] **Step 3: Use stable `firstOrCreate` keys** for demo categories/brands/products; preserve foreign-key IDs and do not overwrite existing rows.
+- [x] **Step 3: Use stable `firstOrCreate` keys** for starter categories/brands/products; preserve foreign-key IDs and do not overwrite existing rows.
 - [x] **Step 4: Review and minimally correct setup scripts**: keep `ecommerce_thltw`, Laravel `/api`, ports 8000/3000, safe `migrate` only; never rewrite existing `.env`; clearly require Laragon Start All.
 - [x] **Step 5: Update docs/CI** with route methods, global trashed-slug uniqueness, relation guards, local-only admin warning, and CI triggered only on branch `CT_24F` while running from the nested app directory.
 - [x] **Step 6: Run** seeder test, full backend tests, and inspect scripts for `migrate:fresh`, `db:wipe`, DROP/TRUNCATE, or committed `.env`; expected: none.

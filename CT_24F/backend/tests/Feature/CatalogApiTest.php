@@ -68,7 +68,7 @@ class CatalogApiTest extends TestCase
         $this->getJson('/api/products')->assertOk()->assertJsonMissingPath('data.0.category_id')->assertJsonMissingPath('data.0.brand_id')->assertJsonMissingPath('data.0.deleted_at')->assertJsonMissingPath('data.0.status');
     }
 
-    public function test_demo_seeder_is_idempotent_and_preserves_edited_demo_records(): void
+    public function test_catalog_seeder_is_idempotent_and_preserves_edited_records(): void
     {
         $this->seed(DatabaseSeeder::class);
         Category::where('slug', 'dien-tu')->update(['name' => 'Tên danh mục đã chỉnh sửa']);
@@ -329,6 +329,23 @@ class CatalogApiTest extends TestCase
         $first = $this->getJson('/api/products')->assertOk()->assertJsonCount(12, 'data')->assertJsonPath('meta.per_page', 12);
         $this->getJson('/api/products?page=2')->assertOk()->assertJsonCount(2, 'data');
         $first->assertJsonMissing(['slug' => 'hidden-category-product'])->assertJsonMissing(['slug' => 'hidden-brand-product-public'])->assertJsonMissing(['slug' => 'inactive-product'])->assertJsonMissing(['slug' => $categoryProduct->slug])->assertJsonMissing(['slug' => $brandProduct->slug])->assertJsonFragment(['slug' => 'no-brand']);
+    }
+
+    public function test_api_errors_are_in_vietnamese(): void
+    {
+        $this->postJson('/api/admin/categories', ['name' => 'Thiếu đường dẫn'])
+            ->assertUnprocessable()
+            ->assertJsonPath('errors.slug.0', 'Trường đường dẫn là bắt buộc.');
+
+        $this->getJson('/api/admin/categories/9999')
+            ->assertNotFound()
+            ->assertJsonPath('message', 'Không tìm thấy trang hoặc dữ liệu yêu cầu.');
+
+        $category = $this->category('in-use');
+        Product::create(['category_id' => $category->id, 'name' => 'Liên quan', 'slug' => 'lien-quan', 'price' => 1000, 'status' => true]);
+        $this->deleteJson("/api/admin/categories/{$category->id}")
+            ->assertStatus(409)
+            ->assertJsonPath('message', 'Danh mục này vẫn có sản phẩm.');
     }
 
     private function category(string $slug, bool $status = true, ?int $parentId = null): Category

@@ -2,6 +2,7 @@ import API_CONFIG from "@/config/api";
 import axiosAdmin from "@/lib/axiosAdmin";
 import axiosClient from "@/lib/axiosClient";
 
+// Storefront reads use axiosClient; admin catalog CRUD, options, and trash use axiosAdmin.
 const brandServices = {
   getBrands: () => axiosClient.get(API_CONFIG.ENDPOINTS.BRANDS.INDEX),
   getAdminBrands: (params) => axiosAdmin.get(API_CONFIG.ENDPOINTS.BRANDS.ADMIN_INDEX, { params }),

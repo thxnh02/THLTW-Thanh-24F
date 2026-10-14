@@ -13,6 +13,8 @@ Route::get('/categories/{slug}', [CategoryController::class, 'show']);
 Route::get('/brands', [BrandController::class, 'index']);
 Route::get('/products', [ProductController::class, 'index']);
 
+// Admin catalog APIs: apiResource supplies list/show/create/update/soft-delete routes;
+// the explicit routes below it handle trash, restore, and permanent deletion.
 Route::prefix('admin')->group(function (): void {
     Route::get('categories/trash', [AdminCategoryController::class, 'trash']);
     Route::get('categories/trash/{id}', [AdminCategoryController::class, 'trashedShow'])->whereNumber('id');

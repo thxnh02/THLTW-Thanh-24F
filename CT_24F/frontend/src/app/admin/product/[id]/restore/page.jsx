@@ -10,5 +10,5 @@ export default function RestoreProductPage() {
   const load = useCallback(() => productServices.getTrashedProduct(id), [id]);
   const submit = useCallback(() => productServices.restoreProduct(id), [id]);
 
-  return <ConfirmActionPage actionLabel="Restore product" backHref="/admin/product/trash" load={load} recordLabel={(record) => `${record.name} · ${record.slug}`} submit={submit} successHref="/admin/product" title="Restore this product?" warning="The product will return to the admin catalog. Its category and brand must be available before restoration." />;
+  return <ConfirmActionPage actionLabel="Khôi phục sản phẩm" backHref="/admin/product/trash" load={load} recordLabel={(record) => `${record.name} · ${record.slug}`} submit={submit} successHref="/admin/product" title="Khôi phục sản phẩm này?" warning="Sản phẩm sẽ trở lại trang quản trị. Cần khôi phục danh mục và thương hiệu trước nếu chúng đang ở trong thùng rác." />;
 }

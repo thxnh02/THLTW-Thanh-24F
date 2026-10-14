@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import AdminTable from "@/components/admin/AdminTable";
+import AdminRowActions from "@/components/admin/AdminRowActions";
 import ConfirmDialog from "@/components/admin/ConfirmDialog";
 import StatusBadge from "@/components/admin/StatusBadge";
 import Pagination from "@/components/common/Pagination";
@@ -22,7 +23,7 @@ export default function AdminBrandsPage() {
       setData(response.data.data);
       setMeta(response.data.meta);
     }).catch((requestError) => {
-      setError(requestError.response?.data?.message ?? "Could not load brands.");
+      setError(requestError.response?.data?.message ?? "Không thể tải thương hiệu.");
     }).finally(() => setLoading(false));
   }, []);
 
@@ -33,7 +34,7 @@ export default function AdminBrandsPage() {
       setData(response.data.data);
       setMeta(response.data.meta);
     }).catch((requestError) => {
-      if (current) setError(requestError.response?.data?.message ?? "Could not load brands.");
+      if (current) setError(requestError.response?.data?.message ?? "Không thể tải thương hiệu.");
     }).finally(() => {
       if (current) setLoading(false);
     });
@@ -42,22 +43,22 @@ export default function AdminBrandsPage() {
 
   const columns = [
     { key: "id", label: "ID" },
-    { key: "name", label: "Name" },
-    { key: "slug", label: "Slug" },
-    { key: "sort_order", label: "Sort order" },
-    { key: "status", label: "Visibility", render: (item) => <StatusBadge status={item.status} /> },
+    { key: "name", label: "Tên thương hiệu" },
+    { key: "slug", label: "Đường dẫn" },
+    { key: "sort_order", label: "Thứ tự" },
+    { key: "status", label: "Hiển thị", render: (item) => <StatusBadge status={item.status} /> },
   ];
 
   return (
     <section className="space-y-5">
       <header className="flex flex-wrap items-end justify-between gap-4">
-        <div><p className="text-xs font-bold uppercase tracking-[0.16em] text-indigo-700">Catalog partners</p><h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">Brands</h1><p className="mt-2 max-w-xl text-sm text-slate-600">Maintain brand details and visibility across the storefront.</p></div>
+        <div><p className="text-xs font-bold uppercase tracking-[0.16em] text-indigo-700">Quản lý thương hiệu</p><h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">Thương hiệu</h1><p className="mt-2 max-w-xl text-sm text-slate-600">Quản lý thông tin và trạng thái hiển thị của thương hiệu trên cửa hàng.</p></div>
         <div className="flex flex-wrap gap-2">
-          <Link className="inline-flex min-h-11 items-center rounded-lg border border-slate-300 px-4 text-sm font-semibold text-slate-700 hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2" href="/admin/brand/trash">View trash</Link>
-          <Link className="inline-flex min-h-11 items-center rounded-lg bg-slate-950 px-4 text-sm font-semibold text-white hover:bg-indigo-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2" href="/admin/brand/create">Add brand</Link>
+          <Link className="inline-flex min-h-11 items-center rounded-lg bg-amber-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-amber-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600" href="/admin/brand/trash">Mở thùng rác</Link>
+          <Link className="inline-flex min-h-11 items-center rounded-lg bg-slate-950 px-4 text-sm font-semibold text-white hover:bg-indigo-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2" href="/admin/brand/create">Thêm thương hiệu</Link>
         </div>
       </header>
-      <AdminTable columns={columns} data={data} emptyMessage="No brands yet." error={error} loading={loading} onRetry={() => load(meta?.current_page ?? 1)} renderActions={(item) => <div className="flex flex-wrap gap-3 whitespace-nowrap"><Link aria-label={`Edit brand ${item.name}`} className="font-semibold text-indigo-700 hover:underline focus-visible:outline focus-visible:outline-2" href={`/admin/brand/${item.id}/edit`}>Edit</Link><button aria-label={`Delete brand ${item.name}`} className="font-semibold text-rose-700 hover:underline focus-visible:outline focus-visible:outline-2" onClick={() => setConfirming(item)} type="button">Delete</button></div>} />
+      <AdminTable columns={columns} data={data} emptyMessage="Chưa có thương hiệu nào." error={error} loading={loading} onRetry={() => load(meta?.current_page ?? 1)} renderActions={(item) => <AdminRowActions editHref={`/admin/brand/${item.id}/edit`} itemName={`thương hiệu ${item.name}`} onDelete={() => setConfirming(item)} />} />
       <ConfirmDialog actionLabel="Chuyển vào thùng rác" description="Bạn có chắc muốn xóa thương hiệu" onComplete={() => load(meta?.current_page ?? 1)} onConfirm={(item) => brandServices.deleteBrand(item.id)} onDismiss={() => setConfirming(null)} record={confirming} title="Xóa thương hiệu này?" />
       <Pagination meta={meta} onPageChange={load} />
     </section>

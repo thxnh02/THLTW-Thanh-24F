@@ -19,7 +19,7 @@ export default function EditBrandPage() {
     brandServices.getAdminBrand(id).then((response) => {
       if (current) setBrand(response.data.data);
     }).catch((requestError) => {
-      if (current) setError(requestError.response?.data?.message ?? "The brand could not be loaded.");
+      if (current) setError(requestError.response?.data?.message ?? "Không thể tải thương hiệu.");
     }).finally(() => {
       if (current) setLoading(false);
     });
@@ -35,11 +35,11 @@ export default function EditBrandPage() {
       router.push("/admin/brand");
     } catch (requestError) {
       setErrors(requestError.response?.data?.errors ?? {});
-      setError(requestError.response?.data?.message ?? "The brand could not be saved.");
+      setError(requestError.response?.data?.message ?? "Không thể lưu thương hiệu.");
     } finally {
       setSubmitting(false);
     }
   };
 
-  return <section className="mx-auto max-w-3xl space-y-5"><header><p className="text-xs font-bold uppercase tracking-[0.16em] text-indigo-700">Brand</p><h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">Edit brand</h1></header>{error && <p className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800" role="alert">{error}</p>}{loading ? <p aria-live="polite" className="animate-pulse rounded-lg bg-white p-5 text-sm text-slate-500">Loading brand…</p> : brand && <BrandForm key={id} errors={errors} initialData={brand} onSubmit={save} submitting={submitting} />}</section>;
+  return <section className="mx-auto max-w-3xl space-y-5"><header><p className="text-xs font-bold uppercase tracking-[0.16em] text-indigo-700">Thương hiệu</p><h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">Sửa thương hiệu</h1></header>{error && <p className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800" role="alert">{error}</p>}{loading ? <p aria-live="polite" className="animate-pulse rounded-lg bg-white p-5 text-sm text-slate-500">Đang tải thương hiệu…</p> : brand && <BrandForm key={id} errors={errors} initialData={brand} onSubmit={save} submitting={submitting} />}</section>;
 }

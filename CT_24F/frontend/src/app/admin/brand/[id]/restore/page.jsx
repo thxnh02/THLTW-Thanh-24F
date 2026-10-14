@@ -10,5 +10,5 @@ export default function RestoreBrandPage() {
   const load = useCallback(() => brandServices.getTrashedBrand(id), [id]);
   const submit = useCallback(() => brandServices.restoreBrand(id), [id]);
 
-  return <ConfirmActionPage actionLabel="Restore brand" backHref="/admin/brand/trash" load={load} recordLabel={(record) => `${record.name} · ${record.slug}`} submit={submit} successHref="/admin/brand" title="Restore this brand?" warning="The brand will be available for admin use again. Its visibility status is preserved." />;
+  return <ConfirmActionPage actionLabel="Khôi phục thương hiệu" backHref="/admin/brand/trash" load={load} recordLabel={(record) => `${record.name} · ${record.slug}`} submit={submit} successHref="/admin/brand" title="Khôi phục thương hiệu này?" warning="Thương hiệu sẽ trở lại trang quản trị và giữ nguyên trạng thái hiển thị." />;
 }

@@ -2,13 +2,13 @@
 
 ## Goal and constraints
 
-Complete the existing CT_24F coursework catalog, not the older feature-rich ecommerce project. Each of Category, Brand, and Product will support server-paginated admin list/create/read/update/soft-delete, a paginated trash, restore, and guarded permanent deletion. Keep the current public shop routes and Laravel/Next/Axios teaching architecture. Work only in the nested `CT_24F/` project on Git branch `CT_24F`; preserve all files and data outside it.
+Complete the existing CT_24F product catalog, not the older feature-rich ecommerce project. Each of Category, Brand, and Product will support server-paginated admin list/create/read/update/soft-delete, a paginated trash, restore, and guarded permanent deletion. Keep the current public shop routes and Laravel/Next/Axios application architecture. Work only in the nested `CT_24F/` project on Git branch `CT_24F`; preserve all files and data outside it.
 
-Out of scope: authentication, cart, checkout, orders, payments, inventory, variants, reviews, wishlist, marketing, and file/media upload. Admin endpoints remain unauthenticated for trusted local coursework only and must be documented as unsafe for public deployment.
+Out of scope: authentication, cart, checkout, orders, payments, inventory, variants, reviews, wishlist, marketing, and file/media upload. Admin endpoints remain unauthenticated for trusted local development only and must be documented as unsafe for public deployment.
 
 ## Existing baseline
 
-The target branch is `CT_24F` at `8b6ff6c` and is clean. The active IDE checkout is `NguyenChiThanh`, so implementation will use an isolated worktree of the target branch. The nested project has Laravel API resources for categories/brands and public products; admin product currently supports create only. No table has `deleted_at`. The Next app is JavaScript/JSX with Next 16, React 19, Tailwind 4, Axios, `jsconfig.json`, and one JavaScript Next config. The nested app has no Lucide, Motion, or shadcn setup. Existing migrations and the Laragon scripts are already forward-migration oriented, but the seeder uses `updateOrCreate` and can overwrite edited demo data.
+The target branch is `CT_24F` at `8b6ff6c` and is clean. The active IDE checkout is `NguyenChiThanh`, so implementation will use an isolated worktree of the target branch. The nested project has Laravel API resources for categories/brands and public products; admin product currently supports create only. No table has `deleted_at`. The Next app is JavaScript/JSX with Next 16, React 19, Tailwind 4, Axios, `jsconfig.json`, and one JavaScript Next config. The nested app has no Lucide, Motion, or shadcn setup. Existing migrations and the Laragon scripts are already forward-migration oriented, but the seeder uses `updateOrCreate` and can overwrite edited catalog data.
 
 ## Options considered
 
@@ -45,7 +45,7 @@ The target branch is `CT_24F` at `8b6ff6c` and is clean. The active IDE checkout
 
 - Expand Laravel feature tests with isolated SQLite where feasible for normal CRUD, pagination, trashed slug uniqueness, each lifecycle, relation guards (including trashed dependents), category cycle prevention, product visibility, and 12-per-page public pagination.
 - Run `php artisan test`, Pint if available, `npm run lint`, `npm run build`, and route/smoke checks. Never run destructive database reset commands against the existing MySQL database.
-- Make seeding idempotent without overwriting existing user-edited records; preserve the current 14+ demo products. Review Laragon setup/start scripts for safe repeatability and no secret leakage. Keep the current single JS config setup unless audit finds a real duplicate inside nested `CT_24F/`.
+- Make seeding idempotent without overwriting existing user-edited records; preserve the current starter products. Review Laragon setup/start scripts for safe repeatability and no secret leakage. Keep the current single JS config setup unless audit finds a real duplicate inside nested `CT_24F/`.
 - Update docs with actual routes/methods, soft-delete/slug/dependency semantics, setup, and the local-only admin security warning. Keep CI scoped to the nested project and do not introduce unrelated modules.
 
 ## Implementation sequence
@@ -65,5 +65,5 @@ The target branch is `CT_24F` at `8b6ff6c` and is clean. The active IDE checkout
 - Existing rows survive forward migrations; soft delete does not erase relationships; permanent delete is guarded.
 - Public product API stays 12 per page, excludes unavailable records/relations, and retains its current response shape.
 - Admin selectors work for more records than one page. Hidden is not mislabeled as trashed.
-- The shop/admin remain JS/JSX and Axios-based, responsive, accessible, and limited to the course scope.
+- The shop/admin remain JS/JSX and Axios-based, responsive, accessible, and limited to the defined project scope.
 - Required Laravel tests, frontend lint, and frontend build pass. Git changes are confined to nested `CT_24F/` and branch `CT_24F`; no force push or merge.

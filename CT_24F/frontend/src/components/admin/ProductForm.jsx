@@ -37,6 +37,7 @@ export default function ProductForm({ initialData = blank, categories = [], bran
     if (name === "slug") setSlugTouched(true);
     if (name === "image") setPreviewFailed(false);
   };
+  // Normalize browser form values; the page-level onSubmit handler owns the API request.
   const submit = (event) => {
     event.preventDefault();
     onSubmit({ ...form, category_id: Number(form.category_id), brand_id: form.brand_id ? Number(form.brand_id) : null, price: Number(form.price), status: Boolean(form.status) });
@@ -67,7 +68,7 @@ export default function ProductForm({ initialData = blank, categories = [], bran
         <label className="admin-label">Giá sản phẩm<input {...fieldProps("price")} className="admin-input max-w-sm" inputMode="decimal" min="0" name="price" required step="0.01" type="number" value={form.price} onChange={change} />{fieldError("price")}</label>
         <label className="admin-label">Đường dẫn hình ảnh<input {...fieldProps("image")} className="admin-input" maxLength={255} name="image" value={form.image ?? ""} onChange={change} />{fieldError("image")}</label>
         <div aria-live="polite" className="flex items-center gap-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
-          {previewSource && !previewFailed ? <Image alt={`${form.name || "Sản phẩm"} preview`} className="h-20 w-20 rounded-lg object-cover" height={80} loading="lazy" src={previewSource} unoptimized width={80} onError={() => setPreviewFailed(true)} /> : <div aria-label="Chưa có hình ảnh" className="grid h-20 w-20 place-items-center rounded-lg bg-slate-200 text-xs font-semibold text-slate-500" role="img">Chưa có ảnh</div>}
+          {previewSource && !previewFailed ? <Image alt={`Xem trước ${form.name || "sản phẩm"}`} className="h-20 w-20 rounded-lg object-cover" height={80} loading="lazy" src={previewSource} unoptimized width={80} onError={() => setPreviewFailed(true)} /> : <div aria-label="Chưa có hình ảnh" className="grid h-20 w-20 place-items-center rounded-lg bg-slate-200 text-xs font-semibold text-slate-500" role="img">Chưa có ảnh</div>}
           <p className="text-sm font-semibold text-slate-800">Xem trước hình ảnh</p>
         </div>
       </section>

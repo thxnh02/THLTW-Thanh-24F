@@ -11,10 +11,10 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        $electronics = $this->category('dien-tu', ['name' => 'Điện tử', 'description' => 'Thiết bị điện tử demo', 'sort_order' => 1, 'status' => true]);
+        $electronics = $this->category('dien-tu', ['name' => 'Điện tử', 'description' => 'Thiết bị điện tử và công nghệ', 'sort_order' => 1, 'status' => true]);
         $phones = $this->category('dien-thoai', ['parent_id' => $electronics->id, 'name' => 'Điện thoại', 'sort_order' => 1, 'status' => true]);
         $laptops = $this->category('laptop', ['parent_id' => $electronics->id, 'name' => 'Laptop', 'sort_order' => 2, 'status' => true]);
-        $accessories = $this->category('phu-kien', ['name' => 'Phụ kiện', 'description' => 'Phụ kiện demo', 'sort_order' => 2, 'status' => true]);
+        $accessories = $this->category('phu-kien', ['name' => 'Phụ kiện', 'description' => 'Phụ kiện công nghệ', 'sort_order' => 2, 'status' => true]);
         $chargers = $this->category('sac-va-cap', ['parent_id' => $accessories->id, 'name' => 'Sạc và cáp', 'sort_order' => 1, 'status' => true]);
 
         $apple = $this->brand('apple', 'Apple', 1);
@@ -32,7 +32,7 @@ class DatabaseSeeder extends Seeder
         ];
 
         foreach ($catalog as [$name, $slug, $category, $brand, $price]) {
-            Product::withTrashed()->firstOrCreate(['slug' => $slug], ['category_id' => $category->id, 'brand_id' => $brand->id, 'name' => $name, 'description' => 'Sản phẩm dữ liệu mẫu dùng để học API và phân trang.', 'price' => $price, 'status' => true]);
+            Product::withTrashed()->firstOrCreate(['slug' => $slug], ['category_id' => $category->id, 'brand_id' => $brand->id, 'name' => $name, 'description' => 'Thiết bị công nghệ và phụ kiện được chọn lọc cho cửa hàng.', 'price' => $price, 'status' => true]);
         }
     }
 
@@ -43,6 +43,6 @@ class DatabaseSeeder extends Seeder
 
     private function brand(string $slug, string $name, int $sortOrder): Brand
     {
-        return Brand::withTrashed()->firstOrCreate(['slug' => $slug], ['name' => $name, 'description' => 'Thương hiệu demo', 'sort_order' => $sortOrder, 'status' => true]);
+        return Brand::withTrashed()->firstOrCreate(['slug' => $slug], ['name' => $name, 'description' => 'Thương hiệu công nghệ', 'sort_order' => $sortOrder, 'status' => true]);
     }
 }

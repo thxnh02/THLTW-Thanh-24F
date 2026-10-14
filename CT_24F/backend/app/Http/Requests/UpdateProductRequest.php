@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
+/** Validation boundary for PUT/PATCH /api/admin/products/{product}. */
 class UpdateProductRequest extends FormRequest
 {
     public function authorize(): bool

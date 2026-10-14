@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/** Product persistence, category/brand links, and soft-delete behavior for the catalog. */
 class Product extends Model
 {
     use HasFactory, SoftDeletes;

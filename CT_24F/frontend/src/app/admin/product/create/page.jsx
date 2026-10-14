@@ -30,6 +30,7 @@ export default function CreateProductPage() {
     return () => { current = false; };
   }, []);
 
+  // Submit the ProductForm payload through the admin API, then return to the product list.
   const save = async (data) => {
     setSubmitting(true);
     setErrors({});

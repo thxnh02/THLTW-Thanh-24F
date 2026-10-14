@@ -1,21 +1,23 @@
-# CT_24F frontend
+# CT_24F Frontend
 
-Next.js 16 / React 19 frontend for the catalog shop and local coursework admin. The application uses JavaScript/JSX, Tailwind CSS 4, Axios services, Lucide icons, and Motion.
+Giao diện cửa hàng và trang quản trị xây dựng bằng Next.js. Cửa hàng hiển thị danh mục, thương hiệu và sản phẩm; trang quản trị hỗ trợ CRUD, phân trang và thùng rác.
 
-## Run locally
+## Chạy trên máy
 
-```bash
-npm ci
+```powershell
+copy .env.example .env.local
+npm install
 npm run dev
 ```
 
-Set `NEXT_PUBLIC_API_URL` in `.env.local` if Laravel is not at the configured local default. The Laravel API runs separately; see the root README for the Laragon setup flow.
+Mở `http://127.0.0.1:3000`. Frontend dùng `NEXT_PUBLIC_API_URL` trong `.env.local` để kết nối Laravel API; nếu không khai báo, địa chỉ mặc định là `http://127.0.0.1:8000/api`.
 
-## Checks
+## Kiểm tra
 
-```bash
+```powershell
 npm run lint
+npm run test
 npm run build
 ```
 
-Admin routes currently have no authentication or authorization. Do not expose this frontend/API as a public admin system.
+Xem [cấu trúc frontend](../docs/FRONTEND_ARCHITECTURE.md) và [sơ đồ mã nguồn quản trị](../docs/ADMIN_CODE_GUIDE.md).
