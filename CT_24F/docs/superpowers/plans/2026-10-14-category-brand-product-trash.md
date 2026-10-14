@@ -133,7 +133,7 @@
 
 **Interfaces:**
 - Consumes: Task 5 service contracts.
-- Produces: reusable semantic table, form states, status badges, explicit confirmation page, and trash list shell; actions navigate to pages and never mutate from row click.
+- Produces: reusable semantic table, form states, status badges, explicit restore confirmation page, inline destructive-action confirmation dialog, and trash list shell; actions never mutate directly from a row click.
 
 - [x] **Step 1: Define component props** in code comments/exports: `AdminTable({columns,data,loading,error,emptyMessage,renderActions})`, `StatusBadge({status,deletedAt})`, `ConfirmActionPage({load,recordLabel,warning,submit,backHref,successHref})`, and `TrashTable({columns,data,meta,loading,error,renderActions})`.
 - [x] **Step 2: Implement semantic/accessibility behavior**: `scope="col"`, local overflow-x, 40–44px actions, visible focus, loading/empty/error, disabled submit, exact server message display, and accessible names for icon-only controls.
@@ -144,9 +144,9 @@
 
 **Files:**
 - Modify: `frontend/src/app/admin/category/page.jsx`, `create/page.jsx`, `[id]/edit/page.jsx`
-- Create: `frontend/src/app/admin/category/[id]/delete/page.jsx`, `trash/page.jsx`, `[id]/restore/page.jsx`, `[id]/force-delete/page.jsx`
+- Create: `frontend/src/app/admin/category/trash/page.jsx`, `[id]/restore/page.jsx`; use inline confirmation dialogs for delete actions.
 - Modify: equivalent existing Brand list/create/edit pages
-- Create: equivalent Brand delete/trash/restore/force-delete pages
+- Create: equivalent Brand trash/restore pages; use inline confirmation dialogs for delete actions.
 - Modify: category/brand services only if Task 5 interfaces require it.
 
 **Interfaces:**

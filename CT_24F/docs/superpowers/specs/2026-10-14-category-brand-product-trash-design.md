@@ -35,8 +35,8 @@ The target branch is `CT_24F` at `8b6ff6c` and is clean. The active IDE checkout
 ## Frontend design
 
 - Preserve public URLs `/`, `/categories`, `/brands`, `/products?page=N` and the existing API-config → Axios client → services → page data flow.
-- Keep admin frontend paths singular. For each resource provide `/admin/{resource}`, `/create`, `/[id]/edit`, `/[id]/delete`, `/trash`, `/[id]/restore`, and `/[id]/force-delete`. Destructive operations happen only after a deliberate button click on their dedicated page. The trash page links to restore/permanent-delete confirmation pages.
-- Add admin product list, edit, delete, trash, restore, permanent delete, and a reusable `ProductForm`. Forms show field-level 422 errors, loading/submission states, and preserve a user-entered slug. Product image is a URL/path string only, with graceful placeholder behavior; no upload manager.
+- Keep admin frontend paths singular. For each resource provide `/admin/{resource}`, `/create`, `/[id]/edit`, `/trash`, and `/[id]/restore`. Following the user's explicit interaction requirement, soft-delete and permanent-delete actions open an accessible confirmation dialog in the current list/trash view; do not navigate to a new delete page. API mutation happens only after a deliberate confirm click. Restore may keep its dedicated confirmation page.
+- Add admin product list, edit, trash, restore, and a reusable `ProductForm`; provide soft-delete and permanent-delete confirmation dialogs in context. Forms show field-level 422 errors, loading/submission states, and preserve a user-entered slug. Product image is a URL/path string only, with graceful placeholder behavior; no upload manager.
 - Fetch all option pages through services when lists provide paginated choices, so category/brand selects do not silently stop at page one. Prefer an options endpoint only for select data; never client-slice the admin lists.
 - Use a restrained shared design: neutral white/slate shop with a blue/indigo accent; dark admin sidebar and light workspace; responsive tables scroll within their container; explicit status badges distinguish hidden from trashed. Use Lucide icons and restrained Motion with reduced-motion support. Avoid shadcn CLI initialization; implement small accessible local controls because this JS/Tailwind 4 app has no shadcn configuration and initialization risks overwriting current CSS.
 - Admin desktop uses independently scrollable sidebar and workspace at viewport height. Mobile navigation is an accessible local drawer. Sidebar contains only Dashboard, Category, Brand, Product, and View Store. No invented metrics or unsupported product data.
@@ -54,7 +54,7 @@ The target branch is `CT_24F` at `8b6ff6c` and is clean. The active IDE checkout
 2. Complete Category and Brand routes/controllers/validation with relationship guards and category-cycle validation.
 3. Complete Product CRUD/trash and public visibility rules; verify all backend tests.
 4. Extend API config/services and option loading across all pages.
-5. Add dedicated category/brand/product admin lifecycle pages and shared form/list states.
+5. Add category/brand/product admin lifecycle pages and shared form/list states, with inline confirmation dialogs for destructive actions as explicitly requested by the user.
 6. Refine shop/admin responsive visual system, accessible navigation, and independent admin scrolling.
 7. Correct seeder/setup/docs/CI only where audit confirms a gap; verify migrations preserve data.
 8. Run tests, lint/build, route checks, and a manual responsive lifecycle smoke pass; review diff and commit/push only to `CT_24F`.
