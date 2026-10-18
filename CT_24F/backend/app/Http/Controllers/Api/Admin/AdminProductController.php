@@ -20,7 +20,28 @@ class AdminProductController extends Controller
     /** GET /api/admin/products */
     public function index(): AnonymousResourceCollection
     {
-        return ProductResource::collection(Product::with(['category', 'brand'])->orderByDesc('id')->paginate(10));
+        return ProductResource::collection($this->filtered(Product::with(['category', 'brand']))->paginate($this->perPage())->withQueryString());
+    }
+
+    private function perPage(): int
+    {
+        $perPage = (int) request()->query('per_page', 10);
+
+        return in_array($perPage, [5, 10, 20], true) ? $perPage : 10;
+    }
+
+    private function filtered($query)
+    {
+        $keyword = trim((string) request()->query('keyword', request()->query('q', '')));
+        if ($keyword !== '') {
+            $query->where(fn ($q) => $q->where('name', 'like', '%'.$keyword.'%')
+                ->orWhere('sku', 'like', '%'.$keyword.'%'));
+        }
+        if (request()->filled('category_id')) {
+            $query->where('category_id', (int) request()->query('category_id'));
+        }
+
+        return $query->orderByDesc('id');
     }
 
     /** POST /api/admin/products */
@@ -64,7 +85,7 @@ class AdminProductController extends Controller
     /** GET /api/admin/products/trash — paginated products that were soft-deleted. */
     public function trash(): AnonymousResourceCollection
     {
-        return ProductResource::collection(Product::onlyTrashed()->with(['category', 'brand'])->orderByDesc('deleted_at')->orderByDesc('id')->paginate(10));
+        return ProductResource::collection($this->filtered(Product::onlyTrashed()->with(['category', 'brand']))->paginate($this->perPage())->withQueryString());
     }
 
     /** GET /api/admin/products/trash/{id} */
