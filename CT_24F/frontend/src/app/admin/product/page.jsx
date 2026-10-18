@@ -32,7 +32,6 @@ export default function AdminProductsPage() {
   const [confirming, setConfirming] = useState(null);
   const [reload, setReload] = useState(0);
 
-  useEffect(() => { setDraft(keyword); }, [keyword]);
   useEffect(() => {
     let active = true;
     categoryServices.getAdminCategoryOptions().then(r => { if(active) setCategories(r.data.data ?? []); }).catch(() => {});
@@ -45,7 +44,6 @@ export default function AdminProductsPage() {
   }, [reload]);
   useEffect(() => {
     let active = true;
-    setLoading(true);
     productServices.getAdminProducts({ page, keyword: keyword || undefined, category_id: categoryId || undefined, per_page: perPage })
       .then(r => { if(active) { setData(r.data.data ?? []); setMeta(r.data.meta ?? null); setError(""); } })
       .catch(e => { if(active) setError(e.response?.data?.message ?? "Không tải được sản phẩm."); })
@@ -58,6 +56,7 @@ export default function AdminProductsPage() {
     for (const [key, value] of Object.entries(updates)) {
       if (value === "" || value == null) q.delete(key); else q.set(key, String(value));
     }
+    setLoading(true);
     router.push("/admin/product" + (q.toString() ? "?" + q : ""));
   };
 
