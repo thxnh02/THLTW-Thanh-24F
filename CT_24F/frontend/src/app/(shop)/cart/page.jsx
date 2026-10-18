@@ -1,0 +1,2 @@
+import Link from "next/link";
+export default function CartPage(){return <section className="mx-auto max-w-3xl space-y-4 rounded-2xl border bg-white p-8"><p className="eyebrow">Buổi 1 · Giao diện tĩnh</p><h1 className="text-3xl font-semibold">Giỏ hàng</h1><p className="text-sm text-slate-500">Chưa có sản phẩm trong giỏ. Phần lưu giỏ hàng sẽ được kết nối sau khi học API tương ứng.</p><Link href="/products" className="inline-block rounded-xl bg-[#19352f] px-5 py-3 text-sm font-semibold text-white">Tiếp tục xem sản phẩm</Link></section>}
