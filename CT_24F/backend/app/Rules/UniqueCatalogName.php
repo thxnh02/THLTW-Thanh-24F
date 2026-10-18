@@ -9,9 +9,7 @@ use Illuminate\Support\Str;
 /** Tên trong cùng bảng không được trùng, kể cả bản ghi đang ở thùng rác. */
 class UniqueCatalogName implements ValidationRule
 {
-    public function __construct(private string $model, private ?int $exceptId = null)
-    {
-    }
+    public function __construct(private string $model, private ?int $exceptId = null) {}
 
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
