@@ -14,7 +14,6 @@ export default function ProductDetailPage() {
   const [loading, setLoading] = useState(true);
   useEffect(() => {
     let active = true;
-    setLoading(true);
     productServices.getProductBySlug(slug).then(r => { if(active) setProduct(r.data.data); })
       .catch(e => { if(active) setError(e.response?.status === 404 ? "Không tìm thấy sản phẩm." : "Không thể tải sản phẩm."); })
       .finally(() => { if(active) setLoading(false); });
@@ -26,7 +25,7 @@ export default function ProductDetailPage() {
     {error && <p role="alert" className="rounded-xl bg-rose-50 p-8 text-rose-800">{error}</p>}
     {product && <div className="grid gap-9 lg:grid-cols-2">
       <div className="flex aspect-square items-center justify-center overflow-hidden rounded-3xl bg-[#eaf1eb]">
-        {product.image ? <img className="h-full w-full object-contain" alt={product.name} src={catalogImageUrl(product.image)} /> : <span className="font-serif text-8xl text-emerald-800/30">{product.name?.[0]}</span>}
+        {product.image ? <> {/* eslint-disable-next-line @next/next/no-img-element */} <img className="h-full w-full object-contain" alt={product.name} src={catalogImageUrl(product.image)} /> </> : <span className="font-serif text-8xl text-emerald-800/30">{product.name?.[0]}</span>}
       </div>
       <div className="space-y-5">
         <p className="text-sm font-semibold uppercase tracking-wider text-[#37665b]">{product.brand?.name ?? "Sản phẩm"}</p>
