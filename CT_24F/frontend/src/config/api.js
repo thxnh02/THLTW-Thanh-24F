@@ -19,7 +19,7 @@ const API_CONFIG = {
       ADMIN_OPTIONS: "/admin/brands/options",
     },
     PRODUCTS: {
-      INDEX: "/products", ADMIN_INDEX: "/admin/products", ADMIN_SHOW: (id) => `/admin/products/${id}`,
+      INDEX: "/products", SHOW_BY_SLUG: (slug) => `/products/${encodeURIComponent(slug)}`, ADMIN_INDEX: "/admin/products", ADMIN_SHOW: (id) => `/admin/products/${id}`,
       ADMIN_STORE: "/admin/products", ADMIN_UPDATE: (id) => `/admin/products/${id}`, ADMIN_DELETE: (id) => `/admin/products/${id}`,
       ADMIN_TRASH: "/admin/products/trash", ADMIN_TRASHED_SHOW: (id) => `/admin/products/trash/${id}`,
       ADMIN_RESTORE: (id) => `/admin/products/${id}/restore`, ADMIN_FORCE_DELETE: (id) => `/admin/products/${id}/force`,
