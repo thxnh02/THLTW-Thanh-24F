@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\Brand;
 use App\Models\CatalogImage;
 use App\Models\Category;
 use Illuminate\Foundation\Testing\RefreshDatabase;
