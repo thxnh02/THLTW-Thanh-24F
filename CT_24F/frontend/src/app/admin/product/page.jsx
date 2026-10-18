@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Search, SlidersHorizontal } from "lucide-react";
@@ -15,7 +15,7 @@ import categoryServices from "@/services/categoryServices";
 
 const money = (v) => Number(v ?? 0).toLocaleString("vi-VN") + " đ";
 
-export default function AdminProductsPage() {
+function AdminProductsContent() {
   const router = useRouter();
   const search = useSearchParams();
   const page = Math.max(1, Number(search.get("page")) || 1);
@@ -79,4 +79,9 @@ export default function AdminProductsPage() {
     <Pagination meta={meta} onPageChange={target => navigate({page:target})}/>
     <ConfirmDialog actionLabel="Chuyển vào thùng rác" description="Bạn có chắc muốn xóa sản phẩm" onComplete={() => {setConfirming(null);setReload(v=>v+1);}} onConfirm={item => productServices.deleteProduct(item.id)} onDismiss={() => setConfirming(null)} record={confirming} title="Xóa sản phẩm này?" />
   </section>;
+}
+
+
+export default function AdminProductsPage() {
+  return <Suspense fallback={<p className="rounded-xl bg-white p-8 text-slate-500">Đang tải bộ lọc…</p>}><AdminProductsContent /></Suspense>;
 }
