@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import ProductCard from "@/components/shop/ProductCard";
 import Pagination from "@/components/common/Pagination";
@@ -8,7 +8,7 @@ import productServices from "@/services/productServices";
 import categoryServices from "@/services/categoryServices";
 import brandServices from "@/services/brandServices";
 
-export default function ProductsPage() {
+function ProductsContent() {
   const router = useRouter();
   const search = useSearchParams();
   const page = Math.max(1, Number(search.get("page")) || 1);
@@ -91,4 +91,9 @@ export default function ProductsPage() {
       </div>
     </div>
   </section>;
+}
+
+
+export default function ProductsPage() {
+  return <Suspense fallback={<p className="rounded-xl bg-white p-8 text-slate-500">Đang tải bộ lọc…</p>}><ProductsContent /></Suspense>;
 }
