@@ -1,30 +1,27 @@
-# Database
+# Database và Laragon
 
-Core ecommerce tables:
+Runtime dùng MySQL/MariaDB của Laragon.
 
-- `users`, `addresses`
-- `categories`, `brands`, `products`, `product_variants`, `product_images`
-- `carts`, `cart_items`
-- `promotions`, `promotion_usages`
-- `orders`, `order_items`, `order_status_histories`, `payments`
-- `post_categories`, `posts`, `pages`, `menus`, `banners`
-- `contacts`
-- `stock_documents`, `stock_document_items`, `inventory_movements`
-- `settings`, `wishlists`, `reviews`
+```env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=ecommerce_thltw
+DB_USERNAME=root
+DB_PASSWORD=
+```
 
-Important rules:
+Chạy `setup-mysql.bat` sau khi Laragon Start All. Script chỉ dùng `CREATE DATABASE IF NOT EXISTS`, `php artisan migrate` và `php artisan db:seed`; không dùng `DROP DATABASE` hay `migrate:fresh`.
 
-- Product price, promotion and stock are recalculated on the backend.
-- Order items snapshot product name, variant name, SKU, unit price and subtotal.
-- Checkout writes `inventory_movements` and does not allow negative stock.
-- Canceled/completed order flows are prepared in schema but not fully implemented in UI yet.
+## Bảng trong phạm vi hiện tại
 
-User `avatar_path` stores the uploaded avatar path and `email_verified_at` is set only by the signed verification flow, the authenticated six-digit verification flow or a trusted administrative operation. Verification codes are stored as hashes in `email_verification_codes`. Product variants are retained during normal product updates; explicit deletion is blocked when an order item references the variant.
-# Added Tables / Columns
+- `categories`: `parent_id` có thể rỗng, tự liên kết tới `categories.id`.
+- `brands`: thông tin thương hiệu hiển thị công khai.
+- `products`: `category_id` liên kết `categories.id`; `brand_id` có thể rỗng và liên kết `brands.id`. `sale_price` có thể rỗng, dùng cho giá khuyến mãi và phải thấp hơn `price` khi nhập qua API.
+- `catalog_images`: lưu nội dung ảnh dạng base64, MIME và dung lượng; `owner_type`/`owner_id` gắn một ảnh với sản phẩm, danh mục hoặc thương hiệu. Cột `image`/`logo` ở bảng tương ứng lưu URL ngắn để đọc ảnh qua API, không chứa dữ liệu base64 trong phản hồi danh sách.
 
-- `shipping_methods`: configurable checkout shipping choices with fee, free-shipping threshold, estimate and active state.
-- `orders`: added `shipping_method_id`, `shipping_method_name`, `shipping_carrier`, `tracking_code`, `shipped_at`, `delivered_at`.
-- `return_requests`, `return_request_items`: member/admin return and refund workflow with item quantities and stock restore timestamp.
-- `customer_notifications`: member notification center with unread tracking.
-- `promotions`: added `applies_to`, `first_order_only`, `free_shipping`, `min_quantity`.
-- `promotion_products`, `promotion_categories`, `promotion_brands`: promotion targeting pivots.
+Cả ba bảng dùng `deleted_at` để chuyển bản ghi vào thùng rác trước khi xóa vĩnh viễn. Việc khôi phục sản phẩm yêu cầu danh mục và thương hiệu liên quan đang khả dụng.
+
+Seeder dùng `slug` cố định và `firstOrCreate`, nên chạy `php artisan db:seed` nhiều lần không tạo trùng hay ghi đè dữ liệu đã chỉnh sửa. Có 14 sản phẩm khởi tạo để kiểm tra phân trang.
+
+Ảnh tải lên được giữ khi bản ghi vào thùng rác hoặc khôi phục, và bị xóa khỏi `catalog_images` khi bản ghi bị xóa vĩnh viễn. Ảnh URL cũ vẫn được giữ nguyên.

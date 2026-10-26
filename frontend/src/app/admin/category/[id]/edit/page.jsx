@@ -5,9 +5,47 @@ import { useParams, useRouter } from "next/navigation";
 import CategoryForm from "@/components/admin/CategoryForm";
 import categoryServices from "@/services/categoryServices";
 
+// Trang /admin/category/[id]/edit: sửa danh mục đã có theo ID trên URL.
 export default function EditCategoryPage() {
-  const { id } = useParams(); const router = useRouter(); const [category, setCategory] = useState(null); const [categories, setCategories] = useState([]); const [errors, setErrors] = useState({}); const [submitting, setSubmitting] = useState(false);
-  useEffect(() => { Promise.all([categoryServices.getAdminCategory(id), categoryServices.getAdminCategories({ per_page: 100 })]).then(([one, all]) => { setCategory(one.data.data); setCategories(all.data.data); }); }, [id]);
-  const save = async (data) => { setSubmitting(true); setErrors({}); try { await categoryServices.updateCategory(id, data); router.push("/admin/category"); } catch (error) { setErrors(error.response?.data?.errors ?? {}); } finally { setSubmitting(false); } };
-  return <section><h1 className="mb-4 text-2xl font-bold">Sửa danh mục</h1>{category ? <CategoryForm categories={categories} errors={errors} initialData={category} onSubmit={save} submitting={submitting} /> : <p>Đang tải...</p>}</section>;
+  const { id } = useParams();
+  const router = useRouter();
+  const [category, setCategory] = useState(null);
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [errors, setErrors] = useState({});
+  const [submitting, setSubmitting] = useState(false);
+
+  // Tải danh mục cần sửa và danh sách danh mục cha có thể chọn.
+  useEffect(() => {
+    let current = true;
+    Promise.all([categoryServices.getAdminCategory(id), categoryServices.getAdminCategoryOptions()]).then(([one, options]) => {
+      if (!current) return;
+      setCategory(one.data.data);
+      setCategories(options.data.data);
+    }).catch((requestError) => {
+      if (current) setError(requestError.response?.data?.message ?? "Không thể tải danh mục.");
+    }).finally(() => {
+      if (current) setLoading(false);
+    });
+    return () => { current = false; };
+  }, [id]);
+
+  // Nhận dữ liệu từ CategoryForm và gọi API cập nhật danh mục.
+  const save = async (data) => {
+    setSubmitting(true);
+    setErrors({});
+    setError("");
+    try {
+      await categoryServices.updateCategory(id, data);
+      router.push("/admin/category");
+    } catch (requestError) {
+      setErrors(requestError.response?.data?.errors ?? {});
+      setError(requestError.response?.data?.message ?? "Không thể lưu danh mục.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return <section className="mx-auto max-w-3xl space-y-5"><header><p className="text-xs font-bold uppercase tracking-[0.16em] text-indigo-700">Danh mục</p><h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">Sửa danh mục</h1></header>{error && <p className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800" role="alert">{error}</p>}{loading ? <p aria-live="polite" className="animate-pulse rounded-lg bg-white p-5 text-sm text-slate-500">Đang tải danh mục…</p> : category && <CategoryForm key={id} categories={categories} errors={errors} initialData={category} onSubmit={save} submitting={submitting} />}</section>;
 }

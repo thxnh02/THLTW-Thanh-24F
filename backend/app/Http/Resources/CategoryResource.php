@@ -9,6 +9,6 @@ class CategoryResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
-        return ['id' => $this->id, 'parent_id' => $this->parent_id, 'name' => $this->name, 'slug' => $this->slug, 'description' => $this->description, 'image' => $this->image, 'sort_order' => $this->sort_order, 'status' => $this->status, 'parent' => new self($this->whenLoaded('parent')), 'children' => self::collection($this->whenLoaded('children'))];
+        return ['id' => $this->id, 'parent_id' => $this->parent_id, 'name' => $this->name, 'slug' => $this->slug, 'description' => $this->description, 'image' => $this->image, 'sort_order' => $this->sort_order, 'status' => $this->status, 'deleted_at' => $this->when(request()->is('api/admin/*'), $this->deleted_at), 'parent' => new self($this->whenLoaded('parent')), 'children' => self::collection($this->whenLoaded('children'))];
     }
 }
