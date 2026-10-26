@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/categories/{slug}', [CategoryController::class, 'show']);
 Route::get('/brands', [BrandController::class, 'index']);
+Route::get('/products/price-range', [ProductController::class, 'priceRange']);
 Route::get('/products', [ProductController::class, 'index']);
 Route::get('/posts', [PostController::class, 'index'])->name('public.posts.index');
 Route::get('/posts/{slug}', [PostController::class, 'show'])->name('public.posts.show');

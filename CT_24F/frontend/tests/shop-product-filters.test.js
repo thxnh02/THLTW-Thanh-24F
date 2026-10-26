@@ -59,3 +59,50 @@ test("nested public categories become unique options without dropping children",
     { id: 3, name: "Android", depth: 2 },
   ]);
 });
+
+test("removing one active filter preserves the others and resets pagination", async () => {
+  const { removeShopProductFilter, shopProductHref } = await loadFilters();
+  const filters = { category_id: "2", brand_id: "3", min_price: "0", max_price: "5000000" };
+  const withoutBrand = removeShopProductFilter?.(filters, "brand") ?? {};
+  assert.deepEqual(withoutBrand, { category_id: "2", brand_id: "", min_price: "0", max_price: "5000000" });
+  assert.equal(shopProductHref(withoutBrand), "/products?category_id=2&min_price=0&max_price=5000000");
+  assert.deepEqual(removeShopProductFilter?.(filters, "price") ?? {}, { category_id: "2", brand_id: "3", min_price: "", max_price: "" });
+  assert.deepEqual(removeShopProductFilter?.(filters, "category") ?? {}, { category_id: "", brand_id: "3", min_price: "0", max_price: "5000000" });
+  assert.deepEqual(filters, { category_id: "2", brand_id: "3", min_price: "0", max_price: "5000000" });
+});
+
+test("active filter chips count price as one type and keep missing IDs visible", async () => {
+  const { shopFilterCount, shopActiveFilterChips } = await loadFilters();
+  const filters = { category_id: "99", brand_id: "3", min_price: "0", max_price: "5000000" };
+  assert.equal(shopFilterCount?.(filters) ?? -1, 3);
+  assert.deepEqual(shopActiveFilterChips?.(filters, [], [{ id: 3, name: "Apple" }]) ?? [], [
+    { type: "category", label: "Danh mục #99" },
+    { type: "brand", label: "Apple" },
+    { type: "price", label: "0 đ – 5.000.000 đ" },
+  ]);
+  assert.equal(shopFilterCount?.({ category_id: "", brand_id: "", min_price: "", max_price: "" }) ?? -1, 0);
+});
+
+test("slider uses the full catalog bound and expands for a bookmarked higher maximum", async () => {
+  const { shopSliderState } = await loadFilters();
+  const bounds = { min_price: "750.00", max_price: "100000.00" };
+  assert.deepEqual(shopSliderState?.(bounds, { min_price: "", max_price: "" }) ?? {}, {
+    disabled: false, min: 0, max: 100000, value: [0, 100000], step: 100,
+  });
+  assert.deepEqual(shopSliderState?.(bounds, { min_price: "50000", max_price: "150000" }) ?? {}, {
+    disabled: false, min: 0, max: 150000, value: [50000, 150000], step: 100,
+  });
+});
+
+test("empty and unavailable bounds disable only the slider while cheap prices retain precision", async () => {
+  const { shopSliderState } = await loadFilters();
+  assert.deepEqual(shopSliderState?.({ min_price: null, max_price: null }, { min_price: "", max_price: "" }) ?? {}, {
+    disabled: true, min: 0, max: 0, value: [0, 0], step: 1,
+  });
+  assert.deepEqual(shopSliderState?.(null, { min_price: "5", max_price: "" }) ?? {}, {
+    disabled: true, min: 0, max: 5, value: [5, 5], step: 0.01,
+  });
+  assert.deepEqual(shopSliderState?.({ min_price: "0.00", max_price: "50.00" }, { min_price: "0", max_price: "12.50" }) ?? {}, {
+    disabled: false, min: 0, max: 50, value: [0, 12.5], step: 0.01,
+  });
+});

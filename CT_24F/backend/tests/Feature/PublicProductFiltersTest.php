@@ -124,6 +124,59 @@ class PublicProductFiltersTest extends TestCase
             ->assertOk()->assertJsonCount(0, 'data')->assertJsonPath('meta.total', 0)->assertJsonPath('meta.per_page', 12);
     }
 
+    public function test_public_price_range_uses_all_visible_effective_prices_without_changing_list_pagination(): void
+    {
+        $category = $this->category('range');
+        $this->product('expensive-oldest', $category, null, 100000);
+        foreach (range(1, 12) as $number) {
+            $this->product("range-{$number}", $category, null, 5000);
+        }
+        $this->product('discounted-cheapest', $category, null, 4000, 750);
+        $this->product('invalid-sale', $category, null, 10000, 12000);
+
+        $this->getJson('/api/products/price-range')
+            ->assertOk()
+            ->assertJsonPath('data.min_price', '750.00')
+            ->assertJsonPath('data.max_price', '100000.00');
+        $this->getJson('/api/products')
+            ->assertOk()
+            ->assertJsonCount(12, 'data')
+            ->assertJsonPath('meta.per_page', 12)
+            ->assertJsonPath('meta.total', 15);
+    }
+
+    public function test_public_price_range_excludes_inactive_hidden_and_trashed_products(): void
+    {
+        $category = $this->category('range-visible');
+        $hiddenCategory = $this->category('range-hidden', false);
+        $brand = $this->brand('range-visible');
+        $hiddenBrand = $this->brand('range-hidden', false);
+        $this->product('only-visible', $category, $brand, 3000, 2000);
+        $this->product('hidden-category-cheap', $hiddenCategory, $brand, 1);
+        $this->product('hidden-brand-expensive', $category, $hiddenBrand, 900000);
+        $this->product('inactive-cheap', $category, $brand, 1, null, false);
+        $this->product('trashed-expensive', $category, $brand, 900000)->delete();
+        $deletedCategory = $this->category('range-deleted');
+        $this->product('deleted-category-cheap', $deletedCategory, null, 1);
+        $deletedCategory->delete();
+
+        $this->getJson('/api/products/price-range')
+            ->assertOk()
+            ->assertJsonPath('data.min_price', '2000.00')
+            ->assertJsonPath('data.max_price', '2000.00');
+    }
+
+    public function test_public_price_range_is_empty_when_no_products_are_visible(): void
+    {
+        $hiddenCategory = $this->category('range-empty', false);
+        $this->product('hidden-only', $hiddenCategory, null, 1000);
+
+        $this->getJson('/api/products/price-range')
+            ->assertOk()
+            ->assertJsonPath('data.min_price', null)
+            ->assertJsonPath('data.max_price', null);
+    }
+
     private function category(string $slug, bool $status = true): Category
     {
         return Category::create(['name' => ucfirst($slug), 'slug' => "filter-category-{$slug}", 'status' => $status]);

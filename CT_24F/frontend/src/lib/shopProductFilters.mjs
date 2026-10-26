@@ -76,3 +76,60 @@ export function flattenShopCategories(categories) {
   visit(categories, 0);
   return options;
 }
+
+export function removeShopProductFilter(filters, type) {
+  const next = { ...filters };
+  if (type === "category") next.category_id = "";
+  if (type === "brand") next.brand_id = "";
+  if (type === "price") {
+    next.min_price = "";
+    next.max_price = "";
+  }
+  return next;
+}
+
+export function shopFilterCount(filters) {
+  return Number(String(filters?.category_id ?? "").trim() !== "")
+    + Number(String(filters?.brand_id ?? "").trim() !== "")
+    + Number(String(filters?.min_price ?? "").trim() !== "" || String(filters?.max_price ?? "").trim() !== "");
+}
+
+export function shopActiveFilterChips(filters, categories, brands) {
+  const chips = [];
+  if (filters?.category_id) {
+    const category = categories.find((item) => String(item.id) === String(filters.category_id));
+    chips.push({ type: "category", label: category?.name ?? `Danh mục #${filters.category_id}` });
+  }
+  if (filters?.brand_id) {
+    const brand = brands.find((item) => String(item.id) === String(filters.brand_id));
+    chips.push({ type: "brand", label: brand?.name ?? `Thương hiệu #${filters.brand_id}` });
+  }
+  if (filters?.min_price !== "" || filters?.max_price !== "") {
+    const format = (value) => {
+      const amount = Number(value);
+      return `${Number.isFinite(amount) ? new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 2 }).format(amount) : value} đ`;
+    };
+    const low = filters?.min_price !== "" ? format(filters.min_price) : null;
+    const high = filters?.max_price !== "" ? format(filters.max_price) : null;
+    chips.push({ type: "price", label: low && high ? `${low} – ${high}` : low ? `Từ ${low}` : `Đến ${high}` });
+  }
+  return chips;
+}
+
+export function shopSliderState(bounds, filters) {
+  const catalogMax = bounds?.max_price == null ? null : Number(bounds.max_price);
+  const hasCatalog = catalogMax !== null && Number.isFinite(catalogMax) && catalogMax >= 0;
+  const readPrice = (value) => {
+    if (value === "" || value == null) return null;
+    const price = Number(value);
+    return Number.isFinite(price) && price >= 0 && price <= maxPrice ? price : null;
+  };
+  const selectedMin = readPrice(filters?.min_price);
+  const selectedMax = readPrice(filters?.max_price);
+  const max = Math.max(hasCatalog ? catalogMax : 0, selectedMin ?? 0, selectedMax ?? 0);
+  const lower = Math.min(selectedMin ?? 0, max);
+  const upper = Math.max(lower, Math.min(selectedMax ?? max, max));
+  const step = max === 0 ? 1 : max < 100 ? 0.01 : Math.max(1, Math.min(1000, 10 ** (Math.floor(Math.log10(max)) - 3)));
+
+  return { disabled: !hasCatalog || max === 0, min: 0, max, value: [lower, upper], step };
+}
