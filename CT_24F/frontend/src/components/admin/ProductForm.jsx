@@ -6,7 +6,7 @@ import AdminImageField from "@/components/admin/AdminImageField";
 import AdminSlugField from "@/components/admin/AdminSlugField";
 import { slugify } from "@/lib/slugify.mjs";
 
-const blank = { sku: "", quantity: 0, is_featured: false, short_description: "", name: "", slug: "", category_id: "", brand_id: "", price: "", sale_price: "", image: "", image_file: null, description: "", status: true };
+const blank = { name: "", slug: "", category_id: "", brand_id: "", price: "", sale_price: "", image: "", image_file: null, description: "", status: true };
 
 function categoryDepth(category, categories) {
   const byId = new Map(categories.map((item) => [Number(item.id), item]));
@@ -41,7 +41,7 @@ export default function ProductForm({ initialData = blank, categories = [], bran
   // Khi bấm Lưu: đổi giá/ID về kiểu số rồi chuyển dữ liệu cho save() ở trang thêm hoặc trang sửa.
   const submit = (event) => {
     event.preventDefault();
-    onSubmit({ ...form, category_id: Number(form.category_id), brand_id: form.brand_id ? Number(form.brand_id) : null, price: Number(form.price), quantity: Number(form.quantity), is_featured: Boolean(form.is_featured), sale_price: form.sale_price === "" ? null : Number(form.sale_price), status: Boolean(form.status) });
+    onSubmit({ ...form, category_id: Number(form.category_id), brand_id: form.brand_id ? Number(form.brand_id) : null, price: Number(form.price), sale_price: form.sale_price === "" ? null : Number(form.sale_price), status: Boolean(form.status) });
   };
   const fieldProps = (name) => ({ "aria-describedby": message(name) ? `${name}-error` : undefined, "aria-invalid": Boolean(message(name)) });
   const fieldError = (name) => message(name) && <small className="mt-1 block text-rose-700" id={`${name}-error`} role="alert">{message(name)}</small>;
@@ -54,11 +54,6 @@ export default function ProductForm({ initialData = blank, categories = [], bran
         <h2 className="text-lg font-semibold text-slate-950" id="product-basic-heading">Thông tin cơ bản</h2>
         <label className="admin-label">Tên sản phẩm<input {...fieldProps("name")} autoComplete="off" className="admin-input" maxLength={180} name="name" required value={form.name} onChange={change} />{fieldError("name")}</label>
         <AdminSlugField error={message("slug")} manual={slugManual} maxLength={200} value={form.slug} onChange={change} onReset={resetSlug} />
-        <div className="grid gap-4 sm:grid-cols-2">
-          <label className="admin-label">Mã SKU<input {...fieldProps("sku")} className="admin-input" maxLength={60} name="sku" placeholder="VD: DT001" value={form.sku ?? ""} onChange={change} />{fieldError("sku")}</label>
-          <label className="admin-label">Số lượng tồn kho<input {...fieldProps("quantity")} className="admin-input" min="0" name="quantity" type="number" value={form.quantity ?? 0} onChange={change} />{fieldError("quantity")}</label>
-        </div>
-        <label className="admin-label">Mô tả ngắn<input {...fieldProps("short_description")} className="admin-input" maxLength={255} name="short_description" value={form.short_description ?? ""} onChange={change} />{fieldError("short_description")}</label>
         <label className="admin-label">Mô tả<textarea {...fieldProps("description")} className="admin-input min-h-28 resize-y" name="description" value={form.description ?? ""} onChange={change} />{fieldError("description")}</label>
       </section>
 
@@ -85,8 +80,6 @@ export default function ProductForm({ initialData = blank, categories = [], bran
       <section aria-labelledby="product-visibility-heading" className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
         <h2 className="text-lg font-semibold text-slate-950" id="product-visibility-heading">Hiển thị cửa hàng</h2>
         <label className="mt-4 flex min-h-11 items-center gap-3 rounded-xl bg-slate-50 p-4 text-sm font-medium text-slate-700"><input {...fieldProps("status")} checked={form.status} className="h-4 w-4 accent-indigo-700" name="status" type="checkbox" onChange={change} /> Hiển thị sản phẩm trên cửa hàng</label>
-        <label className="mt-3 flex min-h-11 items-center gap-3 rounded-xl bg-slate-50 p-4 text-sm font-medium text-slate-700"><input checked={Boolean(form.is_featured)} className="h-4 w-4 accent-indigo-700" name="is_featured" type="checkbox" onChange={change} /> Sản phẩm nổi bật</label>
-        {fieldError("is_featured")}
         {fieldError("status")}
       </section>
         </div>

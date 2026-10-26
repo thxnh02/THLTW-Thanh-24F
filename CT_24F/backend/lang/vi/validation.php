@@ -25,8 +25,11 @@ return [
         'numeric' => ':attribute phải nhỏ hơn :value.',
     ],
     'not_in' => ':attribute đã chọn không hợp lệ.',
+    'in' => ':attribute đã chọn không hợp lệ.',
     'attributes' => [
         'name' => 'tên',
+        'title' => 'tiêu đề',
+        'content' => 'nội dung',
         'slug' => 'đường dẫn',
         'parent_id' => 'danh mục cha',
         'category_id' => 'danh mục',

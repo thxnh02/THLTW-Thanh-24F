@@ -53,7 +53,7 @@ test("each catalog list has an obvious trash link and shared aligned row actions
   for (const table of ["category", "brand", "product"]) {
     const page = read(`../src/app/admin/${table}/page.jsx`);
     assert.match(page, new RegExp(`href="/admin/${table}/trash"`));
-    assert.match(page, /thùng rác/i);
+    assert.match(page, /Mở thùng rác/);
     assert.match(page, /AdminRowActions/);
   }
   const actionsPath = path.join(__dirname, "../src/components/admin/AdminRowActions.jsx");

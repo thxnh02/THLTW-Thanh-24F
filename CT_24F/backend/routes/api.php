@@ -17,7 +17,6 @@ Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/categories/{slug}', [CategoryController::class, 'show']);
 Route::get('/brands', [BrandController::class, 'index']);
 Route::get('/products', [ProductController::class, 'index']);
-Route::get('/products/{slug}', [ProductController::class, 'show']);
 Route::get('/posts', [PostController::class, 'index'])->name('public.posts.index');
 Route::get('/posts/{slug}', [PostController::class, 'show'])->name('public.posts.show');
 Route::get('/catalog-images/{catalogImage}', [CatalogImageController::class, 'show'])->whereNumber('catalogImage');
@@ -25,7 +24,7 @@ Route::get('/catalog-images/{catalogImage}', [CatalogImageController::class, 'sh
 // Admin catalog APIs: apiResource supplies list/show/create/update/soft-delete routes;
 // the explicit routes below it handle trash, restore, and permanent deletion.
 Route::prefix('admin')->group(function (): void {
-    // Các API quản trị chưa có xác thực; không triển khai công khai trước khi bổ sung middleware.
+    // Các API quản trị hiện chưa có xác thực: chỉ chạy trong môi trường học tập nội bộ.
     Route::get('users', [AdminUserController::class, 'index']);
     Route::get('users/{user}', [AdminUserController::class, 'show'])->whereNumber('user');
     Route::patch('users/{user}/block', [AdminUserController::class, 'block'])->whereNumber('user');
