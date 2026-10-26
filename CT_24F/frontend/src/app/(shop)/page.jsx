@@ -3,14 +3,17 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import ProductCard from "@/components/shop/ProductCard";
+import PostCard from "@/components/shop/PostCard";
 import categoryServices from "@/services/categoryServices";
 import productServices from "@/services/productServices";
+import postServices from "@/services/postServices";
 
 const categoryIcons = { "dien-thoai": "◉", laptop: "▱", "phu-kien": "⌁", "sac-va-cap": "ϟ" };
 
 export default function HomePage() {
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
+  const [posts, setPosts] = useState([]);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -20,6 +23,15 @@ export default function HomePage() {
         setProducts(productResponse.data.data ?? []);
       })
       .catch(() => setError("Chưa kết nối được cửa hàng. Hãy kiểm tra Laravel API đang chạy."));
+  }, []);
+
+  // Bài viết được tải riêng để lỗi phần nội dung không chặn danh mục và sản phẩm.
+  useEffect(() => {
+    let current = true;
+    postServices.getPublishedPosts({ page: 1 }).then(({ data }) => {
+      if (current) setPosts((data.data ?? []).slice(0, 3));
+    }).catch(() => { if (current) setPosts([]); });
+    return () => { current = false; };
   }, []);
 
   return <div className="space-y-16 pb-12">
@@ -42,6 +54,11 @@ export default function HomePage() {
       <div className="mb-6 flex items-end justify-between gap-4"><div><p className="eyebrow">Lựa chọn dành cho bạn</p><h2 className="section-title">Sản phẩm được yêu thích</h2></div><Link className="text-sm font-semibold text-[#37665b] hover:underline" href="/products">Xem tất cả ↗</Link></div>
       {products.length ? <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">{products.slice(0, 8).map((product) => <ProductCard key={product.id} product={product} />)}</div> : <p className="rounded-2xl border border-dashed border-[#d6dfd9] p-8 text-center text-sm text-slate-500">{error || "Đang tải sản phẩm..."}</p>}
     </section>
+
+    {posts.length > 0 && <section>
+      <div className="mb-6 flex items-end justify-between gap-4"><div><p className="eyebrow">Góc chia sẻ</p><h2 className="section-title">Bài viết mới</h2></div><Link className="text-sm font-semibold text-[#37665b] hover:underline" href="/posts">Xem tất cả ↗</Link></div>
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{posts.map((post) => <PostCard key={post.slug} post={post} />)}</div>
+    </section>}
 
     <section className="flex flex-col justify-between gap-6 rounded-[1.75rem] bg-[#eaf1eb] p-8 sm:flex-row sm:items-center sm:p-10"><div><p className="eyebrow">Không gian dành cho quản trị viên</p><h2 className="mt-2 text-2xl font-semibold tracking-tight text-[#142f2c]">Quản lý cửa hàng thật dễ dàng.</h2></div><Link className="w-fit rounded-full bg-[#142f2c] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#28564d]" href="/admin">Mở trang quản trị ↗</Link></section>
   </div>;

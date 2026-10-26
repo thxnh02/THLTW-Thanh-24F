@@ -2,13 +2,16 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Boxes, Building2, LayoutDashboard, Package, Store } from "lucide-react";
+import { Boxes, Building2, ClipboardList, FileText, LayoutDashboard, Package, Store, Users } from "lucide-react";
 
 const links = [
   { href: "/admin", label: "Tổng quan", icon: LayoutDashboard },
   { href: "/admin/category", label: "Danh mục", icon: Boxes },
   { href: "/admin/brand", label: "Thương hiệu", icon: Building2 },
   { href: "/admin/product", label: "Sản phẩm", icon: Package },
+  { href: "/admin/users", label: "Người dùng", icon: Users },
+  { href: "/admin/orders", label: "Đơn hàng", icon: ClipboardList },
+  { href: "/admin/posts", label: "Bài viết", icon: FileText },
   { href: "/", label: "Xem cửa hàng", icon: Store },
 ];
 

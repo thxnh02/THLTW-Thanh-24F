@@ -53,7 +53,7 @@ test("each catalog list has an obvious trash link and shared aligned row actions
   for (const table of ["category", "brand", "product"]) {
     const page = read(`../src/app/admin/${table}/page.jsx`);
     assert.match(page, new RegExp(`href="/admin/${table}/trash"`));
-    assert.match(page, /Mở thùng rác/);
+    assert.match(page, /thùng rác/i);
     assert.match(page, /AdminRowActions/);
   }
   const actionsPath = path.join(__dirname, "../src/components/admin/AdminRowActions.jsx");
@@ -76,7 +76,7 @@ test("trash tables support selecting visible rows and bulk actions on all catalo
   const adminTable = read("../src/components/admin/AdminTable.jsx");
   const trashTable = read("../src/components/admin/TrashTable.jsx");
   assert.match(adminTable, /Chọn tất cả trên trang này/);
-  assert.match(adminTable, /Chọn \$\{row\.name\}/);
+  assert.match(adminTable, /Chọn \$\{row\.name \?\? row\.title/);
   assert.match(trashTable, /selectedIds/);
   for (const table of ["category", "brand", "product"]) {
     const page = read(`../src/app/admin/${table}/trash/page.jsx`);

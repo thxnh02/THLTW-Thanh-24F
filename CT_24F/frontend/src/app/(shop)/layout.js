@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-const links = [["/categories", "Danh mục"], ["/brands", "Thương hiệu"], ["/products", "Sản phẩm"]];
+const links = [["/categories", "Danh mục"], ["/brands", "Thương hiệu"], ["/products", "Sản phẩm"], ["/posts", "Bài viết"]];
 
 export default function ShopLayout({ children }) {
   return <div className="shop-shell min-h-screen">
@@ -14,6 +14,6 @@ export default function ShopLayout({ children }) {
       <div className="flex justify-center gap-6 border-t border-[#eef1ee] px-4 py-2 md:hidden">{links.map(([href, label]) => <Link className="text-xs font-medium text-slate-600" href={href} key={href}>{label}</Link>)}</div>
     </header>
     <main className="mx-auto max-w-7xl px-5 py-8 sm:py-10 lg:px-8">{children}</main>
-    <footer className="border-t border-[#e8ede9] bg-white"><div className="mx-auto flex max-w-7xl flex-col justify-between gap-3 px-5 py-7 text-xs text-slate-500 sm:flex-row sm:items-center lg:px-8"><span className="font-semibold tracking-[.12em] text-[#244941]">CT_24F · CÔNG NGHỆ ĐƯỢC CHỌN LỌC</span><span>Cửa hàng công nghệ · Thiết bị và phụ kiện</span></div></footer>
+    <footer className="border-t border-[#e8ede9] bg-white"><div className="mx-auto flex max-w-7xl flex-col justify-between gap-3 px-5 py-7 text-xs text-slate-500 sm:flex-row sm:items-center lg:px-8"><span className="font-semibold tracking-[.12em] text-[#244941]">CT_24F · CÔNG NGHỆ ĐƯỢC CHỌN LỌC</span><span>Cửa hàng công nghệ · Thiết bị và phụ kiện · <Link className="font-semibold text-[#37665b] hover:underline" href="/posts">Bài viết</Link></span></div></footer>
   </div>;
 }

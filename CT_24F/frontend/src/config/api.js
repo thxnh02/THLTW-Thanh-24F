@@ -24,6 +24,21 @@ const API_CONFIG = {
       ADMIN_TRASH: "/admin/products/trash", ADMIN_TRASHED_SHOW: (id) => `/admin/products/trash/${id}`,
       ADMIN_RESTORE: (id) => `/admin/products/${id}/restore`, ADMIN_FORCE_DELETE: (id) => `/admin/products/${id}/force`,
     },
+    USERS: {
+      ADMIN_INDEX: "/admin/users", ADMIN_SHOW: (id) => `/admin/users/${id}`,
+      ADMIN_BLOCK: (id) => `/admin/users/${id}/block`, ADMIN_UNBLOCK: (id) => `/admin/users/${id}/unblock`,
+    },
+    ORDERS: {
+      ADMIN_INDEX: "/admin/orders", ADMIN_SHOW: (id) => `/admin/orders/${id}`,
+      ADMIN_STATUS: (id) => `/admin/orders/${id}/status`,
+    },
+    POSTS: {
+      INDEX: "/posts", SHOW_BY_SLUG: (slug) => `/posts/${encodeURIComponent(slug)}`,
+      ADMIN_INDEX: "/admin/posts", ADMIN_SHOW: (id) => `/admin/posts/${id}`,
+      ADMIN_STORE: "/admin/posts", ADMIN_UPDATE: (id) => `/admin/posts/${id}`, ADMIN_DELETE: (id) => `/admin/posts/${id}`,
+      ADMIN_TRASH: "/admin/posts/trash", ADMIN_RESTORE: (id) => `/admin/posts/${id}/restore`,
+      ADMIN_FORCE_DELETE: (id) => `/admin/posts/${id}/force`,
+    },
   },
 };
 

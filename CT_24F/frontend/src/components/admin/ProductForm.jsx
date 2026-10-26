@@ -24,7 +24,7 @@ function categoryDepth(category, categories) {
 }
 
 // Form nhập liệu dùng chung cho trang thêm và sửa; trang cha quyết định gọi API nào qua onSubmit.
-export default function ProductForm({ initialData = blank, categories = [], brands = [], errors = {}, onSubmit, submitting = false, cancelHref = "/admin/product" }) {
+export default function ProductForm({ initialData = blank, categories = [], brands = [], errors = {}, onSubmit, onError, submitting = false, cancelHref = "/admin/product" }) {
   const [form, setForm] = useState(() => ({ ...blank, ...initialData, category_id: initialData.category_id ?? "", brand_id: initialData.brand_id ?? "", price: initialData.price ?? "", sale_price: initialData.sale_price ?? "" }));
   const [slugManual, setSlugManual] = useState(false);
 
@@ -48,6 +48,8 @@ export default function ProductForm({ initialData = blank, categories = [], bran
 
   return (
     <form className="space-y-5" onSubmit={submit}>
+      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(20rem,1fr)]">
+        <div className="space-y-5">
       <section aria-labelledby="product-basic-heading" className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
         <h2 className="text-lg font-semibold text-slate-950" id="product-basic-heading">Thông tin cơ bản</h2>
         <label className="admin-label">Tên sản phẩm<input {...fieldProps("name")} autoComplete="off" className="admin-input" maxLength={180} name="name" required value={form.name} onChange={change} />{fieldError("name")}</label>
@@ -68,6 +70,8 @@ export default function ProductForm({ initialData = blank, categories = [], bran
         </div>
       </section>
 
+        </div>
+        <div className="space-y-5">
       <section aria-labelledby="product-pricing-heading" className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
         <h2 className="text-lg font-semibold text-slate-950" id="product-pricing-heading">Giá bán và hình ảnh</h2>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -75,7 +79,7 @@ export default function ProductForm({ initialData = blank, categories = [], bran
           <label className="admin-label">Giá khuyến mãi <span className="font-normal text-slate-500">(không bắt buộc)</span><input {...fieldProps("sale_price")} className="admin-input" inputMode="decimal" min="0" name="sale_price" step="0.01" type="number" value={form.sale_price} onChange={change} />{fieldError("sale_price")}</label>
         </div>
         <p className="text-xs text-slate-500">Để trống nếu không giảm giá. Giá khuyến mãi phải thấp hơn giá gốc.</p>
-        <AdminImageField errors={errors} file={form.image_file} fileName="image_file" label="Ảnh sản phẩm" name="image" value={form.image} onFileChange={(file) => setForm((current) => ({ ...current, image_file: file }))} onUrlChange={(image) => setForm((current) => ({ ...current, image }))} />
+        <AdminImageField errors={errors} file={form.image_file} fileName="image_file" label="Ảnh sản phẩm" name="image" value={form.image} onError={onError} onFileChange={(file) => setForm((current) => ({ ...current, image_file: file }))} onUrlChange={(image) => setForm((current) => ({ ...current, image }))} />
       </section>
 
       <section aria-labelledby="product-visibility-heading" className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
@@ -85,8 +89,10 @@ export default function ProductForm({ initialData = blank, categories = [], bran
         {fieldError("is_featured")}
         {fieldError("status")}
       </section>
+        </div>
+      </div>
 
-      <div className="flex flex-wrap gap-3 border-t border-slate-200 pt-5">
+      <div className="flex flex-wrap justify-end gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:px-6">
         <Link className="inline-flex min-h-11 items-center rounded-lg border border-slate-300 px-4 text-sm font-semibold text-slate-700 hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2" href={cancelHref}>Hủy</Link>
         <button className="min-h-11 rounded-lg bg-slate-950 px-5 text-sm font-semibold text-white transition hover:bg-indigo-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-50" disabled={submitting || !categories.length} type="submit">{submitting ? "Đang lưu…" : initialData.id ? "Lưu sản phẩm" : "Thêm sản phẩm"}</button>
       </div>

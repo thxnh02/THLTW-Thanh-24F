@@ -64,7 +64,7 @@ export default function AdminTable({
             ) : data.length ? (
               data.map((row) => (
                 <tr className="border-t border-slate-100 transition-colors hover:bg-slate-50/70" key={row.id}>
-                  {selectable && <td className="px-4 py-3.5"><input aria-label={`Chọn ${row.name}`} checked={selected.has(String(row.id))} className="size-4 accent-indigo-700" disabled={loading} onChange={(event) => toggleRow(row, event.target.checked)} type="checkbox" /></td>}
+                  {selectable && <td className="px-4 py-3.5"><input aria-label={`Chọn ${row.name ?? row.title ?? row.slug ?? row.id}`} checked={selected.has(String(row.id))} className="size-4 accent-indigo-700" disabled={loading} onChange={(event) => toggleRow(row, event.target.checked)} type="checkbox" /></td>}
                   {columns.map((column) => (
                     <td className="px-4 py-3.5 text-slate-700" key={column.key}>{column.render ? column.render(row) : row[column.key]}</td>
                   ))}
