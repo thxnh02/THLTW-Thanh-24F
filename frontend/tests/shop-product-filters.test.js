@@ -122,7 +122,7 @@ test("search defaults to relevance and changing or clearing one chip preserves t
   assert.equal(shopProductHref(withoutQuery), "/products?brand_id=3&sale=1");
 });
 
-test("search URL helper encodes queries and suggestion keyboard movement wraps", async () => {
+test("search URL helper encodes queries and suggestion movement wraps", async () => {
   const { pathToFileURL } = require("node:url");
   const path = require("node:path");
   const { productSearchHref, moveSuggestionIndex } = await import(pathToFileURL(path.join(__dirname, "../src/lib/shopSearch.mjs")).href);

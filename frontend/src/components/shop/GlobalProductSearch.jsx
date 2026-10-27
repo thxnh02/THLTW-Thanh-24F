@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowUpRight, LoaderCircle, Search, X } from "lucide-react";
 import productServices from "@/services/productServices";
@@ -8,66 +8,81 @@ import { productSearchHref, moveSuggestionIndex } from "@/lib/shopSearch.mjs";
 
 const price = (value) => `${Number(value ?? 0).toLocaleString("vi-VN")} đ`;
 
-export default function GlobalProductSearch({ className = "" }) {
+export default function GlobalProductSearch({ className = "", autoFocus = false, onClose = () => {} }) {
   const router = useRouter();
   const inputId = useId();
   const listId = useId();
   const root = useRef(null);
+  const input = useRef(null);
+  const onCloseRef = useRef(onClose);
   const [query, setQuery] = useState("");
-  const [suggestions, setSuggestions] = useState([]);
+  const [suggestionState, setSuggestionState] = useState({ query: "", items: [] });
+  const [loadingQuery, setLoadingQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(-1);
   const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const search = query.trim();
+  const suggestions = suggestionState.query === search ? suggestionState.items : [];
+  const loading = search.length >= 2 && loadingQuery === search;
+
+  const closeSuggestions = useCallback(() => { setOpen(false); setActiveIndex(-1); }, []);
+  const closeSearch = useCallback(() => { closeSuggestions(); onCloseRef.current?.(); }, [closeSuggestions]);
+
+  useEffect(() => { onCloseRef.current = onClose; }, [onClose]);
 
   useEffect(() => {
-    const search = query.trim();
+    if (autoFocus) input.current?.focus();
+  }, [autoFocus]);
+
+  useEffect(() => {
     if (search.length < 2) {
       return undefined;
     }
 
     const controller = new AbortController();
     const timer = window.setTimeout(() => {
-      setLoading(true);
+      setLoadingQuery(search);
       productServices.getSuggestions({ q: search }, { signal: controller.signal })
         .then(({ data }) => {
           if (controller.signal.aborted) return;
-          setSuggestions(Array.isArray(data.data) ? data.data : []);
+          setSuggestionState({ query: search, items: Array.isArray(data.data) ? data.data : [] });
           setActiveIndex(-1);
-          setOpen(true);
         })
         .catch((error) => {
           if (controller.signal.aborted || error.code === "ERR_CANCELED") return;
-          setSuggestions([]);
+          setSuggestionState({ query: search, items: [] });
           setActiveIndex(-1);
         })
-        .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+        .finally(() => { if (!controller.signal.aborted) setLoadingQuery((value) => value === search ? "" : value); });
     }, 300);
 
     return () => {
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [query]);
+  }, [search]);
 
   useEffect(() => {
     const closeOnOutsideClick = (event) => {
-      if (!root.current?.contains(event.target)) setOpen(false);
+      if (!root.current?.contains(event.target)) closeSearch();
     };
+    const closeOnScroll = closeSuggestions;
     document.addEventListener("pointerdown", closeOnOutsideClick);
-    return () => document.removeEventListener("pointerdown", closeOnOutsideClick);
-  }, []);
+    document.addEventListener("scroll", closeOnScroll, true);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutsideClick);
+      document.removeEventListener("scroll", closeOnScroll, true);
+    };
+  }, [closeSearch, closeSuggestions]);
 
   const navigateToSearch = (event) => {
     event?.preventDefault();
     const target = productSearchHref(query);
-    setOpen(false);
-    setSuggestions([]);
+    closeSearch();
     router.push(target);
   };
 
   const selectSuggestion = (suggestion) => {
-    setOpen(false);
-    setSuggestions([]);
+    closeSearch();
     router.push(`/products/${encodeURIComponent(suggestion.slug)}`);
   };
 
@@ -82,7 +97,8 @@ export default function GlobalProductSearch({ className = "" }) {
       setOpen(true);
       setActiveIndex((index) => moveSuggestionIndex(index, suggestions.length, -1));
     } else if (event.key === "Escape") {
-      setOpen(false);
+      if (!open && onClose) onClose();
+      closeSuggestions();
       setActiveIndex(-1);
     } else if (event.key === "Enter" && activeIndex >= 0 && suggestions[activeIndex]) {
       event.preventDefault();
@@ -103,19 +119,20 @@ export default function GlobalProductSearch({ className = "" }) {
         autoComplete="off"
         className="min-w-0 flex-1 bg-transparent py-2.5 text-sm text-[#19352f] outline-none placeholder:text-slate-400"
         id={inputId}
+        ref={input}
         maxLength={100}
-        onChange={(event) => { setQuery(event.target.value); setOpen(true); }}
+        onChange={(event) => { const value = event.target.value; setQuery(value); setActiveIndex(-1); setOpen(value.trim().length >= 2); setLoadingQuery(value.trim().length >= 2 ? value.trim() : ""); }}
         onFocus={() => { if (query.trim().length >= 2) setOpen(true); }}
         onKeyDown={onKeyDown}
         placeholder="Tìm điện thoại, laptop, phụ kiện..."
         role="combobox"
         value={query}
       />
-      {query && <button aria-label="Xóa nội dung tìm kiếm" className="grid size-8 shrink-0 place-items-center rounded-full text-slate-500 hover:bg-[#eaf1eb] focus-visible:outline-2 focus-visible:outline-[#37665b]" onClick={() => { setQuery(""); setSuggestions([]); setOpen(false); }} type="button"><X aria-hidden="true" className="size-4" /></button>}
+      {query && <button aria-label="Xóa nội dung tìm kiếm" className="grid size-8 shrink-0 place-items-center rounded-full text-slate-500 hover:bg-[#eaf1eb] focus-visible:outline-2 focus-visible:outline-[#37665b]" onClick={() => { setQuery(""); setActiveIndex(-1); setOpen(false); setLoadingQuery(""); setSuggestionState({ query: "", items: [] }); input.current?.focus(); }} type="button"><X aria-hidden="true" className="size-4" /></button>}
       <button aria-label="Tìm kiếm" className="grid size-8 shrink-0 place-items-center rounded-full bg-[#193f36] text-white transition hover:bg-[#28564d] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#37665b]" type="submit">{loading ? <LoaderCircle aria-hidden="true" className="size-4 animate-spin" /> : <Search aria-hidden="true" className="size-4" />}</button>
     </form>
 
-    {open && query.trim().length >= 2 && <div className="absolute inset-x-0 top-full z-50 mt-2 overflow-hidden rounded-2xl border border-[#d8e2da] bg-white shadow-xl">
+    {open && search.length >= 2 && <div className="absolute inset-x-0 top-full z-50 mt-2 overflow-hidden rounded-2xl border border-[#d8e2da] bg-white shadow-xl">
       {loading && suggestions.length === 0 && <p className="px-4 py-3 text-sm text-slate-500" role="status">Đang tìm sản phẩm…</p>}
       {!loading && suggestions.length === 0 && <p className="px-4 py-3 text-sm text-slate-500">Chưa có gợi ý. Nhấn Enter để xem kết quả.</p>}
       <div aria-label="Gợi ý sản phẩm" className="max-h-80 overflow-y-auto" id={listId} role="listbox">

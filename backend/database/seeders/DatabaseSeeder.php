@@ -34,6 +34,9 @@ class DatabaseSeeder extends Seeder
         foreach ($catalog as [$name, $slug, $category, $brand, $price]) {
             Product::withTrashed()->firstOrCreate(['slug' => $slug], ['category_id' => $category->id, 'brand_id' => $brand->id, 'name' => $name, 'description' => 'Thiết bị công nghệ và phụ kiện được chọn lọc cho cửa hàng.', 'price' => $price, 'status' => true]);
         }
+
+        $this->call(HomepageShowcaseSeeder::class);
+        $this->call(ProductDescriptionSeeder::class);
     }
 
     private function category(string $slug, array $attributes): Category

@@ -6,7 +6,7 @@ const test = require("node:test");
 const read = (file) => readFileSync(path.join(__dirname, file), "utf8");
 
 test("shop navigation and home link to public posts", () => {
-  assert.match(read("../src/app/(shop)/layout.js"), /\["\/posts", "Bài viết"\]/);
+  assert.match(read("../src/components/shop/ShopHeader.jsx"), /\["\/posts", "Bài viết"\]/);
   assert.match(read("../src/app/(shop)/page.jsx"), /postServices\.getPublishedPosts/);
   assert.ok(existsSync(path.join(__dirname, "../src/app/(shop)/posts/page.jsx")));
   assert.ok(existsSync(path.join(__dirname, "../src/app/(shop)/posts/[slug]/page.jsx")));
