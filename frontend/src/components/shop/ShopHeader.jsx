@@ -9,7 +9,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 
 const links = [["/", "Trang chủ"], ["/products", "Sản phẩm"], ["/categories", "Danh mục"], ["/brands", "Thương hiệu"], ["/posts", "Bài viết"]];
 
-export default function ShopHeader() {
+function ShopHeaderContent() {
   const pathname = usePathname();
   const [searchOpen, setSearchOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -29,7 +29,7 @@ export default function ShopHeader() {
 
       <div className="ml-auto hidden items-center gap-3 md:flex lg:gap-5">{navLinks("min-h-11 inline-flex items-center whitespace-nowrap text-[12px] font-medium text-slate-600 transition hover:text-[#193f36] focus-visible:rounded focus-visible:outline-2 focus-visible:outline-[#37665b] lg:text-[13px]")}</div>
 
-      <button aria-controls="shop-search-panel" aria-expanded={searchVisible} aria-label={searchVisible ? "Đóng tìm kiếm" : "Mở tìm kiếm sản phẩm"} className="ml-auto grid size-10 shrink-0 place-items-center rounded-full text-[#193f36] transition hover:bg-[#eaf1eb] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#37665b] md:ml-2" onClick={() => { setMenuOpen(false); setPanelPath(pathname); setSearchOpen(!searchVisible); }} type="button">
+      <button aria-controls="shop-search-panel" aria-expanded={searchVisible} aria-label={searchVisible ? "Đóng tìm kiếm" : "Mở tìm kiếm sản phẩm"} className="ml-auto grid size-10 shrink-0 place-items-center rounded-full text-[#193f36] transition hover:bg-[#eaf1eb] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#37665b] md:ml-2" onPointerDown={(event) => event.stopPropagation()} onClick={() => { setMenuOpen(false); setPanelPath(pathname); setSearchOpen(!searchVisible); }} type="button">
         {searchVisible ? <X aria-hidden="true" size={19} /> : <Search aria-hidden="true" size={19} />}
       </button>
 
@@ -48,4 +48,9 @@ export default function ShopHeader() {
       </SheetContent>
     </Sheet>
   </header>;
+}
+
+export default function ShopHeader() {
+  const pathname = usePathname();
+  return <ShopHeaderContent key={pathname} />;
 }

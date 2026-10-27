@@ -4,7 +4,7 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowUpRight, LoaderCircle, Search, X } from "lucide-react";
 import productServices from "@/services/productServices";
-import { productSearchHref, moveSuggestionIndex } from "@/lib/shopSearch.mjs";
+import { productSearchHref, moveSuggestionIndex, isScrollInsideSuggestionList, searchEscapeAction } from "@/lib/shopSearch.mjs";
 
 const price = (value) => `${Number(value ?? 0).toLocaleString("vi-VN")} đ`;
 
@@ -13,6 +13,7 @@ export default function GlobalProductSearch({ className = "", autoFocus = false,
   const inputId = useId();
   const listId = useId();
   const root = useRef(null);
+  const suggestionList = useRef(null);
   const input = useRef(null);
   const onCloseRef = useRef(onClose);
   const [query, setQuery] = useState("");
@@ -65,7 +66,9 @@ export default function GlobalProductSearch({ className = "", autoFocus = false,
     const closeOnOutsideClick = (event) => {
       if (!root.current?.contains(event.target)) closeSearch();
     };
-    const closeOnScroll = closeSuggestions;
+    const closeOnScroll = (event) => {
+      if (!isScrollInsideSuggestionList(event.target, suggestionList.current)) closeSuggestions();
+    };
     document.addEventListener("pointerdown", closeOnOutsideClick);
     document.addEventListener("scroll", closeOnScroll, true);
     return () => {
@@ -97,9 +100,9 @@ export default function GlobalProductSearch({ className = "", autoFocus = false,
       setOpen(true);
       setActiveIndex((index) => moveSuggestionIndex(index, suggestions.length, -1));
     } else if (event.key === "Escape") {
-      if (!open && onClose) onClose();
-      closeSuggestions();
-      setActiveIndex(-1);
+      event.preventDefault();
+      if (searchEscapeAction(open) === "close-suggestions") closeSuggestions();
+      else closeSearch();
     } else if (event.key === "Enter" && activeIndex >= 0 && suggestions[activeIndex]) {
       event.preventDefault();
       selectSuggestion(suggestions[activeIndex]);
@@ -135,7 +138,7 @@ export default function GlobalProductSearch({ className = "", autoFocus = false,
     {open && search.length >= 2 && <div className="absolute inset-x-0 top-full z-50 mt-2 overflow-hidden rounded-2xl border border-[#d8e2da] bg-white shadow-xl">
       {loading && suggestions.length === 0 && <p className="px-4 py-3 text-sm text-slate-500" role="status">Đang tìm sản phẩm…</p>}
       {!loading && suggestions.length === 0 && <p className="px-4 py-3 text-sm text-slate-500">Chưa có gợi ý. Nhấn Enter để xem kết quả.</p>}
-      <div aria-label="Gợi ý sản phẩm" className="max-h-80 overflow-y-auto" id={listId} role="listbox">
+      <div aria-label="Gợi ý sản phẩm" className="max-h-80 overflow-y-auto overscroll-contain" id={listId} ref={suggestionList} role="listbox">
       {suggestions.map((suggestion, index) => <button
         aria-selected={activeIndex === index}
         className={`flex min-h-14 w-full items-center justify-between gap-3 px-4 py-3 text-left transition hover:bg-[#f1f5f1] focus-visible:bg-[#f1f5f1] focus-visible:outline-none ${activeIndex === index ? "bg-[#eaf1eb]" : ""}`}

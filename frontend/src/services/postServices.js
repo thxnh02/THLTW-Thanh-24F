@@ -5,7 +5,7 @@ import axiosAdmin from "@/lib/axiosAdmin";
 const endpoints = API_CONFIG.ENDPOINTS.POSTS;
 
 const postServices = {
-  getPublishedPosts: (params) => axiosClient.get(endpoints.INDEX, { params }),
+  getPublishedPosts: (params, options = {}) => axiosClient.get(endpoints.INDEX, { params, ...options }),
   getPublishedPost: (slug) => axiosClient.get(endpoints.SHOW_BY_SLUG(slug)),
   getPosts: (params) => axiosAdmin.get(endpoints.ADMIN_INDEX, { params }),
   getPost: (id) => axiosAdmin.get(endpoints.ADMIN_SHOW(id)),

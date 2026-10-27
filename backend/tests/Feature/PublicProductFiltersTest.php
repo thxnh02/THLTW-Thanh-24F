@@ -51,6 +51,20 @@ class PublicProductFiltersTest extends TestCase
             ->assertOk()->assertJsonPath('meta.total', 1)->assertJsonPath('data.0.slug', 'match');
     }
 
+    public function test_parent_category_filter_includes_active_descendant_products(): void
+    {
+        $parent = $this->category('parent');
+        $child = Category::create(['name' => 'Child category', 'slug' => 'filter-category-child', 'parent_id' => $parent->id, 'status' => true]);
+        $this->product('parent-product', $parent);
+        $this->product('child-product', $child);
+
+        $this->getJson("/api/products?category_id={$parent->id}")
+            ->assertOk()
+            ->assertJsonPath('meta.total', 2)
+            ->assertJsonFragment(['slug' => 'parent-product'])
+            ->assertJsonFragment(['slug' => 'child-product']);
+    }
+
     public function test_price_bounds_use_sale_only_when_it_is_below_regular_price_and_accept_zero(): void
     {
         $category = $this->category('prices');

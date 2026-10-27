@@ -73,7 +73,7 @@ class CatalogApiTest extends TestCase
         $this->seed(DatabaseSeeder::class);
         Category::where('slug', 'dien-tu')->update(['name' => 'Tên danh mục đã chỉnh sửa']);
         Brand::where('slug', 'apple')->update(['name' => 'Tên thương hiệu đã chỉnh sửa']);
-        Product::where('slug', 'iphone-15')->update(['name' => 'Tên sản phẩm đã chỉnh sửa', 'price' => 123456]);
+        Product::where('slug', 'iphone-15')->update(['name' => 'Tên sản phẩm đã chỉnh sửa', 'price' => 123456, 'is_featured' => false, 'sale_price' => null]);
 
         $this->seed(DatabaseSeeder::class);
 
@@ -83,6 +83,7 @@ class CatalogApiTest extends TestCase
         $this->assertDatabaseHas('categories', ['slug' => 'dien-tu', 'name' => 'Tên danh mục đã chỉnh sửa']);
         $this->assertDatabaseHas('brands', ['slug' => 'apple', 'name' => 'Tên thương hiệu đã chỉnh sửa']);
         $this->assertDatabaseHas('products', ['slug' => 'iphone-15', 'name' => 'Tên sản phẩm đã chỉnh sửa', 'price' => 123456]);
+        $this->assertDatabaseHas('products', ['slug' => 'iphone-15', 'is_featured' => false, 'sale_price' => null]);
     }
 
     public function test_admin_category_crud_pagination_validation_and_delete_rules(): void

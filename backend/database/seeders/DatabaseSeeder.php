@@ -35,7 +35,8 @@ class DatabaseSeeder extends Seeder
             Product::withTrashed()->firstOrCreate(['slug' => $slug], ['category_id' => $category->id, 'brand_id' => $brand->id, 'name' => $name, 'description' => 'Thiết bị công nghệ và phụ kiện được chọn lọc cho cửa hàng.', 'price' => $price, 'status' => true]);
         }
 
-        $this->call(HomepageShowcaseSeeder::class);
+        // Keep homepage merchandising choices under Admin control. Run the
+        // showcase seeder only as an explicit demo-data action when desired.
         $this->call(ProductDescriptionSeeder::class);
     }
 

@@ -125,11 +125,19 @@ test("search defaults to relevance and changing or clearing one chip preserves t
 test("search URL helper encodes queries and suggestion movement wraps", async () => {
   const { pathToFileURL } = require("node:url");
   const path = require("node:path");
-  const { productSearchHref, moveSuggestionIndex } = await import(pathToFileURL(path.join(__dirname, "../src/lib/shopSearch.mjs")).href);
+  const { productSearchHref, moveSuggestionIndex, categoryProductsHref, brandProductsHref, postsPageHref, postsPageFromSearch, searchEscapeAction } = await import(pathToFileURL(path.join(__dirname, "../src/lib/shopSearch.mjs")).href);
   assert.equal(productSearchHref("  iPhone 15 pro  "), "/products?q=iPhone%2015%20pro");
   assert.equal(productSearchHref(""), "/products");
   assert.equal(moveSuggestionIndex(-1, 3, 1), 0);
   assert.equal(moveSuggestionIndex(2, 3, 1), 0);
   assert.equal(moveSuggestionIndex(0, 3, -1), 2);
   assert.equal(moveSuggestionIndex(0, 0, 1), -1);
+  assert.equal(categoryProductsHref(12), "/products?category_id=12");
+  assert.equal(brandProductsHref(7), "/products?brand_id=7");
+  assert.equal(postsPageHref(1), "/posts");
+  assert.equal(postsPageHref(2), "/posts?page=2");
+  assert.equal(postsPageFromSearch("page=2"), 2);
+  assert.equal(postsPageFromSearch("page=invalid"), 1);
+  assert.equal(searchEscapeAction(true), "close-suggestions");
+  assert.equal(searchEscapeAction(false), "close-panel");
 });
