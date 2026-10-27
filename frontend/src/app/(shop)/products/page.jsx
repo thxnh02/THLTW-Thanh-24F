@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Search, SlidersHorizontal, X } from "lucide-react";
+import { SlidersHorizontal, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -132,8 +132,6 @@ function ProductsContent({ queryString, applied, categories, brands, optionError
   const [sheetOpen, setSheetOpen] = useState(false);
   const [draft, setDraft] = useState(() => ({ ...applied.filters }));
   const [fieldErrors, setFieldErrors] = useState({});
-  const [searchDraft, setSearchDraft] = useState(applied.filters.q);
-  const [searchError, setSearchError] = useState("");
   const [products, setProducts] = useState([]);
   const [meta, setMeta] = useState(null);
   const [loading, setLoading] = useState(!applied.error);
@@ -206,37 +204,16 @@ function ProductsContent({ queryString, applied, categories, brands, optionError
     else if (error) refreshProducts();
   };
   const clearAll = () => {
-    setSearchDraft("");
-    setSearchError("");
     setDraft({ ...emptyFilters });
     setFieldErrors({});
     setSheetOpen(false);
     if (queryString) router.push("/products");
     else if (error) refreshProducts();
   };
-  const applySearch = (event) => {
-    event.preventDefault();
-    const q = searchDraft.trim();
-    if (q.length > 100) {
-      setSearchError("Từ khóa tìm kiếm tối đa 100 ký tự.");
-      return;
-    }
-    setSearchError("");
-    const next = { ...applied.filters, q, sort: q ? (applied.filters.sort === "newest" ? "relevant" : applied.filters.sort) : (applied.filters.sort === "relevant" ? "newest" : applied.filters.sort) };
-    const target = shopProductHref(next);
-    if (target !== "/products" + (queryString ? "?" + queryString : "")) router.push(target);
-    else if (error) refreshProducts();
-  };
   const changeSort = (sort) => {
     const next = { ...applied.filters, sort };
     if (sort === "relevant" && !next.q) return;
     router.push(shopProductHref(next));
-  };
-  const clearSearch = () => {
-    setSearchDraft("");
-    setSearchError("");
-    const next = { ...applied.filters, q: "", sort: applied.filters.sort === "relevant" ? "newest" : applied.filters.sort };
-    if (shopProductHref(next) !== "/products" + (queryString ? "?" + queryString : "")) router.push(shopProductHref(next));
   };
   const removeChip = (type) => router.push(shopProductHref(removeShopProductFilter(applied.filters, type)));
   const changePage = (page) => {
@@ -250,24 +227,14 @@ function ProductsContent({ queryString, applied, categories, brands, optionError
         <div><h1 className="text-2xl font-semibold tracking-tight text-[#19352f]">{applied.filters.q ? "Kết quả tìm kiếm" : "Sản phẩm"}</h1>{applied.filters.q && <p className="mt-1 max-w-xl break-words text-sm text-slate-600">Kết quả cho “{applied.filters.q}”</p>}</div>
         {meta && <p className="text-sm text-slate-500">{meta.total} sản phẩm · Trang {meta.current_page} / {meta.last_page}</p>}
       </div>
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-        <form className="flex min-h-11 w-full max-w-2xl items-center gap-2 rounded-xl border border-[#d8e2da] bg-white p-1 shadow-sm focus-within:ring-2 focus-within:ring-[#37665b]/20" onSubmit={applySearch} role="search">
-          <label className="sr-only" htmlFor="product-list-search">Tìm trong sản phẩm</label>
-          <Search aria-hidden="true" className="ml-2 size-4 shrink-0 text-[#587168]" />
-          <Input aria-describedby={searchError ? "product-search-error" : undefined} aria-invalid={Boolean(searchError)} className="min-h-10 min-w-0 flex-1 border-0 shadow-none focus-visible:ring-0" id="product-list-search" maxLength={100} onChange={(event) => { setSearchDraft(event.target.value); setSearchError(""); }} placeholder="Tìm điện thoại, laptop, phụ kiện..." value={searchDraft} />
-          {searchDraft && <button aria-label="Xóa từ khóa" className="grid size-9 shrink-0 place-items-center rounded-full text-slate-500 hover:bg-[#eaf1eb]" onClick={clearSearch} type="button"><X aria-hidden="true" className="size-4" /></button>}
-          <Button aria-label="Tìm sản phẩm" className="min-h-10 shrink-0 rounded-xl px-4" type="submit"><span className="hidden sm:inline">Tìm kiếm</span><Search aria-hidden="true" className="size-4 sm:hidden" /></Button>
-        </form>
-        <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-          <label className="sr-only" htmlFor="product-sort">Sắp xếp sản phẩm</label>
-          <select className={selectClass + " min-h-11 w-auto min-w-40 rounded-xl"} id="product-sort" onChange={(event) => changeSort(event.target.value)} value={applied.filters.sort}>
-            {applied.filters.q && <option value="relevant">Liên quan nhất</option>}
-            <option value="newest">Mới nhất</option><option value="price_asc">Giá thấp đến cao</option><option value="price_desc">Giá cao đến thấp</option><option value="name_asc">Tên A–Z</option>
-          </select>
-          <FilterSheet appliedFilters={applied.filters} bounds={bounds} boundsError={boundsError} boundsLoading={boundsLoading} brands={brands} categories={categoryOptions} draft={draft} errors={fieldErrors} onApply={applyFilters} onChange={changeDraft} onOpenChange={changeSheetOpen} onRangeChange={changeRange} onReset={resetFilters} open={sheetOpen} optionErrors={optionErrors} />
-        </div>
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        <label className="sr-only" htmlFor="product-sort">Sắp xếp sản phẩm</label>
+        <select className={selectClass + " min-h-11 w-auto min-w-40 rounded-xl"} id="product-sort" onChange={(event) => changeSort(event.target.value)} value={applied.filters.sort}>
+          {applied.filters.q && <option value="relevant">Liên quan nhất</option>}
+          <option value="newest">Mới nhất</option><option value="price_asc">Giá thấp đến cao</option><option value="price_desc">Giá cao đến thấp</option><option value="name_asc">Tên A–Z</option>
+        </select>
+        <FilterSheet appliedFilters={applied.filters} bounds={bounds} boundsError={boundsError} boundsLoading={boundsLoading} brands={brands} categories={categoryOptions} draft={draft} errors={fieldErrors} onApply={applyFilters} onChange={changeDraft} onOpenChange={changeSheetOpen} onRangeChange={changeRange} onReset={resetFilters} open={sheetOpen} optionErrors={optionErrors} />
       </div>
-      {searchError && <p className="text-sm text-rose-700" id="product-search-error" role="alert">{searchError}</p>}
     </div>
 
     {chips.length > 0 && <div aria-label="Bộ lọc đang áp dụng" className="mb-6 flex flex-wrap items-center gap-2">
