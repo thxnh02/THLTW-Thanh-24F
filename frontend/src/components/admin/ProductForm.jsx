@@ -6,7 +6,7 @@ import AdminImageField from "@/components/admin/AdminImageField";
 import AdminSlugField from "@/components/admin/AdminSlugField";
 import { slugify } from "@/lib/slugify.mjs";
 
-const blank = { name: "", slug: "", category_id: "", brand_id: "", price: "", sale_price: "", image: "", image_file: null, description: "", status: true };
+const blank = { name: "", slug: "", category_id: "", brand_id: "", price: "", sale_price: "", image: "", image_file: null, description: "", status: true, is_featured: false };
 
 function categoryDepth(category, categories) {
   const byId = new Map(categories.map((item) => [Number(item.id), item]));
@@ -25,7 +25,7 @@ function categoryDepth(category, categories) {
 
 // Form nhập liệu dùng chung cho trang thêm và sửa; trang cha quyết định gọi API nào qua onSubmit.
 export default function ProductForm({ initialData = blank, categories = [], brands = [], errors = {}, onSubmit, onError, submitting = false, cancelHref = "/admin/product" }) {
-  const [form, setForm] = useState(() => ({ ...blank, ...initialData, category_id: initialData.category_id ?? "", brand_id: initialData.brand_id ?? "", price: initialData.price ?? "", sale_price: initialData.sale_price ?? "" }));
+  const [form, setForm] = useState(() => ({ ...blank, ...initialData, category_id: initialData.category_id ?? "", brand_id: initialData.brand_id ?? "", price: initialData.price ?? "", sale_price: initialData.sale_price ?? "", is_featured: Boolean(initialData.is_featured) }));
   const [slugManual, setSlugManual] = useState(false);
 
   const message = (name) => errors[name]?.[0];
@@ -41,7 +41,7 @@ export default function ProductForm({ initialData = blank, categories = [], bran
   // Khi bấm Lưu: đổi giá/ID về kiểu số rồi chuyển dữ liệu cho save() ở trang thêm hoặc trang sửa.
   const submit = (event) => {
     event.preventDefault();
-    onSubmit({ ...form, category_id: Number(form.category_id), brand_id: form.brand_id ? Number(form.brand_id) : null, price: Number(form.price), sale_price: form.sale_price === "" ? null : Number(form.sale_price), status: Boolean(form.status) });
+    onSubmit({ ...form, category_id: Number(form.category_id), brand_id: form.brand_id ? Number(form.brand_id) : null, price: Number(form.price), sale_price: form.sale_price === "" ? null : Number(form.sale_price), status: Boolean(form.status), is_featured: Boolean(form.is_featured) });
   };
   const fieldProps = (name) => ({ "aria-describedby": message(name) ? `${name}-error` : undefined, "aria-invalid": Boolean(message(name)) });
   const fieldError = (name) => message(name) && <small className="mt-1 block text-rose-700" id={`${name}-error`} role="alert">{message(name)}</small>;
@@ -81,6 +81,8 @@ export default function ProductForm({ initialData = blank, categories = [], bran
         <h2 className="text-lg font-semibold text-slate-950" id="product-visibility-heading">Hiển thị cửa hàng</h2>
         <label className="mt-4 flex min-h-11 items-center gap-3 rounded-xl bg-slate-50 p-4 text-sm font-medium text-slate-700"><input {...fieldProps("status")} checked={form.status} className="h-4 w-4 accent-indigo-700" name="status" type="checkbox" onChange={change} /> Hiển thị sản phẩm trên cửa hàng</label>
         {fieldError("status")}
+        <label className="mt-3 flex min-h-11 items-center gap-3 rounded-xl bg-emerald-50 p-4 text-sm font-medium text-emerald-950"><input {...fieldProps("is_featured")} checked={form.is_featured} className="h-4 w-4 accent-emerald-800" name="is_featured" type="checkbox" onChange={change} /> Chọn làm sản phẩm nổi bật trên trang chủ</label>
+        {fieldError("is_featured")}
       </section>
         </div>
       </div>

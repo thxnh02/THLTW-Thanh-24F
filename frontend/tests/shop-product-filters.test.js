@@ -7,17 +7,17 @@ const loadFilters = () => import(pathToFileURL(path.join(__dirname, "../src/lib/
 
 test("URL round-trip keeps combined filters and page while a new apply resets page", async () => {
   const { parseShopProductQuery, shopProductHref, shopProductRequestParams } = await loadFilters();
-  const url = "/products?category_id=2&brand_id=3&min_price=5000000&max_price=15000000&page=2";
+  const url = "/products?q=iphone&category_id=2&brand_id=3&min_price=5000000&max_price=15000000&sort=price_asc&sale=1&featured=1&page=2";
   const parsed = parseShopProductQuery(new URL(url, "http://localhost").searchParams);
 
-  assert.deepEqual(parsed.filters, { category_id: "2", brand_id: "3", min_price: "5000000", max_price: "15000000" });
+  assert.deepEqual(parsed.filters, { q: "iphone", category_id: "2", brand_id: "3", min_price: "5000000", max_price: "15000000", sort: "price_asc", sale: "1", featured: "1" });
   assert.equal(parsed.page, 2);
   assert.equal(parsed.error, "");
   assert.deepEqual(shopProductRequestParams(parsed.filters, parsed.page), {
-    category_id: "2", brand_id: "3", min_price: "5000000", max_price: "15000000", page: 2,
+    q: "iphone", category_id: "2", brand_id: "3", min_price: "5000000", max_price: "15000000", sort: "price_asc", sale: "1", featured: "1", page: 2,
   });
   assert.equal(shopProductHref(parsed.filters, 2), url);
-  assert.equal(shopProductHref({ ...parsed.filters, brand_id: "4" }), "/products?category_id=2&brand_id=4&min_price=5000000&max_price=15000000");
+  assert.equal(shopProductHref({ ...parsed.filters, brand_id: "4" }), "/products?q=iphone&category_id=2&brand_id=4&min_price=5000000&max_price=15000000&sort=price_asc&sale=1&featured=1");
   assert.equal(shopProductHref({ category_id: "", brand_id: "", min_price: "", max_price: "" }), "/products");
 });
 
@@ -27,6 +27,10 @@ test("invalid URL IDs, pages, prices and reversed ranges return usable feedback"
     ["category_id=abc", "danh mục"],
     ["brand_id=0", "thương hiệu"],
     ["page=0", "trang"],
+    ["q=" + "x".repeat(101), "từ khóa"],
+    ["sort=bad", "sắp xếp"],
+    ["sort=relevant", "từ khóa"],
+    ["sale=2", "tùy chọn"],
     ["min_price=-1", "giá"],
     ["max_price=abc", "giá"],
     ["min_price=200&max_price=100", "Giá đến"],
@@ -64,10 +68,10 @@ test("removing one active filter preserves the others and resets pagination", as
   const { removeShopProductFilter, shopProductHref } = await loadFilters();
   const filters = { category_id: "2", brand_id: "3", min_price: "0", max_price: "5000000" };
   const withoutBrand = removeShopProductFilter?.(filters, "brand") ?? {};
-  assert.deepEqual(withoutBrand, { category_id: "2", brand_id: "", min_price: "0", max_price: "5000000" });
+  assert.deepEqual(withoutBrand, { q: "", category_id: "2", brand_id: "", min_price: "0", max_price: "5000000", sort: "newest", sale: "", featured: "" });
   assert.equal(shopProductHref(withoutBrand), "/products?category_id=2&min_price=0&max_price=5000000");
-  assert.deepEqual(removeShopProductFilter?.(filters, "price") ?? {}, { category_id: "2", brand_id: "3", min_price: "", max_price: "" });
-  assert.deepEqual(removeShopProductFilter?.(filters, "category") ?? {}, { category_id: "", brand_id: "3", min_price: "0", max_price: "5000000" });
+  assert.deepEqual(removeShopProductFilter?.(filters, "price") ?? {}, { q: "", category_id: "2", brand_id: "3", min_price: "", max_price: "", sort: "newest", sale: "", featured: "" });
+  assert.deepEqual(removeShopProductFilter?.(filters, "category") ?? {}, { q: "", category_id: "", brand_id: "3", min_price: "0", max_price: "5000000", sort: "newest", sale: "", featured: "" });
   assert.deepEqual(filters, { category_id: "2", brand_id: "3", min_price: "0", max_price: "5000000" });
 });
 
@@ -105,4 +109,27 @@ test("empty and unavailable bounds disable only the slider while cheap prices re
   assert.deepEqual(shopSliderState?.({ min_price: "0.00", max_price: "50.00" }, { min_price: "0", max_price: "12.50" }) ?? {}, {
     disabled: false, min: 0, max: 50, value: [0, 12.5], step: 0.01,
   });
+});
+
+test("search defaults to relevance and changing or clearing one chip preserves the rest", async () => {
+  const { parseShopProductQuery, shopActiveFilterChips, removeShopProductFilter, shopProductHref } = await loadFilters();
+  const parsed = parseShopProductQuery(new URLSearchParams("q=iphone&brand_id=3&sale=1"));
+  assert.equal(parsed.filters.sort, "relevant");
+  const chips = shopActiveFilterChips(parsed.filters, [], [{ id: 3, name: "Apple" }]);
+  assert.deepEqual(chips.map(({ type }) => type), ["query", "brand", "sale", "sort"]);
+  const withoutQuery = removeShopProductFilter(parsed.filters, "query");
+  assert.equal(withoutQuery.sort, "newest");
+  assert.equal(shopProductHref(withoutQuery), "/products?brand_id=3&sale=1");
+});
+
+test("search URL helper encodes queries and suggestion keyboard movement wraps", async () => {
+  const { pathToFileURL } = require("node:url");
+  const path = require("node:path");
+  const { productSearchHref, moveSuggestionIndex } = await import(pathToFileURL(path.join(__dirname, "../src/lib/shopSearch.mjs")).href);
+  assert.equal(productSearchHref("  iPhone 15 pro  "), "/products?q=iPhone%2015%20pro");
+  assert.equal(productSearchHref(""), "/products");
+  assert.equal(moveSuggestionIndex(-1, 3, 1), 0);
+  assert.equal(moveSuggestionIndex(2, 3, 1), 0);
+  assert.equal(moveSuggestionIndex(0, 3, -1), 2);
+  assert.equal(moveSuggestionIndex(0, 0, 1), -1);
 });

@@ -1,10 +1,22 @@
 const filterKeys = ["category_id", "brand_id", "min_price", "max_price"];
 const maxPrice = 9999999999.99;
+const sortValues = new Set(["newest", "price_asc", "price_desc", "name_asc", "relevant"]);
+const sortLabels = { newest: "Mới nhất", price_asc: "Giá thấp đến cao", price_desc: "Giá cao đến thấp", name_asc: "Tên A–Z", relevant: "Liên quan nhất" };
+
+export const emptyShopProductFilters = Object.freeze({ q: "", category_id: "", brand_id: "", min_price: "", max_price: "", sort: "newest", sale: "", featured: "" });
 
 export function validateShopProductFilters(values) {
-  const filters = Object.fromEntries(filterKeys.map((key) => [key, String(values?.[key] ?? "").trim()]));
+  const filters = {
+    ...emptyShopProductFilters,
+    q: String(values?.q ?? "").trim(),
+    ...Object.fromEntries(filterKeys.map((key) => [key, String(values?.[key] ?? "").trim()])),
+    sort: String(values?.sort ?? "newest").trim() || "newest",
+    sale: String(values?.sale ?? "").trim(),
+    featured: String(values?.featured ?? "").trim(),
+  };
   const errors = {};
 
+  if (filters.q.length > 100) errors.q = "Từ khóa tìm kiếm tối đa 100 ký tự.";
   for (const [key, label] of [["category_id", "danh mục"], ["brand_id", "thương hiệu"]]) {
     const value = filters[key];
     if (value && (!/^[1-9]\d*$/.test(value) || !Number.isSafeInteger(Number(value)))) {
@@ -22,13 +34,24 @@ export function validateShopProductFilters(values) {
   if (!errors.min_price && !errors.max_price && filters.min_price !== "" && filters.max_price !== "" && Number(filters.min_price) > Number(filters.max_price)) {
     errors.max_price = "Giá đến phải lớn hơn hoặc bằng Giá từ.";
   }
+  if (!sortValues.has(filters.sort)) errors.sort = "Cách sắp xếp không hợp lệ.";
+  if (filters.sort === "relevant" && !filters.q) errors.sort = "Cần nhập từ khóa để sắp xếp theo độ phù hợp.";
+  for (const key of ["sale", "featured"]) {
+    if (filters[key] !== "" && filters[key] !== "0" && filters[key] !== "1") errors[key] = "Tùy chọn lọc không hợp lệ.";
+  }
 
   return { valid: Object.keys(errors).length === 0, errors, filters };
 }
 
 export function parseShopProductQuery(searchParams) {
-  const filters = Object.fromEntries(filterKeys.map((key) => [key, searchParams.get(key) ?? ""]));
-  const validation = validateShopProductFilters(filters);
+  const values = {
+    q: searchParams.get("q") ?? "",
+    ...Object.fromEntries(filterKeys.map((key) => [key, searchParams.get(key) ?? ""])),
+    sort: searchParams.get("sort") ?? (String(searchParams.get("q") ?? "").trim() ? "relevant" : "newest"),
+    sale: searchParams.get("sale") ?? "",
+    featured: searchParams.get("featured") ?? "",
+  };
+  const validation = validateShopProductFilters(values);
   const rawPage = searchParams.get("page");
   const validPage = rawPage == null || (/^[1-9]\d*$/.test(rawPage) && Number.isSafeInteger(Number(rawPage)));
   const errors = validPage ? validation.errors : { ...validation.errors, page: "Số trang không hợp lệ." };
@@ -42,21 +65,25 @@ export function parseShopProductQuery(searchParams) {
 }
 
 export function shopProductHref(filters, page = 1) {
+  const normalized = validateShopProductFilters(filters).filters;
   const query = new URLSearchParams();
-  for (const key of filterKeys) {
-    const value = String(filters?.[key] ?? "").trim();
-    if (value !== "") query.set(key, value);
-  }
+  if (normalized.q) query.set("q", normalized.q);
+  for (const key of filterKeys) if (normalized[key] !== "") query.set(key, normalized[key]);
+  if (normalized.sort !== "newest") query.set("sort", normalized.sort);
+  if (normalized.sale !== "") query.set("sale", normalized.sale);
+  if (normalized.featured !== "") query.set("featured", normalized.featured);
   if (page > 1) query.set("page", String(page));
   return query.size ? `/products?${query.toString()}` : "/products";
 }
 
 export function shopProductRequestParams(filters, page = 1) {
+  const normalized = validateShopProductFilters(filters).filters;
   const params = {};
-  for (const key of filterKeys) {
-    const value = String(filters?.[key] ?? "").trim();
-    if (value !== "") params[key] = value;
-  }
+  if (normalized.q) params.q = normalized.q;
+  for (const key of filterKeys) if (normalized[key] !== "") params[key] = normalized[key];
+  if (normalized.sort !== "newest") params.sort = normalized.sort;
+  if (normalized.sale !== "") params.sale = normalized.sale;
+  if (normalized.featured !== "") params.featured = normalized.featured;
   params.page = page;
   return params;
 }
@@ -78,24 +105,32 @@ export function flattenShopCategories(categories) {
 }
 
 export function removeShopProductFilter(filters, type) {
-  const next = { ...filters };
+  const next = { ...emptyShopProductFilters, ...filters };
   if (type === "category") next.category_id = "";
   if (type === "brand") next.brand_id = "";
   if (type === "price") {
     next.min_price = "";
     next.max_price = "";
   }
+  if (type === "query") next.q = "";
+  if (type === "sort") next.sort = "newest";
+  if (type === "sale") next.sale = "";
+  if (type === "featured") next.featured = "";
+  if (next.sort === "relevant" && !next.q) next.sort = "newest";
   return next;
 }
 
 export function shopFilterCount(filters) {
   return Number(String(filters?.category_id ?? "").trim() !== "")
     + Number(String(filters?.brand_id ?? "").trim() !== "")
-    + Number(String(filters?.min_price ?? "").trim() !== "" || String(filters?.max_price ?? "").trim() !== "");
+    + Number(String(filters?.min_price ?? "").trim() !== "" || String(filters?.max_price ?? "").trim() !== "")
+    + Number(filters?.sale === "1")
+    + Number(filters?.featured === "1");
 }
 
-export function shopActiveFilterChips(filters, categories, brands) {
+export function shopActiveFilterChips(filters, categories = [], brands = []) {
   const chips = [];
+  if (filters?.q) chips.push({ type: "query", label: `Từ khóa: ${filters.q}` });
   if (filters?.category_id) {
     const category = categories.find((item) => String(item.id) === String(filters.category_id));
     chips.push({ type: "category", label: category?.name ?? `Danh mục #${filters.category_id}` });
@@ -113,6 +148,9 @@ export function shopActiveFilterChips(filters, categories, brands) {
     const high = filters?.max_price !== "" ? format(filters.max_price) : null;
     chips.push({ type: "price", label: low && high ? `${low} – ${high}` : low ? `Từ ${low}` : `Đến ${high}` });
   }
+  if (filters?.sale === "1") chips.push({ type: "sale", label: "Đang khuyến mãi" });
+  if (filters?.featured === "1") chips.push({ type: "featured", label: "Sản phẩm nổi bật" });
+  if (filters?.sort && filters.sort !== "newest") chips.push({ type: "sort", label: `Sắp xếp: ${sortLabels[filters.sort] ?? filters.sort}` });
   return chips;
 }
 

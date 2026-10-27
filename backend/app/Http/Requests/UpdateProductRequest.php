@@ -40,6 +40,7 @@ class UpdateProductRequest extends FormRequest
             'price' => ['required', 'numeric', 'decimal:0,2', 'min:0', 'max:9999999999.99'],
             'sale_price' => ['nullable', 'numeric', 'decimal:0,2', 'min:0', 'max:9999999999.99', 'lt:price'],
             'status' => ['required', 'boolean'],
+            'is_featured' => ['sometimes', 'required', 'boolean'],
         ];
     }
 }

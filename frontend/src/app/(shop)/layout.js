@@ -1,4 +1,5 @@
 import Link from "next/link";
+import GlobalProductSearch from "@/components/shop/GlobalProductSearch";
 
 const links = [["/categories", "Danh mục"], ["/brands", "Thương hiệu"], ["/products", "Sản phẩm"], ["/posts", "Bài viết"]];
 
@@ -8,9 +9,12 @@ export default function ShopLayout({ children }) {
     <header className="sticky top-0 z-30 border-b border-[#e8ede9] bg-[#fbfcfa]/95 backdrop-blur">
       <nav className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-4 lg:px-8">
         <Link className="flex items-center gap-3" href="/"><span className="grid h-10 w-10 place-items-center rounded-2xl bg-[#142f2c] font-serif text-xl italic text-[#cde8d4]">C</span><span className="leading-tight"><span className="block text-sm font-bold tracking-[.13em] text-[#142f2c]">CT_24F</span><span className="block text-[10px] tracking-[.15em] text-slate-500">CÔNG NGHỆ ĐƯỢC CHỌN LỌC</span></span></Link>
-        <div className="hidden items-center gap-8 md:flex">{links.map(([href, label]) => <Link className="text-sm font-medium text-slate-600 transition hover:text-[#37665b]" href={href} key={href}>{label}</Link>)}</div>
-        <div className="flex items-center gap-2"><Link aria-label="Đi tới sản phẩm" className="grid h-10 w-10 place-items-center rounded-full border border-[#e4eae5] text-[#244941] transition hover:bg-[#edf3ee]" href="/products">⌕</Link><Link className="rounded-full bg-[#142f2c] px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-[#28564d]" href="/admin">Quản trị <span aria-hidden="true">↗</span></Link></div>
+        <GlobalProductSearch className="hidden max-w-[26rem] flex-1 lg:block" />
+        <div className="hidden items-center gap-6 xl:flex">{links.map(([href, label]) => <Link className="text-sm font-medium text-slate-600 transition hover:text-[#37665b]" href={href} key={href}>{label}</Link>)}</div>
+        <div className="flex items-center gap-2"><Link className="rounded-full bg-[#142f2c] px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-[#28564d]" href="/admin">Quản trị <span aria-hidden="true">↗</span></Link></div>
       </nav>
+      <div className="hidden items-center justify-center gap-7 border-t border-[#eef1ee] px-4 py-2 md:flex xl:hidden">{links.map(([href, label]) => <Link className="text-xs font-medium text-slate-600" href={href} key={href}>{label}</Link>)}</div>
+      <div className="border-t border-[#eef1ee] px-4 py-3 md:hidden"><GlobalProductSearch /></div>
       <div className="flex justify-center gap-6 border-t border-[#eef1ee] px-4 py-2 md:hidden">{links.map(([href, label]) => <Link className="text-xs font-medium text-slate-600" href={href} key={href}>{label}</Link>)}</div>
     </header>
     <main className="mx-auto max-w-7xl px-5 py-8 sm:py-10 lg:px-8">{children}</main>

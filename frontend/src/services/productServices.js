@@ -7,6 +7,9 @@ import { catalogFormData } from "@/lib/catalogFormData.mjs";
 const productServices = {
   getProducts: (params, options = {}) => axiosClient.get(API_CONFIG.ENDPOINTS.PRODUCTS.INDEX, { params, ...options }),
   getPublicPriceRange: () => axiosClient.get(API_CONFIG.ENDPOINTS.PRODUCTS.PRICE_RANGE),
+  getSuggestions: (params, options = {}) => axiosClient.get(API_CONFIG.ENDPOINTS.PRODUCTS.SUGGESTIONS, { params, ...options }),
+  getPublicProduct: (slug, options = {}) => axiosClient.get(API_CONFIG.ENDPOINTS.PRODUCTS.SHOW_BY_SLUG(slug), options),
+  getRelatedProducts: (slug, params, options = {}) => axiosClient.get(API_CONFIG.ENDPOINTS.PRODUCTS.RELATED(slug), { params, ...options }),
   // params.page quyết định trang danh sách sản phẩm trong admin.
   getAdminProducts: (params) => axiosAdmin.get(API_CONFIG.ENDPOINTS.PRODUCTS.ADMIN_INDEX, { params }),
   getAdminProduct: (id) => axiosAdmin.get(API_CONFIG.ENDPOINTS.PRODUCTS.ADMIN_SHOW(id)),
