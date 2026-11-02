@@ -9,7 +9,9 @@ use App\Http\Controllers\Api\Admin\AdminUserController;
 use App\Http\Controllers\Api\BrandController;
 use App\Http\Controllers\Api\CatalogImageController;
 use App\Http\Controllers\Api\CategoryController;
+use App\Http\Controllers\Api\CustomerAddressController;
 use App\Http\Controllers\Api\CustomerAuthController;
+use App\Http\Controllers\Api\CustomerProfileController;
 use App\Http\Controllers\Api\PostController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Middleware\EnsureCustomerAccountActive;
@@ -39,6 +41,20 @@ Route::prefix('auth')->group(function (): void {
         Route::get('/me', [CustomerAuthController::class, 'me'])->middleware(EnsureCustomerAccountActive::class);
         Route::post('/logout', [CustomerAuthController::class, 'logout']);
     });
+});
+
+Route::prefix('account')->middleware(['auth:sanctum', EnsureCustomerAccountActive::class])->group(function (): void {
+    Route::get('/profile', [CustomerProfileController::class, 'show']);
+    Route::patch('/profile', [CustomerProfileController::class, 'update']);
+    Route::post('/avatar', [CustomerProfileController::class, 'uploadAvatar'])->middleware('throttle:10,1');
+    Route::delete('/avatar', [CustomerProfileController::class, 'deleteAvatar']);
+    Route::post('/security/password', [CustomerProfileController::class, 'changePassword'])->middleware('throttle:5,1');
+    Route::get('/addresses', [CustomerAddressController::class, 'index']);
+    Route::post('/addresses', [CustomerAddressController::class, 'store']);
+    Route::get('/addresses/{address}', [CustomerAddressController::class, 'show'])->whereNumber('address');
+    Route::patch('/addresses/{address}', [CustomerAddressController::class, 'update'])->whereNumber('address');
+    Route::delete('/addresses/{address}', [CustomerAddressController::class, 'destroy'])->whereNumber('address');
+    Route::patch('/addresses/{address}/default', [CustomerAddressController::class, 'makeDefault'])->whereNumber('address');
 });
 
 // Admin catalog APIs: apiResource supplies list/show/create/update/soft-delete routes;
