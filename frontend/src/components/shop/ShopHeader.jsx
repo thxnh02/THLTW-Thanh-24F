@@ -3,21 +3,28 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { Menu, Search, X } from "lucide-react";
+import { LogIn, LogOut, Menu, Search, UserRound, X } from "lucide-react";
 import GlobalProductSearch from "@/components/shop/GlobalProductSearch";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { useCustomerAuth } from "@/contexts/CustomerAuthContext";
 
 const links = [["/", "Trang chủ"], ["/products", "Sản phẩm"], ["/categories", "Danh mục"], ["/brands", "Thương hiệu"], ["/posts", "Bài viết"]];
 
 function ShopHeaderContent() {
   const pathname = usePathname();
+  const { user, loading: authLoading, logout } = useCustomerAuth();
   const [searchOpen, setSearchOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [panelPath, setPanelPath] = useState(pathname);
+  const [logoutError, setLogoutError] = useState("");
   const searchVisible = searchOpen && panelPath === pathname;
   const menuVisible = menuOpen && panelPath === pathname;
 
   const closePanels = () => { setSearchOpen(false); setMenuOpen(false); };
+  const signOut = async () => {
+    setLogoutError("");
+    try { await logout(); } catch { setLogoutError("Không thể đăng xuất lúc này. Vui lòng thử lại."); }
+  };
   const navLinks = (className = "") => links.map(([href, label]) => <Link aria-current={pathname === href ? "page" : undefined} className={className} href={href} key={href} onClick={closePanels}>{label}</Link>);
 
   return <header className="shop-header relative z-40 border-b border-[#e5ebe6] bg-[#fbfcfa]/95 backdrop-blur">
@@ -29,9 +36,15 @@ function ShopHeaderContent() {
 
       <div className="ml-auto hidden items-center gap-3 md:flex lg:gap-5">{navLinks("min-h-11 inline-flex items-center whitespace-nowrap text-[12px] font-medium text-slate-600 transition hover:text-[#193f36] focus-visible:rounded focus-visible:outline-2 focus-visible:outline-[#37665b] lg:text-[13px]")}</div>
 
-      <button aria-controls="shop-search-panel" aria-expanded={searchVisible} aria-label={searchVisible ? "Đóng tìm kiếm" : "Mở tìm kiếm sản phẩm"} className="ml-auto grid size-10 shrink-0 place-items-center rounded-full text-[#193f36] transition hover:bg-[#eaf1eb] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#37665b] md:ml-2" onPointerDown={(event) => event.stopPropagation()} onClick={() => { setMenuOpen(false); setPanelPath(pathname); setSearchOpen(!searchVisible); }} type="button">
+      {authLoading ? <span aria-label="Đang tải tài khoản" className="grid size-10 shrink-0 place-items-center text-[#587168]" role="status">…</span> : user ? <>
+        <Link aria-label="Tài khoản" className="inline-flex min-h-10 max-w-36 shrink-0 items-center gap-2 rounded-full px-2 text-sm font-medium text-[#29483f] hover:bg-[#eaf1eb] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#37665b]" href="/account" onClick={closePanels}><UserRound aria-hidden="true" className="size-5 shrink-0" /><span className="hidden truncate sm:inline">{user.name.split(" ")[0]}</span></Link>
+        <button aria-label="Đăng xuất" className="hidden size-10 shrink-0 place-items-center rounded-full text-[#587168] hover:bg-[#eaf1eb] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#37665b] md:grid" onClick={signOut} type="button"><LogOut aria-hidden="true" className="size-4" /></button>
+      </> : <Link aria-label="Đăng nhập" className="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-full px-2 text-sm font-medium text-[#29483f] hover:bg-[#eaf1eb] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#37665b]" href="/login" onClick={closePanels}><LogIn aria-hidden="true" className="size-5 shrink-0" /><span className="hidden sm:inline">Đăng nhập</span></Link>}
+
+      <button aria-controls="shop-search-panel" aria-expanded={searchVisible} aria-label={searchVisible ? "Đóng tìm kiếm" : "Mở tìm kiếm sản phẩm"} className="grid size-10 shrink-0 place-items-center rounded-full text-[#193f36] transition hover:bg-[#eaf1eb] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#37665b] md:ml-1" onPointerDown={(event) => event.stopPropagation()} onClick={() => { setMenuOpen(false); setPanelPath(pathname); setSearchOpen(!searchVisible); }} type="button">
         {searchVisible ? <X aria-hidden="true" size={19} /> : <Search aria-hidden="true" size={19} />}
       </button>
+      {logoutError && <span className="absolute right-2 top-[calc(100%+4px)] z-50 rounded-lg border border-rose-100 bg-white px-3 py-2 text-xs text-rose-700 shadow-md" role="alert">{logoutError}</span>}
 
       <button aria-label={menuVisible ? "Đóng điều hướng" : "Mở điều hướng"} aria-controls="shop-mobile-navigation" aria-expanded={menuVisible} className="grid size-10 shrink-0 place-items-center rounded-full text-[#193f36] transition hover:bg-[#eaf1eb] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#37665b] md:hidden" onClick={() => { setSearchOpen(false); setPanelPath(pathname); setMenuOpen(!menuVisible); }} type="button"><Menu aria-hidden="true" size={20} /></button>
 
@@ -45,6 +58,13 @@ function ShopHeaderContent() {
           <SheetDescription className="text-left">Chọn khu vực bạn muốn khám phá.</SheetDescription>
         </SheetHeader>
         <nav aria-label="Điều hướng di động" className="flex flex-col gap-1 px-4">{navLinks("flex min-h-12 items-center rounded-xl px-3 text-sm font-medium text-[#29483f] hover:bg-[#eaf1eb] focus-visible:outline-2 focus-visible:outline-[#37665b]")}</nav>
+        <div className="mt-4 border-t border-[#e7eee8] px-4 pt-4">
+          {authLoading ? <p aria-live="polite" className="px-3 py-2 text-sm text-slate-500">Đang tải tài khoản…</p> : user ? <>
+            <Link className="flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-medium text-[#29483f] hover:bg-[#eaf1eb]" href="/account" onClick={closePanels}><UserRound aria-hidden="true" className="size-4" />Tài khoản của {user.name.split(" ")[0]}</Link>
+            <button className="flex min-h-11 w-full items-center gap-2 rounded-xl px-3 text-left text-sm font-medium text-[#29483f] hover:bg-[#eaf1eb]" onClick={signOut} type="button"><LogOut aria-hidden="true" className="size-4" />Đăng xuất</button>
+          </> : <div className="flex flex-col gap-1"><Link className="flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-medium text-[#29483f] hover:bg-[#eaf1eb]" href="/login" onClick={closePanels}><LogIn aria-hidden="true" className="size-4" />Đăng nhập</Link><Link className="flex min-h-11 items-center rounded-xl px-3 text-sm font-medium text-[#37665b] hover:bg-[#eaf1eb]" href="/register" onClick={closePanels}>Tạo tài khoản</Link></div>}
+          {logoutError && <p className="mt-2 text-xs text-rose-700" role="alert">{logoutError}</p>}
+        </div>
       </SheetContent>
     </Sheet>
   </header>;

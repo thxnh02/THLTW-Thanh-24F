@@ -13,7 +13,12 @@ class User extends Authenticatable
 
     protected function casts(): array
     {
-        return ['blocked_at' => 'datetime', 'password' => 'hashed'];
+        return [
+            'blocked_at' => 'datetime',
+            'email_verified_at' => 'datetime',
+            'password' => 'hashed',
+            'customer_auth_version' => 'integer',
+        ];
     }
 
     public function orders(): HasMany
