@@ -2,8 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Http\Middleware\EnsureAdminAccess;
 use App\Models\CatalogImage;
 use App\Models\Category;
+use Illuminate\Auth\Middleware\Authenticate;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Tests\TestCase;
@@ -11,6 +13,13 @@ use Tests\TestCase;
 class CatalogImageUploadTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        // Upload behavior is independent of the admin session guard.
+        $this->withoutMiddleware([Authenticate::class, EnsureAdminAccess::class]);
+    }
 
     private const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=';
 

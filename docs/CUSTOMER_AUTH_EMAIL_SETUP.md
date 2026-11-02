@@ -93,4 +93,4 @@ Kiểm tra với `Mail::fake()` trong test chỉ xác nhận ứng dụng tạo 
 
 Các tài khoản cũ được giữ nguyên. Chúng không được tự động đánh dấu đã xác minh. Tài khoản có mật khẩu rỗng/null không thể đăng nhập bằng mật khẩu cho đến khi chủ email dùng quy trình quên mật khẩu để đặt mật khẩu mới; sau đó vẫn phải xác minh email trước khi đăng nhập. Tài khoản bị chặn vẫn bị từ chối khi đăng nhập, xác minh và đặt lại mật khẩu.
 
-Đăng nhập khách hàng không cấp quyền quản trị. Các API `/api/admin/*` hiện có vẫn chưa được bảo vệ bằng xác thực/phân quyền phía máy chủ; cần bổ sung quyền Admin riêng trước khi đưa hệ thống lên môi trường công khai.
+Đăng nhập khách hàng không cấp quyền quản trị. Các API `/api/admin/*` hiện đã yêu cầu tài khoản có quyền admin; xem [ADMIN_AUTH.md](ADMIN_AUTH.md).

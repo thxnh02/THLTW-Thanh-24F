@@ -55,4 +55,4 @@ Liên kết `backend/public/storage` với `backend/storage/app/public` đã đ�
 5. Đổi mật khẩu rồi đăng nhập lại. Thử mật khẩu hiện tại sai, phiên cũ, tài khoản bị chặn và tài khoản cũ chưa xác minh.
 6. Kiểm tra lại đăng ký → OTP → đăng nhập và quên mật khẩu. Email đến inbox thật chỉ có thể xác nhận bằng SMTP đã cấu hình và địa chỉ nhận do bạn kiểm soát; test tự động không gửi email thật.
 
-**Cần xử lý trước khi triển khai công khai:** các route `/api/admin/*` hiện vẫn chưa có xác thực và phân quyền server. Đăng nhập khách hàng không bảo vệ các route đó. Cần một bước Admin auth riêng có role, middleware và test trước khi public ứng dụng.
+**Cập nhật:** các route `/api/admin/*` đã được bảo vệ bằng quyền admin riêng. Xem [ADMIN_AUTH.md](ADMIN_AUTH.md) để thiết lập và kiểm tra.

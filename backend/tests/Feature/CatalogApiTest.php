@@ -2,16 +2,25 @@
 
 namespace Tests\Feature;
 
+use App\Http\Middleware\EnsureAdminAccess;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
 use Database\Seeders\DatabaseSeeder;
+use Illuminate\Auth\Middleware\Authenticate;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class CatalogApiTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        // Catalog behavior is tested here; admin authorization has dedicated feature tests.
+        $this->withoutMiddleware([Authenticate::class, EnsureAdminAccess::class]);
+    }
 
     public function test_public_category_and_brand_endpoints_return_only_active_data(): void
     {

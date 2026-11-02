@@ -61,6 +61,9 @@ class CustomerProfileController extends Controller
         if ($extension === null) {
             throw ValidationException::withMessages(['avatar' => 'Tệp phải là ảnh JPEG, PNG hoặc WebP hợp lệ.']);
         }
+        if (($size[0] ?? 0) < 1 || ($size[1] ?? 0) < 1 || $size[0] > 4096 || $size[1] > 4096 || $size[0] * $size[1] > 12_000_000) {
+            throw ValidationException::withMessages(['avatar' => 'Ảnh cần có kích thước tối đa 4096 × 4096 pixel và không quá 12 triệu pixel.']);
+        }
 
         $user = $request->user();
         $path = Storage::disk('public')->putFileAs('avatars/'.$user->id, $file, Str::random(40).'.'.$extension);

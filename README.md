@@ -4,7 +4,7 @@ Dự án cửa hàng công nghệ với Laravel JSON API và giao diện Next.js
 
 Phiên bản hiện tại chưa có đăng nhập, giỏ hàng, đặt hàng hoặc thanh toán.
 
-Các API quản trị (kể cả tải ảnh lên) hiện chưa có xác thực; chỉ chạy trong môi trường cục bộ cho tới khi bổ sung đăng nhập và phân quyền.
+Trang `/admin` và các API `/api/admin/*` yêu cầu phiên đăng nhập có quyền quản trị. Tài khoản mẫu local được hướng dẫn trong [docs/ADMIN_AUTH.md](docs/ADMIN_AUTH.md).
 
 ## Cài lần đầu với Laragon
 
@@ -20,7 +20,6 @@ Các API quản trị (kể cả tải ảnh lên) hiện chưa có xác thực;
 2. Nhấp đúp `start-dev.bat`.
 
 Frontend: `http://127.0.0.1:3000`
-
 API: `http://127.0.0.1:8000/api`
 
 Nếu port `8000` hoặc `3000` đang được dùng, đóng tiến trình đang dùng port đó rồi chạy lại script.

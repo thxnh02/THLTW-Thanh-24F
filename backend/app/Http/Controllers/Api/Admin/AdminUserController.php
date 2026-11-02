@@ -12,16 +12,20 @@ class AdminUserController extends Controller
     /** Danh sách tài khoản thật, kèm số đơn hàng và phân trang từ database. */
     public function index(): AnonymousResourceCollection
     {
-        return UserResource::collection(User::withCount('orders')->orderByDesc('id')->paginate(10));
+        return UserResource::collection(User::where('is_admin', false)->withCount('orders')->orderByDesc('id')->paginate(10));
     }
 
     public function show(User $user): UserResource
     {
+        abort_if($user->is_admin, 404);
+
         return new UserResource($user->loadCount('orders'));
     }
 
     public function block(User $user): UserResource
     {
+        abort_if($user->is_admin, 403);
+
         if ($user->blocked_at === null) {
             $user->update(['blocked_at' => now()]);
         }
@@ -31,6 +35,8 @@ class AdminUserController extends Controller
 
     public function unblock(User $user): UserResource
     {
+        abort_if($user->is_admin, 403);
+
         if ($user->blocked_at !== null) {
             $user->update(['blocked_at' => null]);
         }

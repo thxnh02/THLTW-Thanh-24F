@@ -19,6 +19,9 @@ test("customer return paths allow local storefront destinations and reject exter
 test("auth feedback exposes Vietnamese API errors and safely masks email addresses", async () => {
   const { authErrorMessage, authFieldErrors, maskEmail } = await loadHelpers();
   assert.equal(authErrorMessage({ response: { status: 419 } }), "Phiên bảo mật đã hết hạn. Vui lòng thử lại.");
+  assert.match(authErrorMessage({ response: { status: 401 } }), /đăng nhập lại/);
+  assert.match(authErrorMessage({ response: { status: 403 } }), /không có quyền/);
+  assert.match(authErrorMessage({ response: { status: 404 } }), /không còn tồn tại/);
   assert.equal(authErrorMessage({ response: { data: { message: "Mã đã hết hạn." } } }), "Mã đã hết hạn.");
   assert.deepEqual(authFieldErrors({ response: { data: { errors: { email: ["Email không hợp lệ."] } } } }), { email: ["Email không hợp lệ."] });
   assert.equal(maskEmail("customer@example.com"), "c••••••@example.com");

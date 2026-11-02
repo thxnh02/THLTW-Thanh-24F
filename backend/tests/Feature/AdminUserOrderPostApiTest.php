@@ -2,15 +2,24 @@
 
 namespace Tests\Feature;
 
+use App\Http\Middleware\EnsureAdminAccess;
 use App\Models\Order;
 use App\Models\Post;
 use App\Models\User;
+use Illuminate\Auth\Middleware\Authenticate;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class AdminUserOrderPostApiTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        // These tests exercise admin controllers; AdminAuthenticationTest covers the route guard.
+        $this->withoutMiddleware([Authenticate::class, EnsureAdminAccess::class]);
+    }
 
     public function test_users_are_paginated_and_detail_never_exposes_secrets(): void
     {

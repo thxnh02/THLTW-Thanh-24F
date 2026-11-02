@@ -9,9 +9,12 @@ export function safeCustomerReturnTo(value, fallback = "/account") {
 
 export function authErrorMessage(error, fallback = "Không thể hoàn tất yêu cầu. Vui lòng thử lại.") {
   const response = error?.response?.data;
-  if (typeof response?.message === "string") return response.message;
+  if (error?.response?.status === 401) return "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.";
+  if (error?.response?.status === 403) return "Bạn không có quyền thực hiện thao tác này.";
+  if (error?.response?.status === 404) return "Thông tin này không còn tồn tại. Vui lòng tải lại trang.";
   if (error?.response?.status === 419) return "Phiên bảo mật đã hết hạn. Vui lòng thử lại.";
   if (error?.response?.status === 429) return "Bạn thao tác quá nhanh. Vui lòng chờ một lúc rồi thử lại.";
+  if (typeof response?.message === "string") return response.message;
   return fallback;
 }
 

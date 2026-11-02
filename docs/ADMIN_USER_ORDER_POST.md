@@ -12,6 +12,6 @@ Trang cửa hàng có `/posts` và `/posts/{slug}` với API công khai `GET /ap
 
 Seeder mẫu `AdminDemoSeeder` được chạy riêng bằng `php artisan db:seed --class=AdminDemoSeeder` trong `CT_24F/backend`. Seeder thêm 12 người dùng với email `ct24f-demoXX@example.test`, 15 đơn hàng thuộc các trạng thái khác nhau và 12 bài viết có slug bắt đầu bằng `ct24f-demo-`. Chạy lại không tạo trùng và không ghi đè bản ghi đã chỉnh. Người dùng mẫu không có mật khẩu, chỉ để xem/quản lý trên trang admin; không dùng làm tài khoản đăng nhập. `DatabaseSeeder` mặc định không tự chạy seeder này.
 
-**Giới hạn bảo mật:** các route `/api/admin/*` hiện không có middleware xác thực trong project gốc. Chức năng này chỉ phù hợp môi trường phát triển nội bộ, không đưa lên server công khai. Project chưa có luồng đăng nhập, nên `blocked_at` hiện chỉ là trạng thái quản trị; khi bổ sung đăng nhập cần kiểm tra cờ này trong luồng xác thực. Không tạo hệ xác thực mới trong phần này.
+**Cập nhật bảo mật:** các route `/api/admin/*` hiện yêu cầu đăng nhập và quyền admin. Tài khoản bị khóa không thể đăng nhập hoặc tiếp tục dùng phiên quản trị. Xem [ADMIN_AUTH.md](ADMIN_AUTH.md).
 
 Chạy `php artisan migrate` trong `CT_24F/backend` sau khi MySQL/Laragon hoạt động. Không chạy `migrate:fresh`, không xóa dữ liệu cũ.

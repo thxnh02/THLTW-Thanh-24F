@@ -99,6 +99,9 @@ class CustomerAccountApiTest extends TestCase
             ->assertUnprocessable();
         $this->postJson('/api/account/avatar', ['avatar' => UploadedFile::fake()->createWithContent('oversize.png', base64_decode(self::PNG).str_repeat('x', 2 * 1024 * 1024))])
             ->assertUnprocessable();
+        $widePng = substr_replace(base64_decode(self::PNG), pack('N', 5000), 16, 4);
+        $this->postJson('/api/account/avatar', ['avatar' => UploadedFile::fake()->createWithContent('wide.png', $widePng)])
+            ->assertUnprocessable();
         $this->postJson('/api/account/avatar', ['avatar' => $this->png()])->assertOk()->assertJsonStructure(['data' => ['user' => ['avatar_url']]]);
         $firstPath = $user->fresh()->avatar_path;
         $this->assertStringStartsWith('avatars/'.$user->id.'/', $firstPath);
@@ -148,6 +151,24 @@ class CustomerAccountApiTest extends TestCase
         $this->patchJson("/api/account/addresses/{$first}/default")->assertNotFound();
         $this->deleteJson("/api/account/addresses/{$first}")->assertNotFound();
         $this->getJson('/api/account/addresses')->assertJsonCount(0, 'data.addresses');
+    }
+
+    public function test_address_can_become_default_during_creation_or_edit_without_losing_legacy_fields(): void
+    {
+        $user = $this->customer('default-choice@example.com');
+        $this->signIn($user);
+        $first = $this->postJson('/api/account/addresses', $this->address([
+            'district' => 'Quận cũ', 'province_code' => null, 'ward_code' => null,
+        ]))->assertCreated()->json('data.address.id');
+        $second = $this->postJson('/api/account/addresses', $this->address([
+            'label' => 'Công ty', 'make_default' => true,
+        ]))->assertCreated()->assertJsonPath('data.address.is_default', true)->json('data.address.id');
+        $this->assertDatabaseHas('user_addresses', ['id' => $first, 'district' => 'Quận cũ', 'is_default' => false]);
+        $this->patchJson("/api/account/addresses/{$first}", $this->address([
+            'district' => 'Quận cũ', 'make_default' => true,
+        ]))->assertOk()->assertJsonPath('data.address.is_default', true);
+        $this->assertDatabaseHas('user_addresses', ['id' => $second, 'is_default' => false]);
+        $this->assertSame(1, $user->addresses()->where('is_default', true)->count());
     }
 
     public function test_address_limit_and_validation_preserve_existing_entries(): void

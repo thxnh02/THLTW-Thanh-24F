@@ -8,14 +8,23 @@ const loadForm = () => import(pathToFileURL(path.join(__dirname, '../src/lib/acc
 test('address draft sends only editable fields and trims user-entered text', async () => {
   const { toAddressPayload } = await loadForm();
   assert.deepEqual(toAddressPayload({
-    id: 8, user_id: 12, is_default: true, full_address: 'server value',
+    id: 8, user_id: 12, is_default: true, make_default: true, full_address: 'server value',
     label: ' Nhà riêng ', recipient_name: ' Nguyễn An ', recipient_phone: '0912345678',
     province: ' Hà Nội ', ward: ' Phường Ba Đình ', street: ' 10 Kim Mã ',
     district: '', detail: '', delivery_note: '', province_code: '', ward_code: '',
   }), {
     label: 'Nhà riêng', recipient_name: 'Nguyễn An', recipient_phone: '0912345678',
     province: 'Hà Nội', ward: 'Phường Ba Đình', street: '10 Kim Mã',
-    district: null, detail: null, delivery_note: null, province_code: null, ward_code: null,
+    district: null, detail: null, delivery_note: null, province_code: null, ward_code: null, make_default: true,
+  });
+});
+
+test('changing province preserves the ward until the user confirms discarding it', async () => {
+  const { changeAddressProvince } = await loadForm();
+  const before = { province: 'Hà Nội', province_code: '01', ward: 'Ba Đình', ward_code: '00004', district: 'Quận cũ' };
+  assert.deepEqual(changeAddressProvince(before, 'Huế', '46', false), before);
+  assert.deepEqual(changeAddressProvince(before, 'Huế', '46', true), {
+    province: 'Huế', province_code: '46', ward: '', ward_code: '', district: 'Quận cũ',
   });
 });
 

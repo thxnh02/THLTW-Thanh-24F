@@ -34,8 +34,13 @@ class CustomerAddressController extends Controller
                 throw ValidationException::withMessages(['addresses' => 'Bạn chỉ có thể lưu tối đa 10 địa chỉ.']);
             }
 
+            $makeDefault = (bool) ($data['make_default'] ?? false);
+            unset($data['make_default']);
+            if ($makeDefault) {
+                $user->addresses()->where('is_default', true)->update(['is_default' => false]);
+            }
             $address = $user->addresses()->create($data);
-            $address->forceFill(['is_default' => $user->addresses()->count() === 1])->save();
+            $address->forceFill(['is_default' => $makeDefault || $user->addresses()->count() === 1])->save();
 
             return $address;
         });
@@ -49,7 +54,15 @@ class CustomerAddressController extends Controller
         $updated = DB::transaction(function () use ($request, $address, $data): UserAddress {
             $user = $this->lockOwner($request);
             $owned = $this->owned($user, $address);
+            $makeDefault = (bool) ($data['make_default'] ?? false);
+            unset($data['make_default']);
+            if ($makeDefault) {
+                $user->addresses()->where('is_default', true)->update(['is_default' => false]);
+            }
             $owned->fill($data)->save();
+            if ($makeDefault) {
+                $owned->forceFill(['is_default' => true])->save();
+            }
 
             return $owned;
         });
@@ -101,6 +114,7 @@ class CustomerAddressController extends Controller
             'street' => ['required', 'string', 'max:200'],
             'detail' => ['nullable', 'string', 'max:200'],
             'delivery_note' => ['nullable', 'string', 'max:500'],
+            'make_default' => ['sometimes', 'boolean'],
         ]);
     }
 
