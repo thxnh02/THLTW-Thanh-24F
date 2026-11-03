@@ -7,12 +7,13 @@ const loadHelpers = () => import(pathToFileURL(path.join(__dirname, "../src/lib/
 
 test("customer return paths allow local storefront destinations and reject external or admin targets", async () => {
   const { safeCustomerReturnTo } = await loadHelpers();
+  assert.equal(safeCustomerReturnTo(null), "/");
   assert.equal(safeCustomerReturnTo("/products?category_id=4"), "/products?category_id=4");
-  assert.equal(safeCustomerReturnTo("https://attacker.example"), "/account");
-  assert.equal(safeCustomerReturnTo("//attacker.example"), "/account");
-  assert.equal(safeCustomerReturnTo("/\\attacker.example"), "/account");
-  assert.equal(safeCustomerReturnTo("/admin/users"), "/account");
-  assert.equal(safeCustomerReturnTo("/login?returnTo=/products"), "/account");
+  assert.equal(safeCustomerReturnTo("https://attacker.example"), "/");
+  assert.equal(safeCustomerReturnTo("//attacker.example"), "/");
+  assert.equal(safeCustomerReturnTo("/\\attacker.example"), "/");
+  assert.equal(safeCustomerReturnTo("/admin/users"), "/");
+  assert.equal(safeCustomerReturnTo("/login?returnTo=/products"), "/");
   assert.equal(safeCustomerReturnTo("/orders", "/products"), "/orders");
 });
 

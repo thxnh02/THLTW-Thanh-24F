@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use Database\Seeders\AdminExampleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
@@ -56,6 +57,20 @@ class AdminAuthenticationTest extends TestCase
         $this->getJson('/api/admin/categories')->assertOk();
         $this->postJson('/api/admin/logout')->assertOk();
         $this->getJson('/api/admin/categories')->assertUnauthorized();
+    }
+
+    public function test_explicit_local_example_seeder_and_independent_real_admin_both_use_normal_login(): void
+    {
+        config()->set('admin_example.email', 'seeded-admin@example.test');
+        config()->set('admin_example.password', 'synthetic-seed-password-123');
+        $this->seed(AdminExampleSeeder::class);
+        $seeded = User::query()->where('email', 'seeded-admin@example.test')->firstOrFail();
+        $this->assertTrue($seeded->is_admin);
+        $this->postJson('/api/admin/login', ['email' => $seeded->email, 'password' => 'synthetic-seed-password-123'])->assertOk();
+        $this->postJson('/api/admin/logout')->assertOk();
+        $real = $this->user('independent-admin@example.test', true);
+        $this->postJson('/api/admin/login', ['email' => $real->email, 'password' => 'example-password'])
+            ->assertOk()->assertJsonPath('data.user.id', $real->id);
     }
 
     public function test_blocked_or_invalidated_admin_session_cannot_access_admin_routes(): void

@@ -1,11 +1,31 @@
+"use client";
+
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { catalogImageUrl } from "@/lib/catalogImage";
+import { useCart } from "@/contexts/CartContext";
 
 export function formatPrice(value) {
   return `${Number(value ?? 0).toLocaleString("vi-VN")} đ`;
 }
 
 export default function ProductCard({ product }) {
+  const router = useRouter();
+  const { add, guest, server } = useCart();
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState('');
+  const soldOut = product.stock_quantity === 0;
+  const addItem = async (buyNow = false) => {
+    setBusy(true); setNotice('');
+    try {
+      const alreadyInCart = (server?.items ?? guest ?? []).some((row) => row.product_id === product.id);
+      if (!buyNow || !alreadyInCart) await add(product.id, 1);
+      if (buyNow) router.push(`/checkout?buy=${product.id}`); else setNotice('Đã thêm vào giỏ.');
+    }
+    catch (error) { setNotice(error.response?.data?.message ?? 'Không thể thêm sản phẩm.'); }
+    finally { setBusy(false); }
+  };
   const palette = ["from-[#e8efe8] to-[#c6d9cd]", "from-[#f4e9df] to-[#dfc5ad]", "from-[#e5eaf1] to-[#c2cedd]", "from-[#f1ebdb] to-[#daceaa]"];
   const onSale = product.sale_price != null && Number(product.sale_price) >= 0 && Number(product.sale_price) < Number(product.price);
   return <article className="product-card group overflow-hidden rounded-2xl border border-[#e9ede9] bg-white">
@@ -25,5 +45,7 @@ export default function ProductCard({ product }) {
         </div>
       </div>
     </Link>
+    <div className="flex gap-2 border-t border-[#edf1ed] p-3"><button aria-label={`Thêm ${product.name} vào giỏ`} className="min-h-10 flex-1 rounded-full border border-[#b7d0bd] px-2 text-xs font-semibold text-[#28584a] hover:bg-[#eef5ef] disabled:opacity-50" disabled={busy || soldOut} onClick={() => addItem(false)} type="button">{soldOut ? 'Hết hàng' : 'Thêm vào giỏ'}</button><button className="min-h-10 rounded-full bg-[#193f36] px-3 text-xs font-semibold text-white hover:bg-[#28564d] disabled:opacity-50" disabled={busy || soldOut} onClick={() => addItem(true)} type="button">Mua ngay</button></div>
+    {notice && <p aria-live="polite" className="px-3 pb-3 text-xs text-[#37665b]">{notice}</p>}
   </article>;
 }

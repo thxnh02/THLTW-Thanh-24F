@@ -123,6 +123,11 @@ class ProductController extends Controller
         return new ProductResource($product);
     }
 
+    public function showById(int $product): ProductResource
+    {
+        return new ProductResource($this->visibleProducts()->with(['category', 'brand'])->whereKey($product)->firstOrFail());
+    }
+
     public function related(Request $request, string $slug): AnonymousResourceCollection
     {
         $filters = $request->validate(['limit' => ['sometimes', 'integer', 'min:1']]);

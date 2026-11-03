@@ -8,13 +8,18 @@ use App\Http\Controllers\Api\Admin\AdminPostController;
 use App\Http\Controllers\Api\Admin\AdminProductController;
 use App\Http\Controllers\Api\Admin\AdminUserController;
 use App\Http\Controllers\Api\BrandController;
+use App\Http\Controllers\Api\CartController;
 use App\Http\Controllers\Api\CatalogImageController;
 use App\Http\Controllers\Api\CategoryController;
+use App\Http\Controllers\Api\CommerceOptionsController;
 use App\Http\Controllers\Api\CustomerAddressController;
 use App\Http\Controllers\Api\CustomerAuthController;
+use App\Http\Controllers\Api\CustomerNotificationController;
+use App\Http\Controllers\Api\CustomerOrderController;
 use App\Http\Controllers\Api\CustomerProfileController;
 use App\Http\Controllers\Api\PostController;
 use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\Api\VnPayCallbackController;
 use App\Http\Middleware\EnsureAdminAccess;
 use App\Http\Middleware\EnsureCustomerAccountActive;
 use Illuminate\Support\Facades\Route;
@@ -24,12 +29,16 @@ Route::get('/categories/{slug}', [CategoryController::class, 'show']);
 Route::get('/brands', [BrandController::class, 'index']);
 Route::get('/products/price-range', [ProductController::class, 'priceRange']);
 Route::get('/products/suggestions', [ProductController::class, 'suggestions']);
+Route::get('/products/id/{product}', [ProductController::class, 'showById'])->whereNumber('product');
 Route::get('/products/{slug}/related', [ProductController::class, 'related']);
 Route::get('/products', [ProductController::class, 'index']);
 Route::get('/products/{slug}', [ProductController::class, 'show']);
 Route::get('/posts', [PostController::class, 'index'])->name('public.posts.index');
 Route::get('/posts/{slug}', [PostController::class, 'show'])->name('public.posts.show');
 Route::get('/catalog-images/{catalogImage}', [CatalogImageController::class, 'show'])->whereNumber('catalogImage');
+Route::get('/commerce/options', CommerceOptionsController::class);
+Route::get('/payments/vnpay/ipn', [VnPayCallbackController::class, 'ipn'])->middleware('throttle:120,1');
+Route::get('/payments/vnpay/return', [VnPayCallbackController::class, 'return'])->middleware('throttle:120,1');
 
 Route::prefix('auth')->group(function (): void {
     Route::post('/register', [CustomerAuthController::class, 'register'])->middleware('throttle:5,1');
@@ -46,6 +55,19 @@ Route::prefix('auth')->group(function (): void {
 });
 
 Route::prefix('account')->middleware(['auth:sanctum', EnsureCustomerAccountActive::class])->group(function (): void {
+    Route::get('/notifications', [CustomerNotificationController::class, 'index']);
+    Route::patch('/notifications/{notification}/read', [CustomerNotificationController::class, 'read'])->whereNumber('notification');
+    Route::get('/orders', [CustomerOrderController::class, 'index']);
+    Route::post('/orders', [CustomerOrderController::class, 'checkout'])->middleware('throttle:10,1');
+    Route::get('/orders/{order}', [CustomerOrderController::class, 'show'])->whereNumber('order');
+    Route::post('/orders/{order}/retry-payment', [CustomerOrderController::class, 'retry'])->whereNumber('order');
+    Route::post('/orders/{order}/cancel', [CustomerOrderController::class, 'cancel'])->whereNumber('order');
+    Route::get('/cart', [CartController::class, 'index']);
+    Route::post('/cart/items', [CartController::class, 'add'])->middleware('throttle:60,1');
+    Route::patch('/cart/items/{product}', [CartController::class, 'update'])->whereNumber('product');
+    Route::delete('/cart/items/{product}', [CartController::class, 'remove'])->whereNumber('product');
+    Route::delete('/cart', [CartController::class, 'clear']);
+    Route::post('/cart/merge', [CartController::class, 'merge'])->middleware('throttle:10,1');
     Route::get('/profile', [CustomerProfileController::class, 'show']);
     Route::patch('/profile', [CustomerProfileController::class, 'update']);
     Route::post('/avatar', [CustomerProfileController::class, 'uploadAvatar'])->middleware('throttle:10,1');

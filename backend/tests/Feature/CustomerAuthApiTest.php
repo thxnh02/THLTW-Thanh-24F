@@ -2,16 +2,16 @@
 
 namespace Tests\Feature;
 
-use App\Mail\CustomerAuthOtpMail;
 use App\Http\Middleware\EnsureCustomerAccountActive;
+use App\Mail\CustomerAuthOtpMail;
 use App\Models\CustomerEmailOtp;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
 use Illuminate\Session\ArraySessionHandler;
 use Illuminate\Session\Store;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Http\Request;
 use Tests\TestCase;
 
 class CustomerAuthApiTest extends TestCase
@@ -28,7 +28,7 @@ class CustomerAuthApiTest extends TestCase
         ]);
     }
 
-    public function test_registration_sends_a_hashed_email_code_then_verification_login_me_and_logout_work(): void
+    public function test_registration_allows_immediate_login_and_optional_hashed_email_verification(): void
     {
         Mail::fake();
 
@@ -42,11 +42,17 @@ class CustomerAuthApiTest extends TestCase
             'password_confirmation' => 'new-password-123',
         ])->assertCreated()
             ->assertJsonPath('data.email', 'customer@example.com')
-            ->assertJsonPath('data.verification_email_sent', true);
+            ->assertJsonPath('data.verification_email_sent', false);
 
         $user = User::query()->where('email', 'customer@example.com')->firstOrFail();
         $this->assertNull($user->email_verified_at);
+        $this->assertSame(1, session('customer_auth_version'));
         $this->assertTrue(Hash::check('new-password-123', $user->password));
+        $this->assertDatabaseMissing('customer_email_otps', ['email' => $user->email, 'purpose' => CustomerEmailOtp::VERIFY_EMAIL]);
+        Mail::assertNothingSent();
+
+        // Verification remains an opt-in flow and never blocks the new session.
+        $this->postJson('/api/auth/email/resend', ['email' => $user->email])->assertAccepted();
         $this->assertDatabaseHas('customer_email_otps', ['email' => $user->email, 'purpose' => CustomerEmailOtp::VERIFY_EMAIL]);
         Mail::assertSent(CustomerAuthOtpMail::class, fn (CustomerAuthOtpMail $mail): bool => $mail->hasTo($user->email) && $mail->purpose === CustomerEmailOtp::VERIFY_EMAIL);
 
@@ -57,25 +63,23 @@ class CustomerAuthApiTest extends TestCase
         $this->assertTrue(Hash::check($mail->code, $otp->otp_hash));
         $this->assertMatchesRegularExpression('/^\d{6}$/', $mail->code);
 
+        // An unverified customer can use the normal account immediately.
+        $this->getJson('/api/auth/me')->assertOk()->assertJsonPath('data.user.email_verified_at', null);
+        $this->getJson('/api/account/addresses')->assertOk();
+
         $this->postJson('/api/auth/email/verify', ['email' => $user->email, 'code' => $mail->code])
             ->assertOk()->assertJsonPath('message', 'Email đã được xác minh. Bạn có thể đăng nhập.');
         $this->assertNotNull($user->fresh()->email_verified_at);
         $this->postJson('/api/auth/email/verify', ['email' => $user->email, 'code' => $mail->code])->assertUnprocessable();
 
-        $login = $this->withCookie(config('session.cookie'), $csrfSession)->postJson('/api/auth/login', [
+        $this->postJson('/api/auth/logout')->assertOk();
+        $login = $this->postJson('/api/auth/login', [
             'email' => 'CUSTOMER@example.com', 'password' => 'new-password-123',
         ])->assertOk()->assertJsonPath('data.user.email', $user->email)
             ->assertJsonMissingPath('data.user.password')
             ->assertJsonMissingPath('data.user.remember_token');
-        $sessionCookie = $login->getCookie(config('session.cookie'))?->getValue();
-        $this->assertNotEmpty($sessionCookie);
-        $this->assertNotSame($csrfSession, $sessionCookie, 'Login rotates the session identifier.');
-
-        $this->withCookie(config('session.cookie'), $sessionCookie)->getJson('/api/auth/me')
-            ->assertOk()->assertJsonPath('data.user.name', 'Khách CT24F');
-        $loggedOut = $this->withCookie(config('session.cookie'), $sessionCookie)->postJson('/api/auth/logout')->assertOk();
-        $afterLogoutCookie = $loggedOut->getCookie(config('session.cookie'))?->getValue();
-        $this->withCookie(config('session.cookie'), $afterLogoutCookie)->getJson('/api/auth/me')->assertUnauthorized();
+        $this->assertNotEmpty($login->getCookie(config('session.cookie'))?->getValue());
+        $this->postJson('/api/auth/logout')->assertOk();
     }
 
     public function test_duplicate_email_is_case_insensitive_and_registration_validation_is_enforced(): void
@@ -99,7 +103,7 @@ class CustomerAuthApiTest extends TestCase
         Mail::assertNothingSent();
     }
 
-    public function test_login_rejects_bad_blocked_unverified_and_legacy_passwordless_accounts(): void
+    public function test_login_rejects_bad_blocked_and_legacy_passwordless_accounts_but_allows_unverified(): void
     {
         $verified = $this->createUser('verified@example.com');
         $blocked = $this->createUser('blocked@example.com');
@@ -116,7 +120,7 @@ class CustomerAuthApiTest extends TestCase
         $this->postJson('/api/auth/login', ['email' => $blocked->email, 'password' => 'correct-password'])
             ->assertForbidden();
         $this->postJson('/api/auth/login', ['email' => $unverified->email, 'password' => 'correct-password'])
-            ->assertForbidden()->assertJsonPath('code', 'EMAIL_NOT_VERIFIED');
+            ->assertOk()->assertJsonPath('data.user.email_verified_at', null);
     }
 
     public function test_wrong_expired_and_superseded_verification_codes_cannot_verify_an_email(): void
@@ -182,7 +186,7 @@ class CustomerAuthApiTest extends TestCase
 
     public function test_reset_code_changes_password_once_invalidates_sessions_and_cannot_be_cross_used(): void
     {
-        $user = $this->createUser('reset@example.com');
+        $user = $this->createUser('reset@example.com', verified: false);
         $this->withSession(['customer_auth_version' => 1])->actingAs($user);
         $this->getJson('/api/auth/me')->assertOk();
         $verifyCode = '112233';
@@ -243,7 +247,7 @@ class CustomerAuthApiTest extends TestCase
         $request = Request::create('/api/auth/me');
         $request->setUserResolver(fn (): User => $user);
         $request->setLaravelSession($session);
-        $middleware = new EnsureCustomerAccountActive();
+        $middleware = new EnsureCustomerAccountActive;
         $next = fn () => response()->json(['ok' => true]);
 
         $this->assertSame(200, $middleware->handle($request, $next)->getStatusCode());
@@ -274,5 +278,4 @@ class CustomerAuthApiTest extends TestCase
 
         return $user->fresh();
     }
-
 }

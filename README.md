@@ -2,9 +2,11 @@
 
 Dự án cửa hàng công nghệ với Laravel JSON API và giao diện Next.js. Khách truy cập có thể xem danh mục, thương hiệu và sản phẩm. Trang quản trị hỗ trợ danh sách có phân trang, thêm, sửa, chuyển vào thùng rác, khôi phục và xóa vĩnh viễn cho cả ba loại dữ liệu. Frontend gọi API qua Axios.
 
-Phiên bản hiện tại chưa có đăng nhập, giỏ hàng, đặt hàng hoặc thanh toán.
+Phiên bản hiện tại có đăng nhập khách/admin, hồ sơ và sổ địa chỉ, giỏ hàng, đặt hàng COD mô phỏng, cùng bộ tích hợp VNPay Sandbox. Xác minh email là tùy chọn cho khách; đặt lại mật khẩu vẫn cần OTP gửi qua email. VNPay chỉ được ghi đã thanh toán khi máy chủ nhận IPN có chữ ký hợp lệ.
 
 Trang `/admin` và các API `/api/admin/*` yêu cầu phiên đăng nhập có quyền quản trị. Tài khoản mẫu local được hướng dẫn trong [docs/ADMIN_AUTH.md](docs/ADMIN_AUTH.md).
+
+Các bảng mua hàng dùng migration bổ sung. Với database đã có dữ liệu, hãy sao lưu và xem trước `php artisan migrate:status`, `php artisan migrate --pretend` trước khi tự chạy `php artisan migrate` trong `backend`. Xem [hướng dẫn giỏ hàng và thanh toán](docs/CART_CHECKOUT_PAYMENTS.md).
 
 ## Cài lần đầu với Laragon
 
@@ -13,6 +15,8 @@ Trang `/admin` và các API `/api/admin/*` yêu cầu phiên đăng nhập có q
 3. Nhấp đúp `start-dev.bat`.
 
 `setup-mysql.bat` tạo `.env` từ mẫu khi chưa có, kiểm tra cấu hình MySQL, rồi tạo database `ecommerce_thltw` nếu cần và chạy migration/seed. Script giữ nguyên `.env` đã có, không xóa database, bảng hay dữ liệu hiện có.
+
+Nếu máy đã có dữ liệu, bỏ qua `setup-mysql.bat`; tự sao lưu, xem `migrate:status`/`migrate --pretend`, rồi mới chạy `php artisan migrate` khi sẵn sàng.
 
 ## Chạy hằng ngày
 
@@ -49,6 +53,10 @@ npm run dev
 - `GET /api/categories/{slug}`
 - `GET /api/brands`
 - `GET /api/products?page=2` — chính xác 12 sản phẩm mỗi trang
+- Giỏ hàng khách lưu ID/số lượng tại trình duyệt; sau đăng nhập đồng bộ với `/api/account/cart/*`
+- Đặt hàng: `POST /api/account/orders`; lịch sử: `GET /api/account/orders`
+- Thông báo: `GET /api/account/notifications`
+- VNPay Sandbox: `GET /api/payments/vnpay/ipn` và `GET /api/payments/vnpay/return`
 - Admin CRUD có phân trang: `/api/admin/categories`, `/api/admin/brands`, `/api/admin/products`
 - Thùng rác: `/api/admin/{categories|brands|products}/trash`
 - Khôi phục: `POST /api/admin/{categories|brands|products}/{id}/restore`
@@ -56,7 +64,7 @@ npm run dev
 
 ## Frontend
 
-- Cửa hàng: `/`, `/categories`, `/brands`, `/products`
+- Cửa hàng: `/`, `/categories`, `/brands`, `/products`, `/cart`, `/checkout`, `/account/orders`, `/account/notifications`
 - Quản trị: `/admin/category`, `/admin/brand`, `/admin/product`; mỗi mục có trang danh sách, thêm, sửa và thùng rác
 - Xóa trong danh sách có hộp thoại xác nhận; thùng rác hỗ trợ khôi phục và xóa vĩnh viễn, với ô tích xác nhận trước khi xóa vĩnh viễn
 - Form thêm/sửa sản phẩm, danh mục và thương hiệu cho phép tải ảnh hoặc logo từ máy (tối đa 2 MB), xem trước và xóa ảnh; nội dung ảnh được lưu trong MySQL

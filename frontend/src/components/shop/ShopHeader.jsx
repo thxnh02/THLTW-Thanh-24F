@@ -2,19 +2,31 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
-import { LogIn, LogOut, Menu, Search, UserRound, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Bell, LogIn, LogOut, Menu, Search, ShoppingCart, UserRound, X } from "lucide-react";
 import { DropdownMenu } from "radix-ui";
 import GlobalProductSearch from "@/components/shop/GlobalProductSearch";
 import CustomerAvatar from "@/components/shop/CustomerAvatar";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useCustomerAuth } from "@/contexts/CustomerAuthContext";
+import { useCart } from "@/contexts/CartContext";
+import commerceServices from "@/services/commerceServices";
 
 const links = [["/", "Trang chủ"], ["/products", "Sản phẩm"], ["/categories", "Danh mục"], ["/brands", "Thương hiệu"], ["/posts", "Bài viết"]];
 
 function ShopHeaderContent() {
   const pathname = usePathname();
   const { user, loading: authLoading, logout } = useCustomerAuth();
+  const { count } = useCart();
+  const [unread, setUnread] = useState(0);
+  useEffect(() => {
+    if (!user) return;
+    let active = true;
+    const load = () => commerceServices.notifications(1).then(({ data }) => { if (active) setUnread(data.data?.unread_count ?? 0); }).catch(() => {});
+    load();
+    const timer = setInterval(load, 30000);
+    return () => { active = false; clearInterval(timer); };
+  }, [user?.id, pathname]); // eslint-disable-line react-hooks/exhaustive-deps
   const [searchOpen, setSearchOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [panelPath, setPanelPath] = useState(pathname);
@@ -28,6 +40,7 @@ function ShopHeaderContent() {
     try { await logout(); } catch { setLogoutError("Không thể đăng xuất lúc này. Vui lòng thử lại."); }
   };
   const navLinks = (className = "") => links.map(([href, label]) => <Link aria-current={pathname === href ? "page" : undefined} className={className} href={href} key={href} onClick={closePanels}>{label}</Link>);
+  const loginHref = pathname === "/login" || pathname === "/register" ? "/login" : `/login?returnTo=${encodeURIComponent(pathname)}`;
 
   return <header className="shop-header relative z-40 border-b border-[#e5ebe6] bg-[#fbfcfa]/95 backdrop-blur">
     <nav aria-label="Điều hướng cửa hàng" className="relative mx-auto flex h-16 max-w-[1280px] items-center gap-2 px-3 sm:px-5 lg:px-8">
@@ -41,8 +54,10 @@ function ShopHeaderContent() {
       {authLoading ? <span aria-label="Đang tải tài khoản" className="grid size-10 shrink-0 place-items-center text-[#587168]" role="status">…</span> : user ? <>
         <Link aria-label="Tài khoản" className="md:hidden" href="/account" onClick={closePanels}><CustomerAvatar size="size-9" user={user} /></Link>
         <DropdownMenu.Root><DropdownMenu.Trigger className="hidden min-h-11 max-w-40 items-center gap-2 rounded-full px-2 text-sm font-medium text-[#29483f] hover:bg-[#eaf1eb] focus-visible:outline-2 focus-visible:outline-[#37665b] md:flex" type="button"><CustomerAvatar size="size-8" user={user} /><span className="truncate">{user.name.split(" ")[0]}</span></DropdownMenu.Trigger><DropdownMenu.Portal><DropdownMenu.Content align="end" className="z-50 mt-2 w-48 rounded-xl border border-[#dce7de] bg-white p-1.5 shadow-lg"><DropdownMenu.Item asChild><Link className="flex min-h-10 items-center gap-2 rounded-lg px-3 text-sm text-[#29483f] outline-none focus:bg-[#eff5ef]" href="/account"><UserRound className="size-4" />Hồ sơ</Link></DropdownMenu.Item><DropdownMenu.Item asChild><Link className="flex min-h-10 items-center rounded-lg px-3 text-sm text-[#29483f] outline-none focus:bg-[#eff5ef]" href="/account/addresses">Địa chỉ</Link></DropdownMenu.Item><DropdownMenu.Item asChild><Link className="flex min-h-10 items-center rounded-lg px-3 text-sm text-[#29483f] outline-none focus:bg-[#eff5ef]" href="/account/security">Bảo mật</Link></DropdownMenu.Item><DropdownMenu.Item asChild><button className="flex min-h-10 w-full items-center gap-2 rounded-lg px-3 text-left text-sm text-rose-700 outline-none focus:bg-rose-50" onClick={signOut} type="button"><LogOut className="size-4" />Đăng xuất</button></DropdownMenu.Item></DropdownMenu.Content></DropdownMenu.Portal></DropdownMenu.Root>
-      </> : <><Link aria-label="Đăng nhập" className="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-full px-2 text-sm font-medium text-[#29483f] hover:bg-[#eaf1eb] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#37665b]" href="/login" onClick={closePanels}><LogIn aria-hidden="true" className="size-5 shrink-0" /><span className="hidden sm:inline">Đăng nhập</span></Link><Link className="hidden min-h-10 items-center rounded-full px-3 text-xs font-semibold text-[#37665b] hover:bg-[#eaf1eb] lg:inline-flex" href="/register">Đăng ký</Link></>}
+      </> : <><Link aria-label="Đăng nhập" className="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-full px-2 text-sm font-medium text-[#29483f] hover:bg-[#eaf1eb] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#37665b]" href={loginHref} onClick={closePanels}><LogIn aria-hidden="true" className="size-5 shrink-0" /><span className="hidden sm:inline">Đăng nhập</span></Link><Link className="hidden min-h-10 items-center rounded-full px-3 text-xs font-semibold text-[#37665b] hover:bg-[#eaf1eb] lg:inline-flex" href="/register">Đăng ký</Link></>}
 
+      <Link aria-label={`Giỏ hàng, ${count} sản phẩm`} className="relative grid size-10 shrink-0 place-items-center rounded-full text-[#193f36] hover:bg-[#eaf1eb]" href="/cart"><ShoppingCart aria-hidden="true" size={19} />{count > 0 && <span className="absolute -right-1 -top-1 grid min-w-5 place-items-center rounded-full bg-rose-600 px-1 text-[10px] font-semibold text-white">{count > 99 ? '99+' : count}</span>}</Link>
+      {user && <Link aria-label={`Thông báo, ${unread} chưa đọc`} className="relative grid size-10 shrink-0 place-items-center rounded-full text-[#193f36] hover:bg-[#eaf1eb]" href="/account/notifications"><Bell aria-hidden="true" size={19} />{unread > 0 && <span className="absolute -right-1 -top-1 grid min-w-5 place-items-center rounded-full bg-rose-600 px-1 text-[10px] font-semibold text-white">{unread > 99 ? '99+' : unread}</span>}</Link>}
       <button aria-controls="shop-search-panel" aria-expanded={searchVisible} aria-label={searchVisible ? "Đóng tìm kiếm" : "Mở tìm kiếm sản phẩm"} className="grid size-10 shrink-0 place-items-center rounded-full text-[#193f36] transition hover:bg-[#eaf1eb] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#37665b] md:ml-1" onPointerDown={(event) => event.stopPropagation()} onClick={() => { setMenuOpen(false); setPanelPath(pathname); setSearchOpen(!searchVisible); }} type="button">
         {searchVisible ? <X aria-hidden="true" size={19} /> : <Search aria-hidden="true" size={19} />}
       </button>
@@ -65,7 +80,7 @@ function ShopHeaderContent() {
             <Link className="flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-medium text-[#29483f] hover:bg-[#eaf1eb]" href="/account" onClick={closePanels}><CustomerAvatar size="size-7" user={user} />Tài khoản của {user.name.split(" ")[0]}</Link>
             <Link className="flex min-h-11 items-center rounded-xl px-3 text-sm font-medium text-[#29483f] hover:bg-[#eaf1eb]" href="/account/addresses" onClick={closePanels}>Địa chỉ</Link><Link className="flex min-h-11 items-center rounded-xl px-3 text-sm font-medium text-[#29483f] hover:bg-[#eaf1eb]" href="/account/security" onClick={closePanels}>Bảo mật</Link>
             <button className="flex min-h-11 w-full items-center gap-2 rounded-xl px-3 text-left text-sm font-medium text-[#29483f] hover:bg-[#eaf1eb]" onClick={signOut} type="button"><LogOut aria-hidden="true" className="size-4" />Đăng xuất</button>
-          </> : <div className="flex flex-col gap-1"><Link className="flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-medium text-[#29483f] hover:bg-[#eaf1eb]" href="/login" onClick={closePanels}><LogIn aria-hidden="true" className="size-4" />Đăng nhập</Link><Link className="flex min-h-11 items-center rounded-xl px-3 text-sm font-medium text-[#37665b] hover:bg-[#eaf1eb]" href="/register" onClick={closePanels}>Tạo tài khoản</Link></div>}
+          </> : <div className="flex flex-col gap-1"><Link className="flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-medium text-[#29483f] hover:bg-[#eaf1eb]" href={loginHref} onClick={closePanels}><LogIn aria-hidden="true" className="size-4" />Đăng nhập</Link><Link className="flex min-h-11 items-center rounded-xl px-3 text-sm font-medium text-[#37665b] hover:bg-[#eaf1eb]" href="/register" onClick={closePanels}>Tạo tài khoản</Link></div>}
           {logoutError && <p className="mt-2 text-xs text-rose-700" role="alert">{logoutError}</p>}
         </div>
       </SheetContent>

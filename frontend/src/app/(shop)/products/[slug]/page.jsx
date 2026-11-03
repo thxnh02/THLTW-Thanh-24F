@@ -1,18 +1,23 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ArrowLeft, ArrowUpRight, ChevronRight } from "lucide-react";
 import ProductCard, { formatPrice } from "@/components/shop/ProductCard";
 import { catalogImageUrl } from "@/lib/catalogImage";
 import productServices from "@/services/productServices";
+import { useCart } from "@/contexts/CartContext";
 
 function isOnSale(product) {
   return product?.sale_price != null && Number(product.sale_price) >= 0 && Number(product.sale_price) < Number(product.price);
 }
 
 export default function ProductDetailPage() {
+  const router = useRouter();
+  const { add, guest, server } = useCart();
+  const [adding, setAdding] = useState(false);
+  const [cartNotice, setCartNotice] = useState('');
   const params = useParams();
   const slug = Array.isArray(params?.slug) ? params.slug[0] : params?.slug;
   const [result, setResult] = useState(null);
@@ -56,6 +61,16 @@ export default function ProductDetailPage() {
   const imageUrl = catalogImageUrl(product.image);
   const categoryHref = product.category?.id ? `/products?category_id=${product.category.id}` : "/products";
   const brandHref = product.brand?.id ? `/products?brand_id=${product.brand.id}` : "/products";
+  const addItem = async (buyNow) => {
+    setAdding(true); setCartNotice('');
+    try {
+      const alreadyInCart = (server?.items ?? guest ?? []).some((row) => row.product_id === product.id);
+      if (!buyNow || !alreadyInCart) await add(product.id, 1);
+      if (buyNow) router.push(`/checkout?buy=${product.id}`); else setCartNotice('Đã thêm sản phẩm vào giỏ.');
+    }
+    catch (requestError) { setCartNotice(requestError.response?.data?.message ?? 'Không thể thêm sản phẩm vào giỏ.'); }
+    finally { setAdding(false); }
+  };
 
   return <div className="space-y-8 pb-10">
     <nav aria-label="Đường dẫn" className="flex flex-wrap items-center gap-2 text-sm text-slate-500">
@@ -82,6 +97,7 @@ export default function ProductDetailPage() {
           <p className={`text-2xl font-bold ${onSale ? "text-rose-700" : "text-[#37665b]"}`}>{formatPrice(onSale ? product.sale_price : product.price)}</p>
           {onSale && <p className="mt-1 text-sm text-slate-500">Giá gốc <span className="ml-1 line-through">{formatPrice(product.price)}</span></p>}
         </div>
+        <div className="flex flex-wrap gap-2 border-b border-[#edf1ed] py-4"><button className="min-h-11 rounded-full border border-[#b7d0bd] px-5 text-sm font-semibold text-[#28584a] disabled:opacity-50" disabled={adding || product.stock_quantity === 0} onClick={() => addItem(false)} type="button">{product.stock_quantity === 0 ? 'Hết hàng' : 'Thêm vào giỏ'}</button><button className="min-h-11 rounded-full bg-[#193f36] px-5 text-sm font-semibold text-white disabled:opacity-50" disabled={adding || product.stock_quantity === 0} onClick={() => addItem(true)} type="button">Mua ngay</button>{cartNotice && <p aria-live="polite" className="w-full text-sm text-[#37665b]">{cartNotice}</p>}</div>
         <div className="py-4">
           <h2 className="text-base font-semibold text-[#19352f]">Mô tả</h2>
           <p className="mt-3 whitespace-pre-line text-sm leading-7 text-slate-600">{product.description?.trim() || "Chưa có mô tả cho sản phẩm này."}</p>

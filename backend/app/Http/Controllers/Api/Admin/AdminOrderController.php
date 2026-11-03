@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\UpdateOrderStatusRequest;
 use App\Http\Resources\OrderResource;
 use App\Models\Order;
+use App\Support\CommerceNotification;
 use App\Support\OrderStatus;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\DB;
@@ -16,7 +17,7 @@ class AdminOrderController extends Controller
     /** Danh sách đơn hàng có phân trang; status chỉ nhận ba giá trị đã định nghĩa. */
     public function index(): AnonymousResourceCollection
     {
-        $query = Order::with('user')->orderByDesc('id');
+        $query = Order::with(['user', 'items'])->orderByDesc('id');
         $status = request()->query('status');
         if (in_array($status, OrderStatus::values(), true)) {
             $query->where('status', $status);
@@ -27,7 +28,7 @@ class AdminOrderController extends Controller
 
     public function show(Order $order): OrderResource
     {
-        return new OrderResource($order->load('user'));
+        return new OrderResource($order->load(['user', 'items', 'paymentAttempts']));
     }
 
     public function updateStatus(UpdateOrderStatusRequest $request, Order $order): OrderResource
@@ -38,7 +39,14 @@ class AdminOrderController extends Controller
             if (! in_array($nextStatus, $locked->allowedNextStatuses(), true)) {
                 throw ValidationException::withMessages(['status' => 'Không thể chuyển đơn hàng sang trạng thái này.']);
             }
+            if ($locked->payment_method === 'vnpay' && $locked->payment_status !== 'paid') {
+                throw ValidationException::withMessages(['status' => 'Đơn VNPay chưa được xác nhận thanh toán.']);
+            }
             $locked->update(['status' => $nextStatus]);
+            if ($locked->payment_method !== null) {
+                CommerceNotification::order($locked, 'status:'.$nextStatus,
+                    'Đơn hàng đã cập nhật', $nextStatus === 'delivered' ? 'Đơn hàng đã giao.' : 'Đơn hàng đang được xử lý.');
+            }
 
             return $locked->load('user');
         });

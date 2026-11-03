@@ -39,6 +39,7 @@ class UpdateProductRequest extends FormRequest
             'image_file' => ['nullable', 'file', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:2048'],
             'price' => ['required', 'numeric', 'decimal:0,2', 'min:0', 'max:9999999999.99'],
             'sale_price' => ['nullable', 'numeric', 'decimal:0,2', 'min:0', 'max:9999999999.99', 'lt:price'],
+            'stock_quantity' => ['nullable', 'integer', 'min:0', 'max:4294967295'],
             'status' => ['required', 'boolean'],
             'is_featured' => ['sometimes', 'required', 'boolean'],
         ];

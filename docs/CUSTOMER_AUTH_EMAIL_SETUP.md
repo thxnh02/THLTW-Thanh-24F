@@ -13,7 +13,7 @@ Tài liệu này hướng dẫn chạy đăng ký, xác minh email, đăng nhậ
 | Quên mật khẩu | `/forgot-password` | `POST /api/auth/forgot-password` |
 | Đặt lại mật khẩu | `/reset-password` | `POST /api/auth/forgot-password/reset` |
 
-Đăng nhập dùng session cookie HttpOnly của Laravel Sanctum. Mã OTP có 6 chữ số, hết hạn sau 5 phút, chỉ dùng một lần và bị khóa sau 5 lần nhập sai. Gửi lại mã có thời gian chờ 60 giây. Mã chỉ được lưu dạng hash trong bảng `customer_email_otps`; frontend chỉ giữ mã trong trạng thái form, không đưa vào URL hay bộ nhớ trình duyệt lâu dài.
+Đăng ký tạo phiên đăng nhập ngay; khách có thể xem hồ sơ, dùng giỏ hàng và đặt hàng khi email chưa xác minh. Xác minh email là tùy chọn tại `/account/security` hoặc `/verify-email`; đăng ký không tự gửi OTP. Khi khách yêu cầu xác minh hoặc đặt lại mật khẩu, mã OTP có 6 chữ số, hết hạn sau 5 phút, chỉ dùng một lần và bị khóa sau 5 lần nhập sai. Gửi lại mã có thời gian chờ 60 giây. Mã chỉ được lưu dạng hash trong bảng `customer_email_otps`; frontend không đưa mã vào URL hay bộ nhớ trình duyệt lâu dài. **Đặt lại mật khẩu luôn cần OTP nhận qua email**, kể cả khi tài khoản chưa xác minh.
 
 ## Chạy migration an toàn
 
@@ -23,7 +23,7 @@ Trong `backend`, kiểm tra trạng thái trước:
 php artisan migrate:status
 ```
 
-Hai migration mới chỉ thêm `email_verified_at` và `customer_auth_version` vào `users`, rồi tạo bảng `customer_email_otps`. Chúng không xóa hay thay thế dữ liệu hiện có. Khi các migration hiện có đều đã chạy và chỉ các migration mới đang chờ, áp dụng bằng:
+Hai migration xác thực trước đây đã thêm `email_verified_at`, `customer_auth_version` và bảng `customer_email_otps`. Hiện còn migration mua hàng bổ sung; xem [CART_CHECKOUT_PAYMENTS.md](CART_CHECKOUT_PAYMENTS.md). Chúng không xóa hay thay thế dữ liệu hiện có. Sau khi sao lưu và xem `php artisan migrate --pretend`, tự áp dụng bằng:
 
 ```powershell
 php artisan migrate
@@ -82,8 +82,8 @@ Không đặt `MAIL_MAILER=log` hoặc `array` nếu muốn nhận email thật:
 
 1. Điền SMTP riêng trong `backend/.env`, bật Laragon/MySQL và chạy migration an toàn ở trên.
 2. Chạy API tại `127.0.0.1:8000` và frontend tại `127.0.0.1:3000`.
-3. Đăng ký bằng địa chỉ email bạn kiểm soát. Kiểm tra hộp thư đến và thư rác; thư có mã xác minh và thông báo thời hạn 5 phút.
-4. Xác minh, đăng nhập, tải lại trang `/account`, rồi đăng xuất.
+3. Đăng ký bằng địa chỉ email bạn kiểm soát; truy cập ngay `/account` dù chưa xác minh.
+4. Tại `/account/security`, tự chọn xác minh email, yêu cầu gửi mã và kiểm tra hộp thư đến/thư rác. Nhập mã, tải lại trang `/account`, rồi đăng xuất.
 5. Dùng “Quên mật khẩu”, nhận mã đặt lại, đổi mật khẩu và đăng nhập bằng mật khẩu mới.
 6. Thử nhập sai mã, dùng mã hết hạn hoặc dùng lại mã đã xác nhận; các trường hợp này phải bị từ chối.
 
@@ -91,6 +91,6 @@ Kiểm tra với `Mail::fake()` trong test chỉ xác nhận ứng dụng tạo 
 
 ## Tài khoản cũ và quyền truy cập
 
-Các tài khoản cũ được giữ nguyên. Chúng không được tự động đánh dấu đã xác minh. Tài khoản có mật khẩu rỗng/null không thể đăng nhập bằng mật khẩu cho đến khi chủ email dùng quy trình quên mật khẩu để đặt mật khẩu mới; sau đó vẫn phải xác minh email trước khi đăng nhập. Tài khoản bị chặn vẫn bị từ chối khi đăng nhập, xác minh và đặt lại mật khẩu.
+Các tài khoản cũ được giữ nguyên. Chúng không được tự động đánh dấu đã xác minh. Tài khoản có mật khẩu rỗng/null không thể đăng nhập bằng mật khẩu cho đến khi chủ email dùng quy trình quên mật khẩu để đặt mật khẩu mới. Tài khoản bị chặn vẫn bị từ chối khi đăng nhập, xác minh và đặt lại mật khẩu. Admin có quy định xác minh riêng.
 
 Đăng nhập khách hàng không cấp quyền quản trị. Các API `/api/admin/*` hiện đã yêu cầu tài khoản có quyền admin; xem [ADMIN_AUTH.md](ADMIN_AUTH.md).

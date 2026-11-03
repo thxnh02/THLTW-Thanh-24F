@@ -15,8 +15,8 @@ class AdminExampleSeeder extends Seeder
             throw new \RuntimeException('Example admin accounts may only be created in local or testing environments.');
         }
 
-        $email = trim((string) env('ADMIN_EXAMPLE_EMAIL', 'admin@example.test'));
-        $password = (string) env('ADMIN_EXAMPLE_PASSWORD', '');
+        $email = trim((string) config('admin_example.email'));
+        $password = (string) config('admin_example.password');
         if (! filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($password) < 12) {
             throw new \RuntimeException('Set ADMIN_EXAMPLE_EMAIL and a 12+ character ADMIN_EXAMPLE_PASSWORD in the local backend/.env file.');
         }

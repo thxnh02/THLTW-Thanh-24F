@@ -15,7 +15,7 @@
 4. Đổi ảnh đại diện, thử ảnh quá lớn, xóa ảnh; kiểm tra tên/số điện thoại chưa lưu vẫn còn sau khi ảnh làm mới header.
 5. Đổi mật khẩu; kiểm tra thông báo đăng nhập lại trước chuyển trang. Với phiên hết hạn, kiểm tra thông báo và chuyển tới đăng nhập. Mở menu tài khoản trên desktop, thử click ngoài và Escape.
 
-Không có migration mới. Test tự động dùng SQLite riêng và không gửi email. Chưa kiểm tra trực tiếp MySQL, SMTP thật, thiết bị di động thật, ảnh EXIF hoặc tốc độ đường truyền chậm. Ảnh đại diện hiện lưu nguyên tệp JPEG/PNG/WebP sau khi kiểm tra MIME, dung lượng và số pixel; máy PHP chưa có thư viện giải mã/ghi lại ảnh nên metadata chưa được loại bỏ.
+Các kiểm tra trong tài liệu này áp dụng cho lần cập nhật hồ sơ/địa chỉ trước đây. Tính năng mua hàng hiện có migration bổ sung; xem [CART_CHECKOUT_PAYMENTS.md](CART_CHECKOUT_PAYMENTS.md). Test tự động dùng SQLite riêng và không gửi email. Chưa kiểm tra trực tiếp MySQL, SMTP thật, thiết bị di động thật, ảnh EXIF hoặc tốc độ đường truyền chậm. Ảnh đại diện hiện lưu nguyên tệp JPEG/PNG/WebP sau khi kiểm tra MIME, dung lượng và số pixel; máy PHP chưa có thư viện giải mã/ghi lại ảnh nên metadata chưa được loại bỏ.
 
 ## Cập nhật bảo vệ quản trị
 

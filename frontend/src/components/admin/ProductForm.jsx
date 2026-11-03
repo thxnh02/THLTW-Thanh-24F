@@ -6,7 +6,7 @@ import AdminImageField from "@/components/admin/AdminImageField";
 import AdminSlugField from "@/components/admin/AdminSlugField";
 import { slugify } from "@/lib/slugify.mjs";
 
-const blank = { name: "", slug: "", category_id: "", brand_id: "", price: "", sale_price: "", image: "", image_file: null, description: "", status: true, is_featured: false };
+const blank = { name: "", slug: "", category_id: "", brand_id: "", price: "", sale_price: "", stock_quantity: "", image: "", image_file: null, description: "", status: true, is_featured: false };
 
 function categoryDepth(category, categories) {
   const byId = new Map(categories.map((item) => [Number(item.id), item]));
@@ -25,7 +25,7 @@ function categoryDepth(category, categories) {
 
 // Form nhập liệu dùng chung cho trang thêm và sửa; trang cha quyết định gọi API nào qua onSubmit.
 export default function ProductForm({ initialData = blank, categories = [], brands = [], errors = {}, onSubmit, onError, submitting = false, cancelHref = "/admin/product" }) {
-  const [form, setForm] = useState(() => ({ ...blank, ...initialData, category_id: initialData.category_id ?? "", brand_id: initialData.brand_id ?? "", price: initialData.price ?? "", sale_price: initialData.sale_price ?? "", is_featured: Boolean(initialData.is_featured) }));
+  const [form, setForm] = useState(() => ({ ...blank, ...initialData, category_id: initialData.category_id ?? "", brand_id: initialData.brand_id ?? "", price: initialData.price ?? "", sale_price: initialData.sale_price ?? "", stock_quantity: initialData.stock_quantity ?? "", is_featured: Boolean(initialData.is_featured) }));
   const [slugManual, setSlugManual] = useState(false);
 
   const message = (name) => errors[name]?.[0];
@@ -41,7 +41,7 @@ export default function ProductForm({ initialData = blank, categories = [], bran
   // Khi bấm Lưu: đổi giá/ID về kiểu số rồi chuyển dữ liệu cho save() ở trang thêm hoặc trang sửa.
   const submit = (event) => {
     event.preventDefault();
-    onSubmit({ ...form, category_id: Number(form.category_id), brand_id: form.brand_id ? Number(form.brand_id) : null, price: Number(form.price), sale_price: form.sale_price === "" ? null : Number(form.sale_price), status: Boolean(form.status), is_featured: Boolean(form.is_featured) });
+    onSubmit({ ...form, category_id: Number(form.category_id), brand_id: form.brand_id ? Number(form.brand_id) : null, price: Number(form.price), sale_price: form.sale_price === "" ? null : Number(form.sale_price), stock_quantity: form.stock_quantity === "" ? null : Number(form.stock_quantity), status: Boolean(form.status), is_featured: Boolean(form.is_featured) });
   };
   const fieldProps = (name) => ({ "aria-describedby": message(name) ? `${name}-error` : undefined, "aria-invalid": Boolean(message(name)) });
   const fieldError = (name) => message(name) && <small className="mt-1 block text-rose-700" id={`${name}-error`} role="alert">{message(name)}</small>;
@@ -74,6 +74,7 @@ export default function ProductForm({ initialData = blank, categories = [], bran
           <label className="admin-label">Giá khuyến mãi <span className="font-normal text-slate-500">(không bắt buộc)</span><input {...fieldProps("sale_price")} className="admin-input" inputMode="decimal" min="0" name="sale_price" step="0.01" type="number" value={form.sale_price} onChange={change} />{fieldError("sale_price")}</label>
         </div>
         <p className="text-xs text-slate-500">Để trống nếu không giảm giá. Giá khuyến mãi phải thấp hơn giá gốc.</p>
+        <label className="admin-label">Tồn kho theo dõi <span className="font-normal text-slate-500">(để trống nếu chưa theo dõi)</span><input {...fieldProps('stock_quantity')} className="admin-input" min="0" name="stock_quantity" step="1" type="number" value={form.stock_quantity} onChange={change} />{fieldError('stock_quantity')}</label>
         <AdminImageField errors={errors} file={form.image_file} fileName="image_file" label="Ảnh sản phẩm" name="image" value={form.image} onError={onError} onFileChange={(file) => setForm((current) => ({ ...current, image_file: file }))} onUrlChange={(image) => setForm((current) => ({ ...current, image }))} />
       </section>
 

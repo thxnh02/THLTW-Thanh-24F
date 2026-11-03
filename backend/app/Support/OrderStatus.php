@@ -4,11 +4,12 @@ namespace App\Support;
 
 class OrderStatus
 {
-    // Chưa có luồng thanh toán/vận chuyển; chỉ dùng ba trạng thái tối thiểu cho bài quản trị.
+    // Fulfillment status is independent from payment_status; a customer may cancel a pending demo COD order.
     private const NEXT = [
         'pending' => ['processing'],
         'processing' => ['delivered'],
         'delivered' => [],
+        'cancelled' => [],
     ];
 
     public static function values(): array

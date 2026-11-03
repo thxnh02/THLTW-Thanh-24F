@@ -1,4 +1,4 @@
-export function safeCustomerReturnTo(value, fallback = "/account") {
+export function safeCustomerReturnTo(value, fallback = "/") {
   const target = String(value ?? "");
   if (!target.startsWith("/") || target.startsWith("//") || target.startsWith("/\\")) return fallback;
 

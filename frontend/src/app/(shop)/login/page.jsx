@@ -6,7 +6,7 @@ import { useState } from "react";
 import { AuthField, AuthFormShell, AuthNotice, authButtonClass, authErrorMessage, authFieldErrors, authInputClass, PasswordInput } from "@/components/shop/AuthFormShell";
 import { useCustomerAuth } from "@/contexts/CustomerAuthContext";
 import { safeCustomerReturnTo } from "@/lib/customerAuth";
-import { clearPendingVerificationEmail, setPendingVerificationEmail, usePendingAuthEmail, useVerificationMailState } from "@/lib/pendingAuthEmail";
+import { clearPendingVerificationEmail, usePendingAuthEmail, useVerificationMailState } from "@/lib/pendingAuthEmail";
 import customerAuthServices from "@/services/customerAuthServices";
 
 export default function LoginPage() {
@@ -32,15 +32,8 @@ export default function LoginPage() {
       const returnTo = new URLSearchParams(window.location.search).get("returnTo");
       router.replace(safeCustomerReturnTo(returnTo));
     } catch (error) {
-      if (error.response?.data?.code === "EMAIL_NOT_VERIFIED") {
-        const targetEmail = error.response.data?.data?.email ?? email;
-        setPendingVerificationEmail(targetEmail);
-        setNotice("Email chưa được xác minh. Nhập mã xác minh hoặc yêu cầu gửi lại.");
-        router.push("/verify-email");
-      } else {
-        setErrors(authFieldErrors(error));
-        setNotice(authErrorMessage(error, "Không thể đăng nhập. Vui lòng thử lại."));
-      }
+      setErrors(authFieldErrors(error));
+      setNotice(authErrorMessage(error, "Không thể đăng nhập. Vui lòng thử lại."));
     } finally {
       setLoading(false);
     }

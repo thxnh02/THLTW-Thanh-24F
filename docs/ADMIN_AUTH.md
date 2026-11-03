@@ -11,3 +11,5 @@ Trang đăng nhập: `http://127.0.0.1:3000/admin/login`. Tài khoản mẫu tr�
 Seeder chỉ hoạt động khi `APP_ENV=local` hoặc `testing`. Nếu email đã thuộc tài khoản khách, seeder dừng mà không tự cấp quyền. Chạy lại seeder không đặt lại mật khẩu của tài khoản admin đã tồn tại.
 
 API admin yêu cầu cookie session Sanctum, CSRF và cờ `is_admin`. Người chưa đăng nhập nhận `401`, tài khoản khách nhận `403`; tài khoản bị khóa, chưa xác minh hoặc phiên bị vô hiệu không được truy cập. Các thao tác danh sách người dùng không hiển thị hoặc khóa tài khoản admin. Đăng xuất admin làm mất hiệu lực phiên hiện tại.
+
+Trang `/admin/recover` giải thích cách khôi phục. Admin kiểm soát hộp thư thật có thể dùng OTP của `/forgot-password` và `/reset-password`; việc đặt lại mật khẩu không tự cấp quyền admin. Với email mẫu `.test` không nhận được thư, người có quyền quản lý hệ thống cần cấp lại mật khẩu qua quy trình nội bộ trên máy local. Không có mật khẩu admin cố định trong frontend và không có đường tắt bỏ qua xác thực.

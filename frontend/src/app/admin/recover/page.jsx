@@ -1,0 +1,5 @@
+import Link from 'next/link';
+
+export default function AdminRecoverPage() {
+  return <main className="grid min-h-dvh place-items-center bg-slate-50 px-4 py-10"><section className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-7 shadow-sm"><h1 className="text-2xl font-semibold text-slate-950">Khôi phục tài khoản quản trị</h1><p className="mt-3 text-sm leading-6 text-slate-600">Nếu bạn kiểm soát hộp thư của tài khoản, hãy dùng mã xác nhận gửi qua email để đặt lại mật khẩu. Quy trình này không thay đổi quyền quản trị.</p><Link className="mt-5 inline-flex min-h-11 items-center rounded-xl bg-indigo-700 px-4 text-sm font-semibold text-white" href="/forgot-password">Khôi phục bằng email</Link><p className="mt-5 text-sm leading-6 text-slate-600">Với tài khoản mẫu dùng email không nhận thư, hãy nhờ người có quyền quản lý hệ thống cấp lại thông tin đăng nhập qua quy trình nội bộ. Không có mật khẩu mặc định trên trang web.</p><Link className="mt-5 inline-block text-sm font-medium text-indigo-700 underline" href="/admin/login">Về đăng nhập quản trị</Link></section></main>;
+}

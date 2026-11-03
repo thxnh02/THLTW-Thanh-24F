@@ -14,7 +14,6 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 
@@ -24,7 +23,7 @@ class CustomerAuthController extends Controller
 
     private const GENERIC_OTP_MESSAGE = 'Nếu email thuộc tài khoản phù hợp, hướng dẫn sẽ được gửi khi dịch vụ email sẵn sàng.';
 
-    public function register(Request $request, CustomerAuthOtpService $otpService): JsonResponse
+    public function register(Request $request): JsonResponse
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:150'],
@@ -34,7 +33,7 @@ class CustomerAuthController extends Controller
 
         $email = $this->normalizeEmail($validated['email']);
         if ($this->findUser($email) !== null) {
-            return response()->json(['message' => 'Email này đã được đăng ký. Hãy đăng nhập hoặc gửi lại mã xác minh.'], 409);
+            return response()->json(['message' => 'Email này đã được đăng ký. Hãy đăng nhập hoặc đặt lại mật khẩu.'], 409);
         }
 
         try {
@@ -45,22 +44,23 @@ class CustomerAuthController extends Controller
             ]);
         } catch (QueryException) {
             if ($this->findUser($email) !== null) {
-                return response()->json(['message' => 'Email này đã được đăng ký. Hãy đăng nhập hoặc gửi lại mã xác minh.'], 409);
+                return response()->json(['message' => 'Email này đã được đăng ký. Hãy đăng nhập hoặc đặt lại mật khẩu.'], 409);
             }
 
             throw new \RuntimeException('Customer account creation failed.');
         }
 
-        $delivery = $otpService->issue($user, CustomerEmailOtp::VERIFY_EMAIL);
-        $message = $delivery === 'sent'
-            ? 'Tạo tài khoản thành công. Hãy nhập mã đã gửi để xác minh email.'
-            : 'Tài khoản đã được tạo nhưng chưa gửi được mã. Hãy thử gửi lại mã xác minh.';
+        $user->refresh(); // Load DB defaults such as customer_auth_version before storing session state.
+        Auth::guard('web')->login($user);
+        $request->session()->regenerate();
+        $request->session()->put('customer_auth_version', (int) $user->customer_auth_version);
 
         return response()->json([
-            'message' => $message,
+            'message' => 'Tạo tài khoản thành công. Bạn có thể xác minh email sau.',
             'data' => [
                 'email' => $user->email,
-                'verification_email_sent' => $delivery === 'sent',
+                'user' => CustomerAccountResource::make($user),
+                'verification_email_sent' => false,
             ],
         ], 201);
     }
@@ -133,14 +133,6 @@ class CustomerAuthController extends Controller
         if ($user->blocked_at !== null) {
             return response()->json(['message' => 'Tài khoản hiện không thể đăng nhập.'], 403);
         }
-        if ($user->email_verified_at === null) {
-            return response()->json([
-                'message' => 'Email chưa được xác minh. Hãy nhập mã hoặc yêu cầu gửi lại mã.',
-                'code' => 'EMAIL_NOT_VERIFIED',
-                'data' => ['email' => $user->email],
-            ], 403);
-        }
-
         Auth::guard('web')->login($user);
         $request->session()->regenerate();
         $request->session()->put('customer_auth_version', (int) $user->customer_auth_version);

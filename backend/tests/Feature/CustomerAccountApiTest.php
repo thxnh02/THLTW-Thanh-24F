@@ -31,7 +31,7 @@ class CustomerAccountApiTest extends TestCase
 
         $unverified = $this->customer('unverified@example.com', false);
         $this->signIn($unverified);
-        $this->patchJson('/api/account/profile', ['name' => 'New'])->assertUnauthorized();
+        $this->patchJson('/api/account/profile', ['name' => 'New'])->assertOk();
 
         $blocked = $this->customer('blocked@example.com');
         $blocked->forceFill(['blocked_at' => now()])->save();

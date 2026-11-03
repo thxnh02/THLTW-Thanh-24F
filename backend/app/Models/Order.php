@@ -5,10 +5,26 @@ namespace App\Models;
 use App\Support\OrderStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Order extends Model
 {
     protected $fillable = ['user_id', 'status'];
+
+    protected function casts(): array
+    {
+        return ['shipping_snapshot' => 'array', 'paid_at' => 'datetime', 'stock_restored_at' => 'datetime'];
+    }
+
+    public function items(): HasMany
+    {
+        return $this->hasMany(OrderItem::class);
+    }
+
+    public function paymentAttempts(): HasMany
+    {
+        return $this->hasMany(PaymentAttempt::class);
+    }
 
     public function user(): BelongsTo
     {
