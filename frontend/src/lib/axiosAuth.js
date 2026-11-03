@@ -1,7 +1,9 @@
 import axios from "axios";
 import API_CONFIG from "@/config/api";
 
-const apiOrigin = new URL(API_CONFIG.BASE_URL).origin;
+const apiOrigin = () => API_CONFIG.BASE_URL.startsWith('/')
+  ? (typeof window === 'undefined' ? 'http://127.0.0.1:3000' : window.location.origin)
+  : new URL(API_CONFIG.BASE_URL).origin;
 
 const authClient = axios.create({
   baseURL: API_CONFIG.BASE_URL,
@@ -15,7 +17,10 @@ let csrfRequest = null;
 
 export function ensureAuthCsrfCookie() {
   if (!csrfRequest) {
-    csrfRequest = axios.get(`${apiOrigin}/sanctum/csrf-cookie`, {
+    const csrfUrl = API_CONFIG.BASE_URL.startsWith('/')
+      ? '/sanctum/csrf-cookie'
+      : `${apiOrigin()}/sanctum/csrf-cookie`;
+    csrfRequest = axios.get(csrfUrl, {
       headers: API_CONFIG.HEADERS,
       timeout: API_CONFIG.TIMEOUT,
       withCredentials: true,

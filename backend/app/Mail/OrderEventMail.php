@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Models\Order;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
@@ -12,7 +13,7 @@ class OrderEventMail extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public function __construct(public readonly int $orderId, public readonly string $title, public readonly string $message) {}
+    public function __construct(public readonly Order $order, public readonly string $title, public readonly string $message) {}
 
     public function envelope(): Envelope
     {
@@ -21,6 +22,6 @@ class OrderEventMail extends Mailable
 
     public function content(): Content
     {
-        return new Content(view: 'emails.order-event');
+        return new Content(view: 'emails.order-event', with: ['order' => $this->order]);
     }
 }

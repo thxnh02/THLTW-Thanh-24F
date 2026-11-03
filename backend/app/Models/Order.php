@@ -31,6 +31,11 @@ class Order extends Model
         return $this->hasMany(PaymentReconciliationEvent::class);
     }
 
+    public function notifications(): HasMany
+    {
+        return $this->hasMany(CustomerNotification::class);
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

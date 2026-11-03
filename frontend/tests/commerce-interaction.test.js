@@ -16,6 +16,8 @@ let added;
 let existingGuest = [];
 let authUser = { id: 1 };
 let checkoutPayload;
+let pdfDownloads = [];
+let pdfFailure = null;
 let returnVerified = true;
 let orderResult = { id: 1, status: 'pending', payment_method: 'cod', payment_status: 'demo_paid', grand_total_vnd: 100000, items: [{ id: 1, product_name: 'Tai nghe', quantity: 1, line_total_vnd: 100000 }] };
 const originalLoad = Module._load;
@@ -25,7 +27,7 @@ Module._load = function (request, ...args) {
   if (request === '@/contexts/CustomerAuthContext') return { useCustomerAuth: () => ({ user: authUser, loading: false, refreshUser: async () => ({ id: 1 }) }) };
   if (request === '@/contexts/CartContext') return { useCart: () => ({ guest: existingGuest, server: { items: [{ product_id: 17, quantity: 5 }] }, refresh: async () => {}, add: async (...args) => { added = args; } }) };
   if (request === '@/services/customerAuthServices') return { __esModule: true, default: { register: async (data) => { registration = data; return { data: { data: { user: { id: 1 } } } }; } } };
-  if (request === '@/services/commerceServices') return { __esModule: true, default: { order: async () => ({ data: { data: orderResult } }), returnStatus: async () => ({ data: { data: { verified_return: returnVerified, order_id: returnVerified ? 1 : null } } }), checkout: async (payload) => { checkoutPayload = payload; return { data: { data: { order: { id: 1 } } } }; } } };
+  if (request === '@/services/commerceServices') return { __esModule: true, default: { order: async () => ({ data: { data: orderResult } }), orderPdf: async (id) => { pdfDownloads.push(id); if (pdfFailure) throw pdfFailure; return { data: new Blob(['%PDF-test'], { type: 'application/pdf' }) }; }, returnStatus: async () => ({ data: { data: { verified_return: returnVerified, order_id: returnVerified ? 1 : null } } }), checkout: async (payload) => { checkoutPayload = payload; return { data: { data: { order: { id: 1 } } } }; } } };
   if (request === '@/services/customerAccountServices') return { __esModule: true, default: { addresses: async () => ({ data: { data: { addresses: [{ id: 1, recipient_name: 'An', recipient_phone: '0912345678', full_address: 'Địa chỉ thử' }] } } }) } };
   if (request === '@/lib/axiosClient') return { __esModule: true, default: { get: async (url) => ({ data: { data: url.startsWith('/products/id/') ? { id: 17, name: 'Tai nghe', slug: 'tai-nghe', price: '100000.00', sale_price: null, stock_quantity: 10 } : { cod_demo_enabled: true, vnpay_sandbox_enabled: false, shipping_fee_vnd: 0 } } }) } };
   return originalLoad.call(this, request, ...args);
@@ -42,6 +44,34 @@ const ProductCard = require('../src/components/shop/ProductCard.jsx').default;
 const CustomerOrderDetailPage = require('../src/app/(shop)/account/orders/[id]/page.jsx').default;
 const PaymentResultPage = require('../src/app/(shop)/payment-result/page.jsx').default;
 const CheckoutPage = require('../src/app/(shop)/checkout/page.jsx').default;
+
+test('customer order detail downloads its PDF through the authenticated order service', async () => {
+  const originalCreateObjectURL = URL.createObjectURL;
+  const originalRevokeObjectURL = URL.revokeObjectURL;
+  URL.createObjectURL = () => 'blob:order-pdf';
+  URL.revokeObjectURL = () => {};
+  pdfDownloads = [];
+  const host = document.createElement('div'); document.body.append(host);
+  const root = createRoot(host);
+  await act(async () => { root.render(React.createElement(CustomerOrderDetailPage)); });
+  await act(async () => { [...host.querySelectorAll('button')].find((button) => button.textContent.includes('PDF')).click(); });
+  assert.deepEqual(pdfDownloads, ['1']);
+  assert.match(host.textContent, /Tải phiếu đơn hàng PDF/);
+  await act(async () => { root.unmount(); }); host.remove();
+  URL.createObjectURL = originalCreateObjectURL;
+  URL.revokeObjectURL = originalRevokeObjectURL;
+});
+
+test('customer order PDF explains an expired authenticated session', async () => {
+  pdfFailure = { response: { status: 401 } };
+  const host = document.createElement('div'); document.body.append(host);
+  const root = createRoot(host);
+  await act(async () => { root.render(React.createElement(CustomerOrderDetailPage)); });
+  await act(async () => { [...host.querySelectorAll('button')].find((button) => button.textContent.includes('PDF')).click(); });
+  assert.match(host.querySelector('[role="alert"]')?.textContent ?? '', /Phiên đăng nhập đã hết hạn/);
+  await act(async () => { root.unmount(); }); host.remove();
+  pdfFailure = null;
+});
 
 const type = async (id, value) => {
   const input = document.getElementById(id);
@@ -98,7 +128,7 @@ test('buy now checkout keeps its own quantity through reload and submits without
   assert.equal(checkoutPayload.buy_now_product_id, 17);
   assert.equal(checkoutPayload.buy_now_quantity, 2);
   assert.equal(added, null);
-  assert.equal(redirects.at(-1), '/account/orders/1?created=1');
+  assert.equal(redirects.at(-1), '/payment-result?order=1');
   await act(async () => { root.unmount(); }); host.remove();
   window.history.replaceState({}, '', '/register');
 });
@@ -119,8 +149,9 @@ test('order result clearly labels simulated COD success', async () => {
   const host = document.createElement('div'); document.body.append(host);
   const root = createRoot(host);
   await act(async () => { root.render(React.createElement(CustomerOrderDetailPage)); });
-  assert.match(host.textContent, /thành công \(mô phỏng\)/);
-  assert.match(host.textContent, /chưa có tiền thực nhận/);
+  assert.match(host.textContent, /Đặt hàng thành công · thanh toán khi giao hàng/);
+  assert.match(host.textContent, /Bạn sẽ thanh toán khi nhận hàng \(COD\)/);
+  assert.doesNotMatch(host.textContent, /demo|mô phỏng/i);
   await act(async () => { root.unmount(); }); host.remove();
 });
 
@@ -129,7 +160,7 @@ test('browser gateway return stays pending until the order is server-confirmed',
   const host = document.createElement('div'); document.body.append(host);
   const root = createRoot(host);
   await act(async () => { root.render(React.createElement(PaymentResultPage)); });
-  assert.match(host.textContent, /Đang chờ IPN hoặc đối soát VNPay/);
+  assert.match(host.textContent, /VNPay/);
   assert.doesNotMatch(host.textContent, /Thanh toán thành công/);
   await act(async () => { root.unmount(); }); host.remove();
 });

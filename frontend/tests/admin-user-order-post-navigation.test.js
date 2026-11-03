@@ -35,6 +35,20 @@ test("changing order status and deleting a post require explicit confirmation", 
   assert.match(trash, /runBulkTrashAction/);
 });
 
+test("admin order list exports the active filters and detail exposes secure PDF and email delivery state", () => {
+  const list = read("../src/app/admin/orders/page.jsx");
+  const detail = read("../src/app/admin/orders/[id]/page.jsx");
+  const service = read("../src/services/orderServices.js");
+  assert.match(list, /created_from/);
+  assert.match(list, /created_to/);
+  assert.match(list, /payment_status/);
+  assert.match(list, /Xuất danh sách đơn hàng \(CSV \/ Excel\)/);
+  assert.match(list, /orderServices\.exportCsv/);
+  assert.match(detail, /Tải phiếu đơn hàng PDF/);
+  assert.match(detail, /notification_delivery/);
+  assert.match(service, /responseType: 'blob'/);
+});
+
 test("all new pages call service wrappers rather than raw Axios", () => {
   for (const section of ["users", "orders", "posts"]) {
     const page = read(`../src/app/admin/${section}/page.jsx`);

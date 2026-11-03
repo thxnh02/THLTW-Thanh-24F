@@ -4,7 +4,7 @@
 
 Trong `backend`, migration `2026_11_03_000001_add_payment_reconciliation_metadata` thêm bốn cột nullable vào `payment_attempts`, cờ `orders.payment_review_required` mặc định false và bảng nhật ký `payment_reconciliation_events`; dữ liệu cũ được giữ nguyên. Migration đã chạy trên MySQL Laragon của máy phát triển ngày 03/11/2026 và `migrate:status` báo `Ran`. Khi cài trên máy khác, sao lưu database, xem `php artisan migrate:status` và `php artisan migrate --pretend` trước khi chạy `php artisan migrate`. Không dùng `migrate:fresh`, `migrate:refresh` hoặc seed hàng loạt với dữ liệu đang dùng.
 
-`COD_DEMO_ENABLED=true` chỉ dùng khi `APP_ENV=local` hoặc `testing`. COD mô phỏng tạo `payment_status=demo_paid` ngay, nhưng **không có tiền thực nhận** và xử lý giao hàng vẫn là `pending`. `ORDER_EMAIL_ENABLED` mặc định tắt; khi bật và SMTP hợp lệ, chỉ email đã xác minh nhận thông báo, lỗi gửi thư không làm mất đơn.
+`COD_DEMO_ENABLED=true` chỉ dùng khi `APP_ENV=local` hoặc `testing`. COD mô phỏng tạo `payment_status=demo_paid` ngay, nhưng **không có tiền thực nhận** và xử lý giao hàng vẫn là `pending`. `ORDER_EMAIL_ENABLED` mặc định tắt; khi bật và SMTP hợp lệ, tài khoản đã xác minh nhận chi tiết đơn, email chưa xác minh chỉ nhận thư chung khi có đơn mới. Email admin mới là tùy chọn qua `ORDER_ADMIN_EMAIL`. Lỗi SMTP không làm mất đơn; trạng thái gửi và lệnh thử lại được mô tả trong [hướng dẫn VNPay/SMTP/xuất đơn](REAL_VNPAY_SMTP_ORDER_EXPORT_SETUP.md).
 
 Giỏ khách chỉ lưu ID và số lượng trong localStorage, khi đăng nhập sẽ gộp vào giỏ máy chủ. **Mua ngay** dùng `buy_now_product_id` và `buy_now_quantity` (1–20) riêng, không thêm hay xóa sản phẩm trong giỏ. Tải lại trang hoặc đăng nhập vẫn giữ ID/số lượng trong URL checkout; backend luôn kiểm tra lại sản phẩm, kho và giá. Đặt hàng từ giỏ chỉ xóa các dòng đã mua sau khi tạo đơn thành công. `idempotency_key` UUID giữ một yêu cầu lặp lại không tạo thêm đơn.
 
@@ -58,6 +58,8 @@ Tài liệu gốc: [VNPay QueryDr](https://sandbox.vnpayment.vn/apis/docs/truy-v
 API chính: `GET /api/payments/vnpay/ipn` nhận callback có chữ ký; `GET /api/payments/vnpay/return` yêu cầu đăng nhập và chỉ xác thực Return cho chủ đơn; `POST /api/admin/orders/{id}/reconcile-payment` và `POST /api/admin/orders/{id}/close-unpaid` yêu cầu quyền admin. Không có endpoint công khai ép thanh toán thành công.
 
 ## Kiểm tra an toàn
+
+Trang quản trị có thể tải CSV theo bộ lọc ngày, trạng thái đơn và trạng thái thanh toán; CSV không chứa thông tin giao hàng và bảo vệ chuỗi có thể bị Excel hiểu là công thức. Khách tải PDF từ chi tiết đơn của mình, Admin có thể tải PDF từ trang quản trị. Hướng dẫn URL HTTPS qua tunnel, cấu hình IPN/SMTP và migration theo dõi email chờ phê duyệt nằm trong [REAL_VNPAY_SMTP_ORDER_EXPORT_SETUP.md](REAL_VNPAY_SMTP_ORDER_EXPORT_SETUP.md).
 
 Các bài test PHP dùng SQLite `:memory:`, `Http::fake` cho QueryDr và dữ liệu tổng hợp. Không có lời gọi sandbox, ngân hàng, SMTP hoặc MySQL Laragon trong test. Sau migration được duyệt, thử trên dữ liệu test riêng: giỏ khách → đăng nhập/gộp giỏ; COD mô phỏng → đơn và thông báo; Mua ngay khi giỏ đã có 5 sản phẩm → đặt 1, giỏ còn 5; VNPay dưới 5.000 đồng bị từ chối; URL hết hạn → QueryDr/đối soát; trả về chỉ hiển thị kết quả đã xác nhận. Kiểm tra ở 390, 768, 1024 và 1440 px, bàn phím và hộp thoại địa chỉ. Không dùng thẻ hoặc tiền thật.
 

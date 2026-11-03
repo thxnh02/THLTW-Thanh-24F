@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import commerceServices from '@/services/commerceServices';
 import { formatPrice } from '@/components/shop/ProductCard';
 
-const paymentLabel = (order) => order.status === 'cancelled' && order.payment_method === 'cod' ? 'Đơn COD mô phỏng đã hủy' : order.payment_status === 'demo_paid' ? 'Đã thanh toán (mô phỏng)' : order.payment_status === 'paid' ? 'Đã thanh toán qua VNPay' : order.payment_status === 'failed' ? 'Thanh toán không thành công' : order.payment_status === 'pending' ? 'Đang chờ xác nhận thanh toán' : 'Đơn cũ chưa có dữ liệu thanh toán';
+const paymentLabel = (order) => order.status === 'cancelled' && order.payment_method === 'cod' ? 'Đơn COD đã hủy' : order.payment_status === 'demo_paid' ? 'COD · chờ thu khi giao hàng' : order.payment_status === 'paid' ? 'Đã thanh toán qua VNPay' : order.payment_status === 'failed' ? 'Thanh toán không thành công' : order.payment_status === 'pending' ? 'Đang chờ xác nhận thanh toán' : 'Đơn cũ chưa có dữ liệu thanh toán';
 const statusLabel = { pending: 'Chờ xử lý', processing: 'Đang xử lý', delivered: 'Đã giao', cancelled: 'Đã hủy' };
 
 export default function CustomerOrdersPage() {

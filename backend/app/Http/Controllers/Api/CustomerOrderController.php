@@ -44,10 +44,10 @@ class CustomerOrderController extends Controller
             'buy_now_quantity' => ['required_with:buy_now_product_id', 'integer', 'min:1', 'max:20'],
         ]);
         if ($data['payment_method'] === 'cod' && ! config('commerce.cod_demo_enabled')) {
-            throw ValidationException::withMessages(['payment_method' => 'COD mô phỏng chưa được bật trên máy chủ.']);
+            throw ValidationException::withMessages(['payment_method' => 'COD chưa được bật trên máy chủ.']);
         }
         if ($data['payment_method'] === 'vnpay' && ! $gateway->configured()) {
-            throw ValidationException::withMessages(['payment_method' => 'VNPay sandbox chưa được cấu hình.']);
+            throw ValidationException::withMessages(['payment_method' => 'VNPay hiện chưa khả dụng.']);
         }
 
         $order = DB::transaction(function () use ($request, $data, $gateway): Order {
@@ -109,7 +109,7 @@ class CustomerOrderController extends Controller
                     'pay_created_at' => $created, 'pay_expires_at' => $created->copy()->addMinutes(15)]);
                 CommerceNotification::order($order, 'pending', 'Đơn hàng đang chờ thanh toán', 'Đang chờ xác nhận thanh toán VNPay.');
             } else {
-                CommerceNotification::order($order, 'demo_paid', 'Đặt hàng thành công', 'Đặt hàng và thanh toán thành công (mô phỏng).');
+                CommerceNotification::order($order, 'demo_paid', 'Đặt hàng thành công', 'Đơn hàng đã được tạo. Bạn thanh toán khi nhận hàng.');
             }
             if (! $buyNow) {
                 CartItem::query()->where('user_id', $request->user()->id)->whereIn('product_id', $cart->pluck('product_id'))->delete();
@@ -128,7 +128,7 @@ class CustomerOrderController extends Controller
     public function retry(Request $request, int $order, VnPayGateway $gateway, VnPayReconciler $reconciler): JsonResponse
     {
         if (! $gateway->configured()) {
-            throw ValidationException::withMessages(['payment' => 'VNPay sandbox chưa được cấu hình.']);
+            throw ValidationException::withMessages(['payment' => 'VNPay hiện chưa khả dụng.']);
         }
         $current = $this->owned($request, $order);
         $last = $current->paymentAttempts()->latest('id')->first();
@@ -178,7 +178,7 @@ class CustomerOrderController extends Controller
                     Product::withTrashed()->whereKey($item->product_id)->whereNotNull('stock_quantity')->increment('stock_quantity', $item->quantity);
                 }
             }
-            CommerceNotification::order($owned, 'cancelled', 'Đơn hàng đã hủy', 'Đơn hàng COD mô phỏng đã được hủy.');
+            CommerceNotification::order($owned, 'cancelled', 'Đơn hàng đã hủy', 'Đơn COD đã được hủy.');
 
             return $owned;
         });

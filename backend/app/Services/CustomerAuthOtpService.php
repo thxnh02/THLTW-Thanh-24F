@@ -25,7 +25,6 @@ class CustomerAuthOtpService
             $latest = CustomerEmailOtp::query()
                 ->where('email', $lockedUser->email)
                 ->where('purpose', $purpose)
-                ->whereNull('consumed_at')
                 ->orderByDesc('id')
                 ->lockForUpdate()
                 ->first();

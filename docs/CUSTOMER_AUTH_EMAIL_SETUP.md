@@ -94,3 +94,9 @@ Kiểm tra với `Mail::fake()` trong test chỉ xác nhận ứng dụng tạo 
 Các tài khoản cũ được giữ nguyên. Chúng không được tự động đánh dấu đã xác minh. Tài khoản có mật khẩu rỗng/null không thể đăng nhập bằng mật khẩu cho đến khi chủ email dùng quy trình quên mật khẩu để đặt mật khẩu mới. Tài khoản bị chặn vẫn bị từ chối khi đăng nhập, xác minh và đặt lại mật khẩu. Admin có quy định xác minh riêng.
 
 Đăng nhập khách hàng không cấp quyền quản trị. Các API `/api/admin/*` hiện đã yêu cầu tài khoản có quyền admin; xem [ADMIN_AUTH.md](ADMIN_AUTH.md).
+
+## Kiểm tra SMTP và email sau đặt hàng
+
+Sau khi điền SMTP trong `backend/.env`, chạy `php artisan config:clear`. Lệnh `php artisan commerce:mail-test <email-bạn-sở-hữu>` gửi đúng một thư kiểm tra và chỉ hoạt động trong `local` hoặc `testing`; phản hồi SMTP nhận thư không đảm bảo thư đã vào Inbox. Chi tiết cấu hình Gmail App Password và kiểm tra VNPay/IPN xem tại [REAL_VNPAY_SMTP_ORDER_EXPORT_SETUP.md](REAL_VNPAY_SMTP_ORDER_EXPORT_SETUP.md).
+
+Đặt `ORDER_EMAIL_ENABLED=true` để bật email đơn hàng. Email xác minh rồi nhận nội dung đơn; email chưa xác minh chỉ nhận thông báo chung cho đơn mới, không kèm mã đơn, mặt hàng hoặc thông tin liên hệ. Email khách và admin được gửi sau khi đơn đã commit, lỗi gửi không hủy đơn. Admin có thể rà soát bằng `php artisan commerce:retry-order-emails --limit=20`; lệnh chỉ gửi khi thêm `--execute`. Trạng thái gửi được lưu trong `customer_notifications`; migration `2026_11_03_000002_add_order_email_delivery_tracking` chưa được chạy trên MySQL và cần được chủ dự án cho phép riêng.

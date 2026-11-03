@@ -36,6 +36,8 @@ const API_CONFIG = {
       ADMIN_STATUS: (id) => `/admin/orders/${id}/status`,
       ADMIN_RECONCILE: (id) => `/admin/orders/${id}/reconcile-payment`,
       ADMIN_CLOSE_UNPAID: (id) => `/admin/orders/${id}/close-unpaid`,
+      ADMIN_EXPORT_CSV: "/admin/orders/export/csv",
+      ADMIN_EXPORT_PDF: (id) => `/admin/orders/${id}/export/pdf`,
     },
     POSTS: {
       INDEX: "/posts", SHOW_BY_SLUG: (slug) => `/posts/${encodeURIComponent(slug)}`,

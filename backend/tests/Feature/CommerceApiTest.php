@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Mail\GenericAccountNoticeMail;
 use App\Mail\OrderEventMail;
 use App\Models\Category;
 use App\Models\CustomerNotification;
@@ -414,14 +415,16 @@ class CommerceApiTest extends TestCase
         $this->assertDatabaseCount('customer_notifications', 2);
     }
 
-    public function test_order_email_is_optional_and_unverified_customer_receives_only_in_app_notice(): void
+    public function test_order_email_is_optional_and_unverified_customer_receives_only_a_generic_notice(): void
     {
         Mail::fake();
         config()->set('commerce.order_email_enabled', true);
         $user = $this->customer('mail@example.test');
         $order = Order::query()->create(['user_id' => $user->id, 'status' => 'pending']);
         CommerceNotification::order($order, 'demo_paid', 'Đặt hàng thành công', 'Đặt hàng và thanh toán thành công (mô phỏng).');
-        Mail::assertNothingSent();
+        Mail::assertSent(GenericAccountNoticeMail::class, fn (GenericAccountNoticeMail $mail): bool => $mail->hasTo($user->email));
+        $generic = Mail::sent(GenericAccountNoticeMail::class)->firstOrFail()->render();
+        $this->assertStringNotContainsString('Địa chỉ', $generic);
         $this->assertDatabaseHas('customer_notifications', ['order_id' => $order->id]);
         $user->forceFill(['email_verified_at' => now()])->save();
         CommerceNotification::order($order, 'processing', 'Đơn đang xử lý', 'Đơn hàng đang được xử lý.');

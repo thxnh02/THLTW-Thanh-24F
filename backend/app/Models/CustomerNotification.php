@@ -11,7 +11,8 @@ class CustomerNotification extends Model
 
     protected function casts(): array
     {
-        return ['read_at' => 'datetime'];
+        return ['read_at' => 'datetime', 'email_attempted_at' => 'datetime', 'email_sent_at' => 'datetime',
+            'admin_email_attempted_at' => 'datetime'];
     }
 
     public function order(): BelongsTo

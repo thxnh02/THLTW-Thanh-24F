@@ -6,7 +6,7 @@ Phiên bản hiện tại có đăng nhập khách/admin, hồ sơ và sổ đ�
 
 Trang `/admin` và các API `/api/admin/*` yêu cầu phiên đăng nhập có quyền quản trị. Tài khoản mẫu local được hướng dẫn trong [docs/ADMIN_AUTH.md](docs/ADMIN_AUTH.md).
 
-Migration đối soát mới bổ sung mốc tạo URL và nhật ký thanh toán. Migration này đã được áp dụng trên MySQL Laragon của máy phát triển ngày 03/11/2026; khi cài trên máy khác, hãy sao lưu và xem trước `php artisan migrate:status`, `php artisan migrate --pretend` trước khi chạy. VNPay yêu cầu tối thiểu 5.000 đồng; QueryDr mặc định tắt và cần merchant Sandbox cùng IPN HTTPS đến được. Xem [hướng dẫn giỏ hàng, đối soát và thanh toán](docs/CART_CHECKOUT_PAYMENTS.md).
+Migration đối soát thanh toán đã áp dụng trên Laragon. Migration theo dõi email đơn hàng mới chỉ được tạo, chưa chạy trên database. VNPay yêu cầu tối thiểu 5.000 đồng; QueryDr mặc định tắt và cần merchant Sandbox cùng IPN HTTPS đến được. Xem [giỏ hàng và thanh toán](docs/CART_CHECKOUT_PAYMENTS.md), [thiết lập SMTP/email](docs/CUSTOMER_AUTH_EMAIL_SETUP.md) và [VNPay Sandbox, SMTP, PDF/CSV](docs/REAL_VNPAY_SMTP_ORDER_EXPORT_SETUP.md).
 
 ## Cài lần đầu với Laragon
 
@@ -57,6 +57,8 @@ npm run dev
 - Đặt hàng: `POST /api/account/orders`; lịch sử: `GET /api/account/orders`
 - Thông báo: `GET /api/account/notifications`
 - VNPay Sandbox: `GET /api/payments/vnpay/ipn` và `GET /api/payments/vnpay/return`
+- Tải phiếu PDF: `GET /api/account/orders/{id}/export/pdf` (chủ đơn) và `GET /api/admin/orders/{id}/export/pdf` (admin)
+- Xuất CSV đơn hàng admin theo bộ lọc: `GET /api/admin/orders/export/csv`
 - Admin CRUD có phân trang: `/api/admin/categories`, `/api/admin/brands`, `/api/admin/products`
 - Thùng rác: `/api/admin/{categories|brands|products}/trash`
 - Khôi phục: `POST /api/admin/{categories|brands|products}/{id}/restore`

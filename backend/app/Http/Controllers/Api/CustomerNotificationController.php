@@ -11,7 +11,9 @@ class CustomerNotificationController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $query = CustomerNotification::query()->where('user_id', $request->user()->id);
+        $query = CustomerNotification::query()->select([
+            'id', 'user_id', 'order_id', 'event_key', 'title', 'message', 'link', 'read_at', 'email_status', 'email_sent_at', 'created_at', 'updated_at',
+        ])->where('user_id', $request->user()->id);
 
         return response()->json(['data' => [
             'unread_count' => (clone $query)->whereNull('read_at')->count(),
@@ -21,7 +23,9 @@ class CustomerNotificationController extends Controller
 
     public function read(Request $request, int $notification): JsonResponse
     {
-        $item = CustomerNotification::query()->where('user_id', $request->user()->id)->whereKey($notification)->firstOrFail();
+        $item = CustomerNotification::query()->select([
+            'id', 'user_id', 'order_id', 'event_key', 'title', 'message', 'link', 'read_at', 'email_status', 'email_sent_at', 'created_at', 'updated_at',
+        ])->where('user_id', $request->user()->id)->whereKey($notification)->firstOrFail();
         if ($item->read_at === null) {
             $item->read_at = now();
             $item->save();

@@ -5,6 +5,8 @@ return [
     'cod_demo_enabled' => in_array(env('APP_ENV'), ['local', 'testing'], true) && (bool) env('COD_DEMO_ENABLED', false),
     'shipping_fee_vnd' => 0, // Fixed local demo fee; no carrier quote is represented.
     'order_email_enabled' => (bool) env('ORDER_EMAIL_ENABLED', false),
+    'order_admin_email' => env('ORDER_ADMIN_EMAIL'),
+    'frontend_url' => rtrim((string) env('FRONTEND_URL', 'http://127.0.0.1:3000'), '/'),
     'vnpay' => [
         'enabled' => (bool) env('VNPAY_ENABLED', false) && env('VNPAY_ENV', 'sandbox') === 'sandbox',
         'query_enabled' => (bool) env('VNPAY_QUERY_ENABLED', false) && env('VNPAY_ENV', 'sandbox') === 'sandbox',

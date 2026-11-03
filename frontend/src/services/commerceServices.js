@@ -15,6 +15,7 @@ const commerceServices = {
   checkout: (data) => change('post', '/account/orders', data),
   orders: (page = 1) => authClient.get('/account/orders', { params: { page } }),
   order: (id) => authClient.get(`/account/orders/${id}`),
+  orderPdf: (id) => authClient.get(`/account/orders/${id}/export/pdf`, { responseType: 'blob' }),
   retry: (id) => change('post', `/account/orders/${id}/retry-payment`),
   returnStatus: (search) => authClient.get(`/payments/vnpay/return${search}`),
   cancel: (id) => change('post', `/account/orders/${id}/cancel`),

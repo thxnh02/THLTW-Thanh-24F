@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\CustomerAuthController;
 use App\Http\Controllers\Api\CustomerNotificationController;
 use App\Http\Controllers\Api\CustomerOrderController;
 use App\Http\Controllers\Api\CustomerProfileController;
+use App\Http\Controllers\Api\OrderExportController;
 use App\Http\Controllers\Api\PostController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\VnPayCallbackController;
@@ -61,6 +62,7 @@ Route::prefix('account')->middleware(['auth:sanctum', EnsureCustomerAccountActiv
     Route::get('/orders', [CustomerOrderController::class, 'index']);
     Route::post('/orders', [CustomerOrderController::class, 'checkout'])->middleware('throttle:10,1');
     Route::get('/orders/{order}', [CustomerOrderController::class, 'show'])->whereNumber('order');
+    Route::get('/orders/{order}/export/pdf', [OrderExportController::class, 'customerPdf'])->whereNumber('order')->middleware('throttle:10,1');
     Route::post('/orders/{order}/retry-payment', [CustomerOrderController::class, 'retry'])->whereNumber('order');
     Route::post('/orders/{order}/cancel', [CustomerOrderController::class, 'cancel'])->whereNumber('order');
     Route::get('/cart', [CartController::class, 'index']);
@@ -95,7 +97,9 @@ Route::prefix('admin')->group(function (): void {
         Route::patch('users/{user}/block', [AdminUserController::class, 'block'])->whereNumber('user');
         Route::patch('users/{user}/unblock', [AdminUserController::class, 'unblock'])->whereNumber('user');
         Route::get('orders', [AdminOrderController::class, 'index']);
+        Route::get('orders/export/csv', [AdminOrderController::class, 'exportCsv'])->middleware('throttle:10,1');
         Route::get('orders/{order}', [AdminOrderController::class, 'show'])->whereNumber('order');
+        Route::get('orders/{order}/export/pdf', [OrderExportController::class, 'adminPdf'])->whereNumber('order')->middleware('throttle:10,1');
         Route::patch('orders/{order}/status', [AdminOrderController::class, 'updateStatus'])->whereNumber('order');
         Route::post('orders/{order}/reconcile-payment', [AdminPaymentController::class, 'reconcile'])->whereNumber('order')->middleware('throttle:5,1');
         Route::post('orders/{order}/close-unpaid', [AdminPaymentController::class, 'closeUnpaid'])->whereNumber('order')->middleware('throttle:5,1');

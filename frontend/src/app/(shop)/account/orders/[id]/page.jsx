@@ -5,13 +5,14 @@ import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import commerceServices from '@/services/commerceServices';
 import { formatPrice } from '@/components/shop/ProductCard';
+import { downloadErrorMessage, saveBlobDownload } from '@/lib/downloadFile';
 
 const paymentLabels = {
   pending: 'Đang chờ xác nhận thanh toán',
   needs_review: 'Giao dịch cần quản trị viên đối soát; chưa xác nhận đã thanh toán',
   failed: 'Thanh toán không thành công',
   paid: 'Thanh toán VNPay thành công',
-  demo_paid: 'Đặt hàng và thanh toán thành công (mô phỏng)',
+  demo_paid: 'Đặt hàng thành công · thanh toán khi giao hàng',
 };
 const attemptLabels = { pending: 'Đang chờ', needs_review: 'Cần đối soát', failed: 'Không thành công', succeeded: 'Đã xác nhận' };
 
@@ -20,6 +21,7 @@ export default function CustomerOrderDetailPage() {
   const [order, setOrder] = useState(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [downloading, setDownloading] = useState(false);
   const reload = () => commerceServices.order(id).then(({ data }) => { setOrder(data.data); setError(''); }).catch(() => setError('Không thể tải đơn hàng.'));
   useEffect(() => { reload(); }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
   const retry = async () => {
@@ -34,6 +36,17 @@ export default function CustomerOrderDetailPage() {
     catch (requestError) { setError(requestError.response?.data?.message ?? 'Không thể hủy đơn.'); }
     finally { setBusy(false); }
   };
+  const downloadPdf = async () => {
+    setDownloading(true);
+    try {
+      const response = await commerceServices.orderPdf(id);
+      saveBlobDownload(response.data, `phieu-don-hang-${order.order_code ?? order.id}.pdf`);
+    } catch (requestError) {
+      setError(await downloadErrorMessage(requestError, 'Không thể tải phiếu đơn hàng.'));
+    } finally {
+      setDownloading(false);
+    }
+  };
   if (error && !order) return <p className="rounded-xl border border-rose-200 p-4 text-rose-700" role="alert">{error}</p>;
   if (!order) return <p role="status">Đang tải đơn hàng…</p>;
   const address = order.shipping_snapshot;
@@ -42,8 +55,8 @@ export default function CustomerOrderDetailPage() {
       <Link className="text-sm text-[#37665b] underline" href="/account/orders">← Đơn hàng</Link>
       <h2 className="mt-3 text-xl font-semibold text-[#19352f]">Đơn #{order.id}</h2>
       <p className="mt-2 text-sm text-slate-600">Trạng thái xử lý: {{ pending: 'Chờ xử lý', processing: 'Đang xử lý', delivered: 'Đã giao', cancelled: 'Đã hủy' }[order.status] ?? order.status}</p>
-      <p aria-live="polite" className="mt-2 text-sm font-semibold text-[#37665b]">{order.status === 'cancelled' && order.payment_method === 'cod' ? 'Đơn COD mô phỏng đã hủy' : paymentLabels[order.payment_status] ?? 'Đơn cũ chưa có dữ liệu thanh toán'}</p>
-      {order.payment_status === 'demo_paid' && <p className="mt-2 text-xs text-slate-500">Đây là kết quả demo; chưa có tiền thực nhận.</p>}
+      <p aria-live="polite" className="mt-2 text-sm font-semibold text-[#37665b]">{order.status === 'cancelled' && order.payment_method === 'cod' ? 'Đơn COD đã hủy' : paymentLabels[order.payment_status] ?? 'Đơn cũ chưa có dữ liệu thanh toán'}</p>
+      {order.payment_status === 'demo_paid' && <p className="mt-2 text-xs text-slate-500">Bạn sẽ thanh toán khi nhận hàng (COD).</p>}
       {order.payment_status === 'needs_review' && <p className="mt-2 text-sm text-amber-800">Không thử thanh toán lại khi kết quả còn mơ hồ. Quản trị viên cần kiểm tra giao dịch.</p>}
       {order.payment_review_required && order.payment_status === 'paid' && <p className="mt-2 text-sm text-amber-800">Có giao dịch bổ sung đang được quản trị viên kiểm tra. Vui lòng không thanh toán thêm.</p>}
       {error && <p className="mt-3 text-sm text-rose-700" role="alert">{error}</p>}
@@ -51,6 +64,7 @@ export default function CustomerOrderDetailPage() {
         {order.payment_method === 'vnpay' && ['pending', 'needs_review'].includes(order.payment_status) && <button className="min-h-11 rounded-full border border-[#b7d0bd] px-5 text-sm font-semibold text-[#28584a]" disabled={busy} onClick={reload} type="button">Kiểm tra lại trạng thái</button>}
         {order.payment_method === 'vnpay' && ['pending', 'failed'].includes(order.payment_status) && order.status === 'pending' && <button className="min-h-11 rounded-full bg-[#193f36] px-5 text-sm font-semibold text-white disabled:opacity-50" disabled={busy} onClick={retry} type="button">Thử thanh toán VNPay</button>}
         {order.payment_method === 'cod' && order.status === 'pending' && <button className="min-h-11 px-3 text-sm text-rose-700 underline" disabled={busy} onClick={cancel} type="button">Hủy đơn</button>}
+        <button className="min-h-11 rounded-full border border-[#b7d0bd] px-5 text-sm font-semibold text-[#28584a] disabled:opacity-50" disabled={downloading} onClick={downloadPdf} type="button">{downloading ? 'Đang tạo phiếu…' : 'Tải phiếu đơn hàng PDF'}</button>
       </div>
     </section>
     {order.payment_method === 'vnpay' && <section className="rounded-2xl border border-[#e3ebe5] bg-white p-5"><h3 className="font-semibold">Lịch sử giao dịch VNPay</h3><div className="mt-3 space-y-3">{order.payment_attempts?.length ? order.payment_attempts.map((attempt) => <div className="rounded-xl bg-[#f4f7f4] p-3 text-sm" key={attempt.id}><p>Giao dịch #{attempt.id}: <strong>{attemptLabels[attempt.state] ?? 'Chưa rõ'}</strong></p><p className="mt-1 text-xs text-slate-600">Tạo: {attempt.created_at ? new Date(attempt.created_at).toLocaleString('vi-VN') : 'Chưa rõ'} · Kiểm tra gần nhất: {attempt.last_checked_at ? new Date(attempt.last_checked_at).toLocaleString('vi-VN') : 'Chưa kiểm tra'}</p></div>) : <p className="text-sm text-slate-500">Chưa có giao dịch.</p>}</div></section>}
