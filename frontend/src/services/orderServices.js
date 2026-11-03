@@ -7,6 +7,8 @@ const orderServices = {
   getOrders: (params) => axiosAdmin.get(endpoints.ADMIN_INDEX, { params }),
   getOrder: (id) => axiosAdmin.get(endpoints.ADMIN_SHOW(id)),
   updateStatus: (id, status) => axiosAdmin.patch(endpoints.ADMIN_STATUS(id), { status }),
+  reconcile: (id, attempt_id) => axiosAdmin.post(endpoints.ADMIN_RECONCILE(id), { attempt_id }),
+  closeUnpaid: (id, reason) => axiosAdmin.post(endpoints.ADMIN_CLOSE_UNPAID(id), { reason }),
 };
 
 export default orderServices;

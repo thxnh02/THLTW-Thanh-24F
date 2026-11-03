@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\Admin\AdminAuthController;
 use App\Http\Controllers\Api\Admin\AdminBrandController;
 use App\Http\Controllers\Api\Admin\AdminCategoryController;
 use App\Http\Controllers\Api\Admin\AdminOrderController;
+use App\Http\Controllers\Api\Admin\AdminPaymentController;
 use App\Http\Controllers\Api\Admin\AdminPostController;
 use App\Http\Controllers\Api\Admin\AdminProductController;
 use App\Http\Controllers\Api\Admin\AdminUserController;
@@ -38,7 +39,7 @@ Route::get('/posts/{slug}', [PostController::class, 'show'])->name('public.posts
 Route::get('/catalog-images/{catalogImage}', [CatalogImageController::class, 'show'])->whereNumber('catalogImage');
 Route::get('/commerce/options', CommerceOptionsController::class);
 Route::get('/payments/vnpay/ipn', [VnPayCallbackController::class, 'ipn'])->middleware('throttle:120,1');
-Route::get('/payments/vnpay/return', [VnPayCallbackController::class, 'return'])->middleware('throttle:120,1');
+Route::get('/payments/vnpay/return', [VnPayCallbackController::class, 'return'])->middleware(['auth:sanctum', EnsureCustomerAccountActive::class, 'throttle:120,1']);
 
 Route::prefix('auth')->group(function (): void {
     Route::post('/register', [CustomerAuthController::class, 'register'])->middleware('throttle:5,1');
@@ -96,6 +97,8 @@ Route::prefix('admin')->group(function (): void {
         Route::get('orders', [AdminOrderController::class, 'index']);
         Route::get('orders/{order}', [AdminOrderController::class, 'show'])->whereNumber('order');
         Route::patch('orders/{order}/status', [AdminOrderController::class, 'updateStatus'])->whereNumber('order');
+        Route::post('orders/{order}/reconcile-payment', [AdminPaymentController::class, 'reconcile'])->whereNumber('order')->middleware('throttle:5,1');
+        Route::post('orders/{order}/close-unpaid', [AdminPaymentController::class, 'closeUnpaid'])->whereNumber('order')->middleware('throttle:5,1');
         Route::get('posts/trash', [AdminPostController::class, 'trash']);
         Route::post('posts/{id}/restore', [AdminPostController::class, 'restore'])->whereNumber('id');
         Route::delete('posts/{id}/force', [AdminPostController::class, 'forceDestroy'])->whereNumber('id');

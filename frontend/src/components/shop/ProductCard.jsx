@@ -12,16 +12,16 @@ export function formatPrice(value) {
 
 export default function ProductCard({ product }) {
   const router = useRouter();
-  const { add, guest, server } = useCart();
+  const { add } = useCart();
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState('');
   const soldOut = product.stock_quantity === 0;
   const addItem = async (buyNow = false) => {
+    if (buyNow) { router.push(`/checkout?buy=${product.id}&quantity=1`); return; }
     setBusy(true); setNotice('');
     try {
-      const alreadyInCart = (server?.items ?? guest ?? []).some((row) => row.product_id === product.id);
-      if (!buyNow || !alreadyInCart) await add(product.id, 1);
-      if (buyNow) router.push(`/checkout?buy=${product.id}`); else setNotice('Đã thêm vào giỏ.');
+      await add(product.id, 1);
+      setNotice('Đã thêm vào giỏ.');
     }
     catch (error) { setNotice(error.response?.data?.message ?? 'Không thể thêm sản phẩm.'); }
     finally { setBusy(false); }

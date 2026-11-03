@@ -16,6 +16,7 @@ const commerceServices = {
   orders: (page = 1) => authClient.get('/account/orders', { params: { page } }),
   order: (id) => authClient.get(`/account/orders/${id}`),
   retry: (id) => change('post', `/account/orders/${id}/retry-payment`),
+  returnStatus: (search) => authClient.get(`/payments/vnpay/return${search}`),
   cancel: (id) => change('post', `/account/orders/${id}/cancel`),
   notifications: (page = 1) => authClient.get('/account/notifications', { params: { page } }),
   readNotification: (id) => change('patch', `/account/notifications/${id}/read`),

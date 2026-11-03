@@ -2,11 +2,11 @@
 
 Dự án cửa hàng công nghệ với Laravel JSON API và giao diện Next.js. Khách truy cập có thể xem danh mục, thương hiệu và sản phẩm. Trang quản trị hỗ trợ danh sách có phân trang, thêm, sửa, chuyển vào thùng rác, khôi phục và xóa vĩnh viễn cho cả ba loại dữ liệu. Frontend gọi API qua Axios.
 
-Phiên bản hiện tại có đăng nhập khách/admin, hồ sơ và sổ địa chỉ, giỏ hàng, đặt hàng COD mô phỏng, cùng bộ tích hợp VNPay Sandbox. Xác minh email là tùy chọn cho khách; đặt lại mật khẩu vẫn cần OTP gửi qua email. VNPay chỉ được ghi đã thanh toán khi máy chủ nhận IPN có chữ ký hợp lệ.
+Phiên bản hiện tại có đăng nhập khách/admin, hồ sơ và sổ địa chỉ, giỏ hàng, Mua ngay độc lập, đặt hàng COD mô phỏng và tích hợp VNPay Sandbox. Xác minh email là tùy chọn cho khách; đặt lại mật khẩu vẫn cần OTP gửi qua email. VNPay chỉ được ghi đã thanh toán khi máy chủ nhận IPN hoặc QueryDr có chữ ký hợp lệ, đúng merchant, tham chiếu và số tiền.
 
 Trang `/admin` và các API `/api/admin/*` yêu cầu phiên đăng nhập có quyền quản trị. Tài khoản mẫu local được hướng dẫn trong [docs/ADMIN_AUTH.md](docs/ADMIN_AUTH.md).
 
-Các bảng mua hàng dùng migration bổ sung. Với database đã có dữ liệu, hãy sao lưu và xem trước `php artisan migrate:status`, `php artisan migrate --pretend` trước khi tự chạy `php artisan migrate` trong `backend`. Xem [hướng dẫn giỏ hàng và thanh toán](docs/CART_CHECKOUT_PAYMENTS.md).
+Migration đối soát mới bổ sung mốc tạo URL và nhật ký thanh toán. Migration này đã được áp dụng trên MySQL Laragon của máy phát triển ngày 03/11/2026; khi cài trên máy khác, hãy sao lưu và xem trước `php artisan migrate:status`, `php artisan migrate --pretend` trước khi chạy. VNPay yêu cầu tối thiểu 5.000 đồng; QueryDr mặc định tắt và cần merchant Sandbox cùng IPN HTTPS đến được. Xem [hướng dẫn giỏ hàng, đối soát và thanh toán](docs/CART_CHECKOUT_PAYMENTS.md).
 
 ## Cài lần đầu với Laragon
 

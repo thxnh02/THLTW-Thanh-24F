@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Support\CommerceNotification;
 use App\Support\CommercePrice;
 use App\Support\VnPayGateway;
+use App\Support\VnPayReconciler;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -40,6 +41,7 @@ class CustomerOrderController extends Controller
             'idempotency_key' => ['required', 'uuid'],
             'customer_note' => ['nullable', 'string', 'max:500'],
             'buy_now_product_id' => ['nullable', 'integer', 'min:1'],
+            'buy_now_quantity' => ['required_with:buy_now_product_id', 'integer', 'min:1', 'max:20'],
         ]);
         if ($data['payment_method'] === 'cod' && ! config('commerce.cod_demo_enabled')) {
             throw ValidationException::withMessages(['payment_method' => 'COD mô phỏng chưa được bật trên máy chủ.']);
@@ -48,17 +50,17 @@ class CustomerOrderController extends Controller
             throw ValidationException::withMessages(['payment_method' => 'VNPay sandbox chưa được cấu hình.']);
         }
 
-        $order = DB::transaction(function () use ($request, $data): Order {
+        $order = DB::transaction(function () use ($request, $data, $gateway): Order {
             User::query()->whereKey($request->user()->id)->lockForUpdate()->firstOrFail();
             $previous = Order::query()->where('user_id', $request->user()->id)->where('idempotency_key', $data['idempotency_key'])->first();
             if ($previous) {
                 return $previous;
             }
             $address = $request->user()->addresses()->whereKey($data['address_id'])->firstOrFail();
-            $cart = CartItem::query()->where('user_id', $request->user()->id)->orderBy('product_id')->get();
-            if (! empty($data['buy_now_product_id'])) {
-                $cart = $cart->where('product_id', (int) $data['buy_now_product_id']);
-            }
+            $buyNow = ! empty($data['buy_now_product_id']);
+            $cart = $buyNow
+                ? collect([(object) ['product_id' => (int) $data['buy_now_product_id'], 'quantity' => (int) $data['buy_now_quantity']]])
+                : CartItem::query()->where('user_id', $request->user()->id)->orderBy('product_id')->get();
             if ($cart->isEmpty()) {
                 throw ValidationException::withMessages(['cart' => 'Giỏ hàng đang trống.']);
             }
@@ -86,8 +88,8 @@ class CustomerOrderController extends Controller
                 }
             }
             $shipping = (int) config('commerce.shipping_fee_vnd', 0);
-            if ($data['payment_method'] === 'vnpay' && $subtotal + $shipping < 1) {
-                throw ValidationException::withMessages(['payment_method' => 'VNPay yêu cầu tổng tiền từ 1 đồng.']);
+            if ($data['payment_method'] === 'vnpay') {
+                $gateway->assertAmount($subtotal + $shipping);
             }
             $snapshot = $address->only(['recipient_name', 'recipient_phone', 'province', 'ward', 'district', 'street', 'detail', 'delivery_note']);
             $order = new Order;
@@ -101,13 +103,17 @@ class CustomerOrderController extends Controller
             ])->save();
             $order->items()->createMany($lines);
             if ($data['payment_method'] === 'vnpay') {
-                $order->paymentAttempts()->create(['provider' => 'vnpay', 'txn_ref' => (string) Str::uuid(),
-                    'amount_vnd' => $subtotal + $shipping, 'state' => 'pending']);
+                $created = now();
+                $order->paymentAttempts()->create(['provider' => 'vnpay', 'txn_ref' => (string) Str::ulid(),
+                    'amount_vnd' => $subtotal + $shipping, 'state' => 'pending',
+                    'pay_created_at' => $created, 'pay_expires_at' => $created->copy()->addMinutes(15)]);
                 CommerceNotification::order($order, 'pending', 'Đơn hàng đang chờ thanh toán', 'Đang chờ xác nhận thanh toán VNPay.');
             } else {
                 CommerceNotification::order($order, 'demo_paid', 'Đặt hàng thành công', 'Đặt hàng và thanh toán thành công (mô phỏng).');
             }
-            CartItem::query()->where('user_id', $request->user()->id)->whereIn('product_id', $cart->pluck('product_id'))->delete();
+            if (! $buyNow) {
+                CartItem::query()->where('user_id', $request->user()->id)->whereIn('product_id', $cart->pluck('product_id'))->delete();
+            }
 
             return $order;
         });
@@ -116,25 +122,38 @@ class CustomerOrderController extends Controller
         $attempt = $order->paymentAttempts->where('state', 'pending')->last();
 
         return response()->json(['data' => ['order' => new OrderResource($order),
-            'payment_url' => $attempt ? $gateway->payUrl($attempt, $request->ip()) : null]], 201);
+            'payment_url' => $attempt && $attempt->pay_expires_at?->isFuture() ? $gateway->payUrl($attempt, $request->ip()) : null]], 201);
     }
 
-    public function retry(Request $request, int $order, VnPayGateway $gateway): JsonResponse
+    public function retry(Request $request, int $order, VnPayGateway $gateway, VnPayReconciler $reconciler): JsonResponse
     {
         if (! $gateway->configured()) {
             throw ValidationException::withMessages(['payment' => 'VNPay sandbox chưa được cấu hình.']);
         }
+        $current = $this->owned($request, $order);
+        $last = $current->paymentAttempts()->latest('id')->first();
+        if ($last && in_array($last->state, ['pending', 'needs_review'], true)
+            && (! $last->pay_expires_at || $last->pay_expires_at->isPast() || $last->state === 'needs_review')) {
+            $reconciler->reconcile($last->id);
+        }
         $attempt = DB::transaction(function () use ($request, $order): PaymentAttempt {
             $owned = Order::query()->where('user_id', $request->user()->id)->whereKey($order)->lockForUpdate()->firstOrFail();
-            if ($owned->payment_method !== 'vnpay' || $owned->payment_status === 'paid' || $owned->status !== 'pending') {
+            if ($owned->payment_method !== 'vnpay' || $owned->payment_review_required
+                || in_array($owned->payment_status, ['paid', 'needs_review'], true) || $owned->status !== 'pending') {
                 throw ValidationException::withMessages(['payment' => 'Đơn hàng không thể thanh toán lại.']);
             }
-            $pending = $owned->paymentAttempts()->where('state', 'pending')->latest('id')->first();
-            if ($pending) {
-                return $pending;
+            app(VnPayGateway::class)->assertAmount((int) $owned->grand_total_vnd);
+            $latest = $owned->paymentAttempts()->latest('id')->lockForUpdate()->first();
+            if ($latest && in_array($latest->state, ['pending', 'needs_review'], true)) {
+                if ($latest->state === 'pending' && $latest->pay_expires_at?->isFuture()) {
+                    return $latest;
+                }
+                throw ValidationException::withMessages(['payment' => 'Giao dịch cũ chưa được xác nhận là thất bại. Vui lòng chờ đối soát hoặc liên hệ quản trị viên; không thể tạo liên kết mới lúc này.']);
             }
-            $attempt = $owned->paymentAttempts()->create(['provider' => 'vnpay', 'txn_ref' => (string) Str::uuid(),
-                'amount_vnd' => $owned->grand_total_vnd, 'state' => 'pending']);
+            $created = now();
+            $attempt = $owned->paymentAttempts()->create(['provider' => 'vnpay', 'txn_ref' => (string) Str::ulid(),
+                'amount_vnd' => $owned->grand_total_vnd, 'state' => 'pending',
+                'pay_created_at' => $created, 'pay_expires_at' => $created->copy()->addMinutes(15)]);
             $owned->forceFill(['payment_status' => 'pending'])->save();
             CommerceNotification::order($owned, 'retry:'.$attempt->id, 'Đang chờ thanh toán', 'Đang chờ xác nhận thanh toán VNPay.');
 

@@ -13,7 +13,7 @@ class Order extends Model
 
     protected function casts(): array
     {
-        return ['shipping_snapshot' => 'array', 'paid_at' => 'datetime', 'stock_restored_at' => 'datetime'];
+        return ['shipping_snapshot' => 'array', 'paid_at' => 'datetime', 'stock_restored_at' => 'datetime', 'payment_review_required' => 'boolean'];
     }
 
     public function items(): HasMany
@@ -24,6 +24,11 @@ class Order extends Model
     public function paymentAttempts(): HasMany
     {
         return $this->hasMany(PaymentAttempt::class);
+    }
+
+    public function paymentEvents(): HasMany
+    {
+        return $this->hasMany(PaymentReconciliationEvent::class);
     }
 
     public function user(): BelongsTo

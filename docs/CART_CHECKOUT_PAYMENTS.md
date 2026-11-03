@@ -2,51 +2,63 @@
 
 ## Chuẩn bị trên máy local
 
-1. Sao lưu MySQL trước khi thay đổi schema. Trong `backend`, chạy `php artisan migrate:status` và `php artisan migrate --pretend` để xem migration mới. Sau khi tự kiểm tra, chạy `php artisan migrate`. Không dùng `migrate:fresh` hoặc `migrate:refresh` với dữ liệu đang sử dụng.
-2. `backend/.env`: `APP_ENV=local` và `COD_DEMO_ENABLED=true` để cho phép COD mô phỏng. Cờ này luôn bị chặn trong production. Không sao chép tài khoản admin mẫu hoặc mật khẩu mẫu lên production.
-   Để gửi email thông báo đơn hàng cho hộp thư **đã xác minh**, bật `ORDER_EMAIL_ENABLED=true` sau khi cấu hình SMTP. Mặc định tắt; lỗi gửi thư được ghi trạng thái `failed` trên thông báo và không hủy đơn/thanh toán.
-3. Chạy Laravel và Next.js như README. Giỏ khách chỉ lưu `product_id` và `quantity` trong localStorage. Khi đăng nhập, client gọi API merge và chỉ xóa các dòng đã được máy chủ xác nhận.
+Trong `backend`, migration `2026_11_03_000001_add_payment_reconciliation_metadata` thêm bốn cột nullable vào `payment_attempts`, cờ `orders.payment_review_required` mặc định false và bảng nhật ký `payment_reconciliation_events`; dữ liệu cũ được giữ nguyên. Migration đã chạy trên MySQL Laragon của máy phát triển ngày 03/11/2026 và `migrate:status` báo `Ran`. Khi cài trên máy khác, sao lưu database, xem `php artisan migrate:status` và `php artisan migrate --pretend` trước khi chạy `php artisan migrate`. Không dùng `migrate:fresh`, `migrate:refresh` hoặc seed hàng loạt với dữ liệu đang dùng.
 
-## Trạng thái
+`COD_DEMO_ENABLED=true` chỉ dùng khi `APP_ENV=local` hoặc `testing`. COD mô phỏng tạo `payment_status=demo_paid` ngay, nhưng **không có tiền thực nhận** và xử lý giao hàng vẫn là `pending`. `ORDER_EMAIL_ENABLED` mặc định tắt; khi bật và SMTP hợp lệ, chỉ email đã xác minh nhận thông báo, lỗi gửi thư không làm mất đơn.
 
-`orders.status` là xử lý đơn: `pending → processing → delivered`, hoặc khách hủy COD demo còn `pending` thành `cancelled`. `payment_status` là thanh toán: COD demo tạo `demo_paid` ngay trên máy chủ; đây **không phải tiền đã thu**. VNPay bắt đầu `pending`, chỉ IPN có chữ ký hợp lệ với mã phản hồi và trạng thái giao dịch đều `00` mới chuyển thành `paid`. IPN thất bại xác thực được có thể chuyển thành `failed`; đơn có thể thử thanh toán lại với tham chiếu mới. Trang Return không ghi trạng thái thanh toán.
+Giỏ khách chỉ lưu ID và số lượng trong localStorage, khi đăng nhập sẽ gộp vào giỏ máy chủ. **Mua ngay** dùng `buy_now_product_id` và `buy_now_quantity` (1–20) riêng, không thêm hay xóa sản phẩm trong giỏ. Tải lại trang hoặc đăng nhập vẫn giữ ID/số lượng trong URL checkout; backend luôn kiểm tra lại sản phẩm, kho và giá. Đặt hàng từ giỏ chỉ xóa các dòng đã mua sau khi tạo đơn thành công. `idempotency_key` UUID giữ một yêu cầu lặp lại không tạo thêm đơn.
 
-Tồn kho `NULL` nghĩa là không theo dõi, số `0` nghĩa là hết hàng. Với hàng có theo dõi kho, số lượng bị trừ khi đặt và được hoàn đúng một lần khi khách hủy COD demo. Đơn VNPay chờ IPN giữ tồn kho; không tự giải phóng chỉ vì người dùng đóng trình duyệt. Cần đối soát thủ công nếu IPN không tới.
+## Tiền, tồn kho và trạng thái
 
-Giá được tính lại trên máy chủ từ giá khuyến mãi hợp lệ, làm tròn VND theo quy tắc phần lẻ từ 0,50 đồng được làm tròn lên. Phí giao hàng là **0 đồng cố định cho demo**, không phải báo giá vận chuyển thực. Đơn lưu ảnh, tên, giá và địa chỉ nhận tại thời điểm đặt, nên sửa địa chỉ sau đó không thay đổi đơn.
-Giỏ hàng ghi giá ở lúc thêm chỉ để báo khi giá hiện tại thay đổi; giá này không quyết định tiền phải trả. Khách xem lại tổng tiền ở trang đặt hàng trước khi xác nhận.
+Giá được tính lại trên máy chủ từ giá khuyến mãi hợp lệ, làm tròn VND với phần lẻ từ 0,50 đồng làm tròn lên. VNPay chỉ nhận tổng **5.000–9.999.999.999 VND**; `vnp_Amount` bằng tổng VND × 100 và tối đa 12 chữ số. Kho theo dõi bị trừ khi tạo đơn; `NULL` là không theo dõi. COD demo hủy khi còn chờ xử lý hoàn kho đúng một lần. Phí giao hàng demo hiện là 0 đồng, không phải báo giá vận chuyển thực.
 
-## VNPay Sandbox
+`orders.status` là tình trạng giao hàng, tách khỏi `payment_status`:
 
-Để bật trên hệ thống thử nghiệm, đặt `VNPAY_ENABLED=true`, `VNPAY_ENV=sandbox`, `VNPAY_TMN_CODE`, `VNPAY_HASH_SECRET`, `VNPAY_PAYMENT_URL=https://sandbox.vnpayment.vn/paymentv2/vpcpay.html`, `VNPAY_RETURN_URL` HTTPS dẫn đến `/payment-result` của frontend và `VNPAY_IPN_URL` HTTPS dẫn đến `GET /api/payments/vnpay/ipn` của backend. Cấu hình cùng IPN URL tại cổng merchant VNPay; endpoint phải truy cập được từ Internet. Localhost không nhận IPN trực tiếp; dùng tunnel HTTPS hoặc triển khai thử nghiệm có kiểm soát. Không đưa hash secret vào frontend hay Git. Khi thiếu cấu hình, tùy chọn VNPay bị khóa.
+| Thanh toán | Ý nghĩa |
+| --- | --- |
+| `demo_paid` | COD mô phỏng, chưa thu tiền thực |
+| `pending` | VNPay chưa được xác nhận |
+| `failed` | IPN/QueryDr xác thực cho biết giao dịch thất bại; kho vẫn được giữ để khách có thể thử lại |
+| `needs_review` | Kết quả mơ hồ, đảo giao dịch, gian lận nghi vấn, URL cũ hoặc IPN muộn; không coi là thành công/thất bại |
+| `paid` | IPN hoặc QueryDr hợp lệ đã xác nhận tiền VNPay |
 
-Ứng dụng tạo tham chiếu giao dịch duy nhất, số tiền VND nhân 100, ký HMAC-SHA512. IPN xác thực chữ ký, mã merchant, loại tiền, tham chiếu và số tiền trước khi cập nhật. Callback trùng được trả mã xác nhận trùng và không tạo thanh toán hoặc thông báo lần hai. Trang `/payment-result` chỉ đọc kết quả từ máy chủ và làm mới mỗi 10 giây khi còn chờ. Chưa có tích hợp API truy vấn/đối soát VNPay tự động; quản trị cần rà soát các đơn chờ lâu trước khi quyết định xử lý.
+Đóng trình duyệt, không có Return/IPN, hoặc URL hết hạn **không chứng minh giao dịch thất bại** và không tự hoàn kho. Khi URL hết hạn, retry truy vấn QueryDr trước. Nếu QueryDr xác nhận thất bại mới tạo tham chiếu và URL mới; nếu chưa chắc chắn, retry bị chặn và Admin thấy `needs_review`. Giao dịch cũ trước migration có `pay_created_at=NULL` không được đoán thời gian gốc; phải xem xét thủ công. Admin chỉ có thể đóng đơn chưa thanh toán và hoàn kho khi **mọi lần thanh toán đều đã xác nhận thất bại**, kèm lý do và ô xác nhận. IPN thành công đến muộn sau khi đóng/hoàn kho sẽ chuyển sang `needs_review`, không tự ghi `paid` hoặc bán vượt kho; cần kiểm tra/hoàn tiền thủ công với VNPay.
 
-Không có giao dịch VNPay thực hoặc sandbox nào được thực hiện tự động khi xây tính năng. Kiểm thử IPN dùng secret và dữ liệu tổng hợp trong SQLite.
+Nếu đơn đã được ghi `paid` nhưng có một giao dịch thành công khác hoặc mã giao dịch mâu thuẫn, hệ thống giữ `paid` cho lần đã xác nhận và bật `payment_review_required`. Bộ lọc **Cần đối soát** trên Admin vẫn hiển thị đơn này để xử lý khả năng thu hai lần; không tự hoàn tiền.
 
-## API chính
+## VNPay Sandbox và QueryDr
 
-| Phương thức | Đường dẫn | Chức năng |
-| --- | --- | --- |
-| GET | `/api/commerce/options` | Phương thức đang được bật |
-| GET, DELETE | `/api/account/cart` | Xem/xóa giỏ đăng nhập |
-| POST | `/api/account/cart/items` | Thêm sản phẩm |
-| PATCH, DELETE | `/api/account/cart/items/{product}` | Đổi số lượng/xóa |
-| POST | `/api/account/cart/merge` | Gộp giỏ khách đã kiểm tra |
-| GET, POST | `/api/account/orders` | Danh sách/tạo đơn |
-| GET | `/api/account/orders/{id}` | Đơn của chính khách |
-| POST | `/api/account/orders/{id}/retry-payment` | Thử VNPay lại |
-| POST | `/api/account/orders/{id}/cancel` | Hủy COD demo đang chờ xử lý |
-| GET, PATCH | `/api/account/notifications`, `/api/account/notifications/{id}/read` | Thông báo theo chủ sở hữu |
-| GET | `/api/payments/vnpay/ipn` | IPN ký từ cổng thanh toán |
-| GET | `/api/payments/vnpay/return` | Kiểm tra chữ ký Return để hiển thị, không cập nhật thanh toán |
+Chỉ dùng thông tin merchant **sandbox** do bạn sở hữu trong `backend/.env`:
 
-Tất cả đường dẫn `/api/account/*` yêu cầu phiên Sanctum của tài khoản còn hoạt động; email khách chưa xác minh vẫn được dùng. Đơn và thông báo lọc theo người đăng nhập. `idempotency_key` UUID của lần đặt hàng tránh tạo đơn đôi khi gửi lại yêu cầu.
+```dotenv
+VNPAY_ENABLED=false
+VNPAY_ENV=sandbox
+VNPAY_TMN_CODE=your-sandbox-code
+VNPAY_HASH_SECRET=your-sandbox-secret
+VNPAY_PAYMENT_URL=https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
+VNPAY_RETURN_URL=https://your-test-shop.example/payment-result
+VNPAY_IPN_URL=https://your-test-api.example/api/payments/vnpay/ipn
+VNPAY_QUERY_ENABLED=false
+VNPAY_QUERY_URL=https://sandbox.vnpayment.vn/merchant_webapi/api/transaction
+VNPAY_QUERY_IP=your-server-egress-ip
+```
 
-## Kiểm tra thủ công sau migration
+`VNPAY_QUERY_ENABLED=true` chỉ khi merchant được cấp QueryDr và IP máy chủ phù hợp quy định của VNPay. Mã TMN, secret, Return URL HTTPS, IPN URL HTTPS công khai phải cùng cấu hình merchant; localhost không nhận IPN trực tiếp. Có thể cần tunnel/host thử nghiệm HTTPS, whitelist merchant/IP từ nhà cung cấp. Thiếu bất kỳ điều kiện nào thì QueryDr thất bại an toàn, trạng thái cần xem xét thủ công; không có đường tắt đánh dấu đã thu tiền. Không đưa secret, mã OTP, cookie hoặc dữ liệu địa chỉ vào Git/log/frontend.
 
-1. Ở cửa sổ khách, thêm sản phẩm, tải lại trang, mở `/cart`; đăng nhập và kiểm tra giỏ được gộp một lần. Thử sản phẩm đã ẩn/xóa mềm và sản phẩm có tồn kho 0.
-2. Tạo/sửa địa chỉ ngay trong `/checkout`, chọn COD demo, xác nhận tổng tiền. Chi tiết đơn phải ghi rõ **mô phỏng**, trạng thái xử lý còn chờ và chỉ có một đơn khi gửi lại cùng khóa.
-3. Kiểm tra `/account/orders`, thông báo chưa đọc/đã đọc và trang quản trị `/admin/orders`. Sửa địa chỉ đã lưu sau khi đặt; bản chụp địa chỉ trong đơn phải giữ nguyên.
-4. Với VNPay Sandbox đã cấu hình và IPN HTTPS đến được, thử giao dịch được phép trên tài khoản thử nghiệm. Return URL chỉ hiện **đang chờ** cho đến khi IPN hợp lệ đổi trạng thái. Không dùng thẻ hoặc tài khoản thật trong quá trình kiểm tra.
-5. Ở màn hình 390 px và desktop, thử tăng/giảm, nhập số lượng, nút Mua ngay, hộp thoại địa chỉ và điều hướng bàn phím. Kiểm tra không có cuộn ngang.
+PAY URL và IPN dùng HMAC-SHA512 trên tham số URL đã sắp xếp. QueryDr là JSON POST đến endpoint sandbox cố định, chữ ký **nối các trường bằng dấu `|` theo thứ tự do VNPay quy định**; response cũng có thứ tự checksum riêng. `vnp_TransactionDate` lấy từ `pay_created_at` gốc GMT+7, không lấy giờ đối soát. Mỗi QueryDr có RequestId mới. HTTP có timeout và không theo redirect. Hệ thống kiểm tra checksum, merchant, tham chiếu, số tiền, loại giao dịch và trạng thái trước khi ghi. `vnp_ResponseCode=00` chỉ có nghĩa truy vấn API thành công; **chỉ `vnp_TransactionStatus=00` hợp lệ mới là thanh toán thành công**. Mã `91`, timeout, `01`, `04`, `07` hoặc response lỗi không giải phóng kho. Return ở trình duyệt chỉ hiển thị trạng thái của đơn thuộc người đăng nhập, không thay đổi thanh toán.
+
+Tài liệu gốc: [VNPay QueryDr](https://sandbox.vnpayment.vn/apis/docs/truy-van-hoan-tien/querydr%26refund.html), [PAY/IPN](https://sandbox.vnpayment.vn/apis/docs/thanh-toan-pay/pay.html), [FAQ về mức tiền và Return/IPN](https://sandbox.vnpayment.vn/apis/docs/faqs/).
+
+## Vận hành đối soát
+
+- Admin đã đăng nhập mở `/admin/orders`, lọc **Cần đối soát**, vào chi tiết đơn để xem các lần thanh toán, mốc hết hạn, lần kiểm tra gần nhất và nhật ký. Nút **Đối soát QueryDr** gửi yêu cầu từ backend với quyền admin và giới hạn tốc độ.
+- Trong `backend`, lệnh `php artisan commerce:reconcile-pending --limit=20` **chỉ xem trước**, không gọi mạng/ghi database. Thêm `--order-id=123` để giới hạn một đơn. Khi đã kiểm tra cấu hình, dùng `php artisan commerce:reconcile-pending --execute --limit=20` để đối soát các lần quá hạn; lệnh giãn cách các yêu cầu. Không có cron mặc định.
+- Nếu chưa có QueryDr, liên hệ nhà cung cấp/kiểm tra merchant portal và bản ghi ngân hàng theo quy trình nội bộ. Không suy đoán thanh toán từ ảnh chụp màn hình, Return URL hay mã lỗi API `91`. Khi mọi attempt đã được xác nhận thất bại, Admin có thể nhập lý do, tích xác nhận và đóng đơn; thao tác được ghi nhật ký và hoàn kho đúng một lần.
+
+API chính: `GET /api/payments/vnpay/ipn` nhận callback có chữ ký; `GET /api/payments/vnpay/return` yêu cầu đăng nhập và chỉ xác thực Return cho chủ đơn; `POST /api/admin/orders/{id}/reconcile-payment` và `POST /api/admin/orders/{id}/close-unpaid` yêu cầu quyền admin. Không có endpoint công khai ép thanh toán thành công.
+
+## Kiểm tra an toàn
+
+Các bài test PHP dùng SQLite `:memory:`, `Http::fake` cho QueryDr và dữ liệu tổng hợp. Không có lời gọi sandbox, ngân hàng, SMTP hoặc MySQL Laragon trong test. Sau migration được duyệt, thử trên dữ liệu test riêng: giỏ khách → đăng nhập/gộp giỏ; COD mô phỏng → đơn và thông báo; Mua ngay khi giỏ đã có 5 sản phẩm → đặt 1, giỏ còn 5; VNPay dưới 5.000 đồng bị từ chối; URL hết hạn → QueryDr/đối soát; trả về chỉ hiển thị kết quả đã xác nhận. Kiểm tra ở 390, 768, 1024 và 1440 px, bàn phím và hộp thoại địa chỉ. Không dùng thẻ hoặc tiền thật.
+
+Chưa chạy Playwright E2E với môi trường thử nghiệm tách biệt; quy trình trên là QA thủ công. Khóa dòng giúp ngăn thao tác trùng trên MySQL/InnoDB, nhưng các race condition giữa IPN, đối soát và Admin đóng đơn vẫn cần thử thêm trên môi trường MySQL riêng trước khi vận hành thật.

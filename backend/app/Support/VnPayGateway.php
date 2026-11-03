@@ -3,11 +3,23 @@
 namespace App\Support;
 
 use App\Models\PaymentAttempt;
-use Illuminate\Support\Carbon;
+use Illuminate\Validation\ValidationException;
 use RuntimeException;
 
 class VnPayGateway
 {
+    public const MIN_VND = 5000;
+
+    // vnp_Amount is an at-most 12-digit integer in units of 1/100 VND.
+    public const MAX_VND = 9999999999;
+
+    public function assertAmount(int $amount): void
+    {
+        if ($amount < self::MIN_VND || $amount > self::MAX_VND) {
+            throw ValidationException::withMessages(['payment_method' => 'VNPay yêu cầu tổng tiền từ 5.000 đ đến 9.999.999.999 đ. Hãy chọn sản phẩm hoặc phương thức khác.']);
+        }
+    }
+
     public function configured(): bool
     {
         $config = config('commerce.vnpay');
@@ -55,7 +67,12 @@ class VnPayGateway
         if (! $this->configured()) {
             throw new RuntimeException('VNPay sandbox chưa được cấu hình.');
         }
-        $now = Carbon::now('Asia/Ho_Chi_Minh');
+        $this->assertAmount((int) $attempt->amount_vnd);
+        if (! $attempt->pay_created_at || ! $attempt->pay_expires_at || $attempt->pay_expires_at->isPast()) {
+            throw ValidationException::withMessages(['payment' => 'Liên kết VNPay đã hết hạn hoặc thiếu thời gian gốc. Cần đối soát trước khi thử lại.']);
+        }
+        $created = $attempt->pay_created_at->copy()->setTimezone('Asia/Ho_Chi_Minh');
+        $expires = $attempt->pay_expires_at->copy()->setTimezone('Asia/Ho_Chi_Minh');
         $fields = [
             'vnp_Version' => '2.1.0', 'vnp_Command' => 'pay',
             'vnp_TmnCode' => config('commerce.vnpay.tmn_code'),
@@ -64,8 +81,8 @@ class VnPayGateway
             'vnp_OrderInfo' => 'Thanh toan don hang '.$attempt->order_id,
             'vnp_OrderType' => 'other', 'vnp_Locale' => 'vn',
             'vnp_ReturnUrl' => config('commerce.vnpay.return_url'),
-            'vnp_IpAddr' => $ip, 'vnp_CreateDate' => $now->format('YmdHis'),
-            'vnp_ExpireDate' => $now->copy()->addMinutes(15)->format('YmdHis'),
+            'vnp_IpAddr' => $ip, 'vnp_CreateDate' => $created->format('YmdHis'),
+            'vnp_ExpireDate' => $expires->format('YmdHis'),
         ];
         $fields['vnp_SecureHash'] = $this->sign($fields);
         ksort($fields, SORT_STRING);

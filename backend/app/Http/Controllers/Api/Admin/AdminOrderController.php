@@ -22,13 +22,19 @@ class AdminOrderController extends Controller
         if (in_array($status, OrderStatus::values(), true)) {
             $query->where('status', $status);
         }
+        $paymentStatus = request()->query('payment_status');
+        if ($paymentStatus === 'needs_review') {
+            $query->where(fn ($q) => $q->where('payment_status', 'needs_review')->orWhere('payment_review_required', true));
+        } elseif (in_array($paymentStatus, ['pending', 'failed', 'paid', 'demo_paid'], true)) {
+            $query->where('payment_status', $paymentStatus);
+        }
 
         return OrderResource::collection($query->paginate(10)->withQueryString());
     }
 
     public function show(Order $order): OrderResource
     {
-        return new OrderResource($order->load(['user', 'items', 'paymentAttempts']));
+        return new OrderResource($order->load(['user', 'items', 'paymentAttempts', 'paymentEvents']));
     }
 
     public function updateStatus(UpdateOrderStatusRequest $request, Order $order): OrderResource
