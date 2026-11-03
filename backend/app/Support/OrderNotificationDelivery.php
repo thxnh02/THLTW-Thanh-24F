@@ -2,10 +2,12 @@
 
 namespace App\Support;
 
+use App\Jobs\DeliverOrderNotificationEmail;
 use App\Mail\AdminNewOrderMail;
 use App\Mail\GenericAccountNoticeMail;
 use App\Mail\OrderEventMail;
 use App\Models\CustomerNotification;
+use Illuminate\Contracts\Bus\Dispatcher;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -14,6 +16,29 @@ use Throwable;
 
 class OrderNotificationDelivery
 {
+    public function enqueue(int $notificationId, bool $retry = false): bool
+    {
+        if (! config('commerce.order_email_enabled')) {
+            return false;
+        }
+
+        try {
+            $job = (new DeliverOrderNotificationEmail($notificationId, $retry))
+                ->onConnection('database')
+                ->onQueue('order-emails');
+            app(Dispatcher::class)->dispatch($job);
+
+            return true;
+        } catch (Throwable $exception) {
+            Log::warning('Order notification queue is unavailable; delivery remains pending.', [
+                'notification_id' => $notificationId,
+                'error_type' => $exception::class,
+            ]);
+
+            return false;
+        }
+    }
+
     public function deliverNew(int $notificationId): void
     {
         if (! config('commerce.order_email_enabled')) {
@@ -51,6 +76,8 @@ class OrderNotificationDelivery
         $order = $notification->order;
         $user = $order?->user;
         if (! $order || ! $user || $user->blocked_at !== null || ! filter_var($user->email, FILTER_VALIDATE_EMAIL)) {
+            $this->setStatus($notification->id, 'email_status', 'skipped');
+
             return 'skipped';
         }
 
@@ -94,7 +121,14 @@ class OrderNotificationDelivery
     private function deliverAdmin(CustomerNotification $notification, bool $retry): string
     {
         $address = config('commerce.order_admin_email');
-        if (! $this->isNewOrderEvent($notification) || ! is_string($address) || ! filter_var($address, FILTER_VALIDATE_EMAIL)) {
+        if (! $this->isNewOrderEvent($notification)) {
+            $this->setStatus($notification->id, 'admin_email_status', 'skipped');
+
+            return 'skipped';
+        }
+        if (! is_string($address) || ! filter_var($address, FILTER_VALIDATE_EMAIL)) {
+            $this->setStatus($notification->id, 'admin_email_status', 'skipped');
+
             return 'skipped';
         }
 
@@ -134,7 +168,7 @@ class OrderNotificationDelivery
             $status = $notification->{$statusColumn};
             $attempts = (int) $notification->{$countColumn};
             $attemptedAt = $notification->{$attemptedColumn};
-            if ($attempts >= 3 || $status === 'sent') {
+            if ($attempts >= (int) config('commerce.order_email_max_attempts', 3) || in_array($status, ['sent', 'skipped'], true)) {
                 return null;
             }
 
@@ -142,10 +176,16 @@ class OrderNotificationDelivery
                 return null;
             }
             if ($retry) {
-                $retryAfter = $status === 'attempted' ? 300 : 60 * (2 ** max(0, $attempts - 1));
-                if (! in_array($status, ['failed', 'attempted'], true)
-                    || ! $attemptedAt?->lte(now()->subSeconds($retryAfter))) {
-                    return null;
+                if ($status === 'pending' && $attempts === 0) {
+                    // Pending work that never reached a worker is safe to enqueue immediately.
+                } else {
+                    $retryAfter = $status === 'attempted'
+                        ? (int) config('commerce.order_email_stale_after_seconds', 300)
+                        : $this->retryBackoffSeconds($attempts);
+                    if (! in_array($status, ['failed', 'attempted'], true)
+                        || ! $attemptedAt?->lte(now()->subSeconds($retryAfter))) {
+                        return null;
+                    }
                 }
             }
 
@@ -180,6 +220,14 @@ class OrderNotificationDelivery
 
     private function isNewOrderEvent(CustomerNotification $notification): bool
     {
-        return preg_match('/^order:\d+:(pending|demo_paid)$/', $notification->event_key) === 1;
+        return preg_match('/^order:\d+:(pending|demo_paid|cod_placed)$/', $notification->event_key) === 1;
+    }
+
+    private function retryBackoffSeconds(int $attempts): int
+    {
+        $schedule = config('commerce.order_email_backoff_seconds', [60, 300, 900]);
+        $index = max(0, $attempts - 1);
+
+        return (int) ($schedule[min($index, count($schedule) - 1)] ?? 900);
     }
 }

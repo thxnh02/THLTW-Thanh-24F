@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\DeliverOrderNotificationEmail;
 use App\Mail\GenericAccountNoticeMail;
 use App\Mail\OrderEventMail;
 use App\Models\Category;
@@ -13,6 +14,7 @@ use App\Models\User;
 use App\Models\UserAddress;
 use App\Support\CommerceNotification;
 use App\Support\CommercePrice;
+use App\Support\OrderNotificationDelivery;
 use App\Support\VnPayGateway;
 use App\Support\VnPayQueryService;
 use App\Support\VnPayReconciler;
@@ -22,6 +24,7 @@ use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
@@ -34,7 +37,7 @@ class CommerceApiTest extends TestCase
     {
         parent::setUp();
         $this->withHeaders(['Origin' => 'http://127.0.0.1:3000', 'Accept' => 'application/json']);
-        config()->set('commerce.cod_demo_enabled', true);
+        config()->set('commerce.cod_enabled', true);
     }
 
     public function test_unverified_customer_cart_checkout_idempotency_and_stock(): void
@@ -51,7 +54,7 @@ class CommerceApiTest extends TestCase
         $key = (string) Str::uuid();
         $payload = ['address_id' => $address->id, 'payment_method' => 'cod', 'idempotency_key' => $key];
         $this->postJson('/api/account/orders', $payload)->assertCreated()
-            ->assertJsonPath('data.order.payment_status', 'demo_paid')
+            ->assertJsonPath('data.order.payment_status', 'pending')
             ->assertJsonPath('data.order.grand_total_vnd', 1600)
             ->assertJsonPath('data.order.status', 'pending');
         $order = Order::query()->firstOrFail();
@@ -59,7 +62,7 @@ class CommerceApiTest extends TestCase
         $this->assertSame(1, $order->items()->count());
         $this->assertSame(800, $order->items()->firstOrFail()->unit_price_vnd);
         $this->assertSame(1, $product->fresh()->stock_quantity);
-        $this->assertDatabaseHas('customer_notifications', ['order_id' => $order->id, 'event_key' => 'order:'.$order->id.':demo_paid']);
+        $this->assertDatabaseHas('customer_notifications', ['order_id' => $order->id, 'event_key' => 'order:'.$order->id.':cod_placed']);
         $this->postJson('/api/account/orders', $payload)->assertCreated()->assertJsonPath('data.order.id', $order->id);
         $this->assertSame(1, Order::query()->count());
         $this->assertSame(1, $order->fresh()->items()->count());
@@ -96,6 +99,9 @@ class CommerceApiTest extends TestCase
 
     public function test_vnpay_ipn_signature_amount_and_return_cannot_fake_payment(): void
     {
+        Queue::fake();
+        Mail::fake();
+        config()->set('commerce.order_email_enabled', true);
         $this->vnpayConfig();
         $user = $this->customer('gateway@example.test');
         $address = $this->address($user);
@@ -136,6 +142,9 @@ class CommerceApiTest extends TestCase
         $this->assertSame('paid', $order->fresh()->payment_status);
         $this->getJson('/api/payments/vnpay/ipn?'.http_build_query($fields))->assertJsonPath('RspCode', '02');
         $this->assertSame(1, $order->fresh()->paymentAttempts()->where('state', 'succeeded')->count());
+        $this->assertDatabaseCount('customer_notifications', 2);
+        Queue::assertPushed(DeliverOrderNotificationEmail::class, 2);
+        Mail::assertNothingOutgoing();
         $this->postJson('/api/auth/logout')->assertOk();
         $this->getJson('/api/payments/vnpay/return?'.http_build_query($fields))->assertUnauthorized();
     }
@@ -418,16 +427,23 @@ class CommerceApiTest extends TestCase
     public function test_order_email_is_optional_and_unverified_customer_receives_only_a_generic_notice(): void
     {
         Mail::fake();
+        Queue::fake();
         config()->set('commerce.order_email_enabled', true);
         $user = $this->customer('mail@example.test');
         $order = Order::query()->create(['user_id' => $user->id, 'status' => 'pending']);
-        CommerceNotification::order($order, 'demo_paid', 'Đặt hàng thành công', 'Đặt hàng và thanh toán thành công (mô phỏng).');
+        CommerceNotification::order($order, 'cod_placed', 'Đặt hàng thành công', 'Đơn hàng đã được ghi nhận. Bạn thanh toán khi nhận hàng.');
+        $notification = $order->notifications()->firstOrFail();
+        Queue::assertPushed(DeliverOrderNotificationEmail::class);
+        Mail::assertNothingSent();
+        (new DeliverOrderNotificationEmail($notification->id))->handle(app(OrderNotificationDelivery::class));
         Mail::assertSent(GenericAccountNoticeMail::class, fn (GenericAccountNoticeMail $mail): bool => $mail->hasTo($user->email));
         $generic = Mail::sent(GenericAccountNoticeMail::class)->firstOrFail()->render();
         $this->assertStringNotContainsString('Địa chỉ', $generic);
         $this->assertDatabaseHas('customer_notifications', ['order_id' => $order->id]);
         $user->forceFill(['email_verified_at' => now()])->save();
         CommerceNotification::order($order, 'processing', 'Đơn đang xử lý', 'Đơn hàng đang được xử lý.');
+        $notification = $order->notifications()->where('event_key', 'order:'.$order->id.':processing')->firstOrFail();
+        (new DeliverOrderNotificationEmail($notification->id))->handle(app(OrderNotificationDelivery::class));
         Mail::assertSent(OrderEventMail::class);
     }
 

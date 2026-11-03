@@ -19,7 +19,7 @@ let checkoutPayload;
 let pdfDownloads = [];
 let pdfFailure = null;
 let returnVerified = true;
-let orderResult = { id: 1, status: 'pending', payment_method: 'cod', payment_status: 'demo_paid', grand_total_vnd: 100000, items: [{ id: 1, product_name: 'Tai nghe', quantity: 1, line_total_vnd: 100000 }] };
+let orderResult = { id: 1, status: 'pending', payment_method: 'cod', payment_status: 'pending', grand_total_vnd: 100000, items: [{ id: 1, product_name: 'Tai nghe', quantity: 1, line_total_vnd: 100000 }] };
 const originalLoad = Module._load;
 Module._load = function (request, ...args) {
   if (request === 'next/navigation') return { useRouter: () => ({ replace: (target) => redirects.push(target), push: (target) => redirects.push(target) }), useParams: () => ({ id: '1' }) };
@@ -29,7 +29,7 @@ Module._load = function (request, ...args) {
   if (request === '@/services/customerAuthServices') return { __esModule: true, default: { register: async (data) => { registration = data; return { data: { data: { user: { id: 1 } } } }; } } };
   if (request === '@/services/commerceServices') return { __esModule: true, default: { order: async () => ({ data: { data: orderResult } }), orderPdf: async (id) => { pdfDownloads.push(id); if (pdfFailure) throw pdfFailure; return { data: new Blob(['%PDF-test'], { type: 'application/pdf' }) }; }, returnStatus: async () => ({ data: { data: { verified_return: returnVerified, order_id: returnVerified ? 1 : null } } }), checkout: async (payload) => { checkoutPayload = payload; return { data: { data: { order: { id: 1 } } } }; } } };
   if (request === '@/services/customerAccountServices') return { __esModule: true, default: { addresses: async () => ({ data: { data: { addresses: [{ id: 1, recipient_name: 'An', recipient_phone: '0912345678', full_address: 'Địa chỉ thử' }] } } }) } };
-  if (request === '@/lib/axiosClient') return { __esModule: true, default: { get: async (url) => ({ data: { data: url.startsWith('/products/id/') ? { id: 17, name: 'Tai nghe', slug: 'tai-nghe', price: '100000.00', sale_price: null, stock_quantity: 10 } : { cod_demo_enabled: true, vnpay_sandbox_enabled: false, shipping_fee_vnd: 0 } } }) } };
+  if (request === '@/lib/axiosClient') return { __esModule: true, default: { get: async (url) => ({ data: { data: url.startsWith('/products/id/') ? { id: 17, name: 'Tai nghe', slug: 'tai-nghe', price: '100000.00', sale_price: null, stock_quantity: 10 } : { cod_enabled: true, vnpay_sandbox_enabled: false, shipping_fee_vnd: 0 } } }) } };
   return originalLoad.call(this, request, ...args);
 };
 const originalResolve = Module._resolveFilename;
@@ -145,14 +145,26 @@ test('guest buy now login redirect preserves product and quantity', async () => 
   window.history.replaceState({}, '', '/register');
 });
 
-test('order result clearly labels simulated COD success', async () => {
+test('customer order detail shows COD payment due at delivery separately from pending fulfillment', async () => {
   const host = document.createElement('div'); document.body.append(host);
   const root = createRoot(host);
   await act(async () => { root.render(React.createElement(CustomerOrderDetailPage)); });
-  assert.match(host.textContent, /Đặt hàng thành công · thanh toán khi giao hàng/);
-  assert.match(host.textContent, /Bạn sẽ thanh toán khi nhận hàng \(COD\)/);
-  assert.doesNotMatch(host.textContent, /demo|mô phỏng/i);
+  assert.match(host.textContent, /Thanh toán khi nhận hàng/);
+  assert.match(host.textContent, /Đơn hàng đang chờ xử lý/);
   await act(async () => { root.unmount(); }); host.remove();
+});
+test('cancelled COD Demo result has a cancelled primary heading', async () => {
+  const previousOrder = orderResult;
+  orderResult = { ...previousOrder, status: 'cancelled', payment_method: 'cod', payment_status: 'demo_paid' };
+  window.history.replaceState({}, '', '/payment-result?order=1');
+  const host = document.createElement('div'); document.body.append(host);
+  const root = createRoot(host);
+  await act(async () => { root.render(React.createElement(PaymentResultPage)); });
+  assert.match(host.querySelector('h1')?.textContent ?? '', /Đơn hàng đã hủy/);
+  assert.doesNotMatch(host.querySelector('h1')?.textContent ?? '', /thành công/i);
+  await act(async () => { root.unmount(); }); host.remove();
+  orderResult = previousOrder;
+  window.history.replaceState({}, '', '/register');
 });
 
 test('browser gateway return stays pending until the order is server-confirmed', async () => {

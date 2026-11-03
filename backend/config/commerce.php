@@ -1,11 +1,14 @@
 <?php
 
 return [
-    // Deliberately unavailable in production even if an env file is copied there.
-    'cod_demo_enabled' => in_array(env('APP_ENV'), ['local', 'testing'], true) && (bool) env('COD_DEMO_ENABLED', false),
+    // COD collects payment on delivery; legacy COD_DEMO_ENABLED remains a fallback for existing local installs.
+    'cod_enabled' => (bool) env('COD_ENABLED', env('COD_DEMO_ENABLED', false)),
     'shipping_fee_vnd' => 0, // Fixed local demo fee; no carrier quote is represented.
     'order_email_enabled' => (bool) env('ORDER_EMAIL_ENABLED', false),
     'order_admin_email' => env('ORDER_ADMIN_EMAIL'),
+    'order_email_max_attempts' => max(1, (int) env('ORDER_EMAIL_MAX_ATTEMPTS', 3)),
+    'order_email_backoff_seconds' => array_map('intval', explode(',', (string) env('ORDER_EMAIL_BACKOFF_SECONDS', '60,300,900'))),
+    'order_email_stale_after_seconds' => max(60, (int) env('ORDER_EMAIL_STALE_AFTER_SECONDS', 300)),
     'frontend_url' => rtrim((string) env('FRONTEND_URL', 'http://127.0.0.1:3000'), '/'),
     'vnpay' => [
         'enabled' => (bool) env('VNPAY_ENABLED', false) && env('VNPAY_ENV', 'sandbox') === 'sandbox',

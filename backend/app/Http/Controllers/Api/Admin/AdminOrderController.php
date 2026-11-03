@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateOrderStatusRequest;
 use App\Http\Resources\OrderResource;
 use App\Models\Order;
 use App\Support\CommerceNotification;
+use App\Support\OrderPresentation;
 use App\Support\OrderStatus;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -36,24 +37,13 @@ class AdminOrderController extends Controller
             fwrite($stream, "\xEF\xBB\xBF");
             fputcsv($stream, ['Mã đơn', 'Ngày tạo', 'Khách hàng', 'Phương thức thanh toán', 'Trạng thái thanh toán', 'Trạng thái đơn', 'Tổng tiền (VND)']);
             foreach ($query->lazyById(200, 'orders.id', 'id') as $order) {
-                $paymentMethod = match ($order->payment_method) {
-                    'vnpay' => 'VNPay',
-                    'cod' => 'Thanh toán khi nhận hàng (COD)',
-                    default => '',
-                };
-                $paymentStatus = match ($order->payment_status) {
-                    'demo_paid' => 'COD · chờ thu khi giao hàng',
-                    'pending' => 'Chờ xác nhận VNPay',
-                    'paid' => 'VNPay đã xác nhận',
-                    'failed' => 'Thanh toán không thành công',
-                    'needs_review' => 'Cần đối soát',
-                    default => $order->payment_status ?? '',
-                };
+                $paymentMethod = OrderPresentation::methodLabel($order);
+                $paymentStatus = OrderPresentation::paymentLabel($order);
                 $values = [
                     $order->order_code ?? 'Đơn cũ #'.$order->id,
                     $order->created_at?->format('Y-m-d H:i:s') ?? '',
                     $order->user?->name ?? '',
-                    $paymentMethod, $paymentStatus, $order->status ?? '', $order->grand_total_vnd ?? '',
+                    $paymentMethod, $paymentStatus, OrderPresentation::fulfillmentLabel($order), $order->grand_total_vnd ?? '',
                 ];
                 fputcsv($stream, array_map(fn ($value) => $this->safeCsvCell($value), $values), ',', '"', '');
             }

@@ -6,14 +6,8 @@ import { useEffect, useState } from 'react';
 import commerceServices from '@/services/commerceServices';
 import { formatPrice } from '@/components/shop/ProductCard';
 import { downloadErrorMessage, saveBlobDownload } from '@/lib/downloadFile';
+import { getFulfillmentLabel, getPaymentLabel } from '@/lib/orderPresentation';
 
-const paymentLabels = {
-  pending: 'Đang chờ xác nhận thanh toán',
-  needs_review: 'Giao dịch cần quản trị viên đối soát; chưa xác nhận đã thanh toán',
-  failed: 'Thanh toán không thành công',
-  paid: 'Thanh toán VNPay thành công',
-  demo_paid: 'Đặt hàng thành công · thanh toán khi giao hàng',
-};
 const attemptLabels = { pending: 'Đang chờ', needs_review: 'Cần đối soát', failed: 'Không thành công', succeeded: 'Đã xác nhận' };
 
 export default function CustomerOrderDetailPage() {
@@ -54,9 +48,8 @@ export default function CustomerOrderDetailPage() {
     <section className="rounded-2xl border border-[#e3ebe5] bg-white p-5">
       <Link className="text-sm text-[#37665b] underline" href="/account/orders">← Đơn hàng</Link>
       <h2 className="mt-3 text-xl font-semibold text-[#19352f]">Đơn #{order.id}</h2>
-      <p className="mt-2 text-sm text-slate-600">Trạng thái xử lý: {{ pending: 'Chờ xử lý', processing: 'Đang xử lý', delivered: 'Đã giao', cancelled: 'Đã hủy' }[order.status] ?? order.status}</p>
-      <p aria-live="polite" className="mt-2 text-sm font-semibold text-[#37665b]">{order.status === 'cancelled' && order.payment_method === 'cod' ? 'Đơn COD đã hủy' : paymentLabels[order.payment_status] ?? 'Đơn cũ chưa có dữ liệu thanh toán'}</p>
-      {order.payment_status === 'demo_paid' && <p className="mt-2 text-xs text-slate-500">Bạn sẽ thanh toán khi nhận hàng (COD).</p>}
+      <p className="mt-2 text-sm text-slate-600">Trạng thái xử lý: {getFulfillmentLabel(order)}</p>
+      <p aria-live="polite" className="mt-2 text-sm font-semibold text-[#37665b]">{getPaymentLabel(order)}</p>
       {order.payment_status === 'needs_review' && <p className="mt-2 text-sm text-amber-800">Không thử thanh toán lại khi kết quả còn mơ hồ. Quản trị viên cần kiểm tra giao dịch.</p>}
       {order.payment_review_required && order.payment_status === 'paid' && <p className="mt-2 text-sm text-amber-800">Có giao dịch bổ sung đang được quản trị viên kiểm tra. Vui lòng không thanh toán thêm.</p>}
       {error && <p className="mt-3 text-sm text-rose-700" role="alert">{error}</p>}

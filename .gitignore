@@ -5,6 +5,7 @@
 .env.production
 /node_modules
 /files/
+/.superpowers/
 
 # === Backend (Laravel) ===
 .phpactor.json
@@ -64,6 +65,8 @@ Homestead.yaml
 /frontend/.nuxt
 /frontend/.vite
 /frontend/coverage
+/frontend/test-results
+/frontend/playwright-report
 /frontend/.env
 /frontend/.env.local
 /frontend/.env.*.local

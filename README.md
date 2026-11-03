@@ -2,11 +2,11 @@
 
 Dự án cửa hàng công nghệ với Laravel JSON API và giao diện Next.js. Khách truy cập có thể xem danh mục, thương hiệu và sản phẩm. Trang quản trị hỗ trợ danh sách có phân trang, thêm, sửa, chuyển vào thùng rác, khôi phục và xóa vĩnh viễn cho cả ba loại dữ liệu. Frontend gọi API qua Axios.
 
-Phiên bản hiện tại có đăng nhập khách/admin, hồ sơ và sổ địa chỉ, giỏ hàng, Mua ngay độc lập, đặt hàng COD mô phỏng và tích hợp VNPay Sandbox. Xác minh email là tùy chọn cho khách; đặt lại mật khẩu vẫn cần OTP gửi qua email. VNPay chỉ được ghi đã thanh toán khi máy chủ nhận IPN hoặc QueryDr có chữ ký hợp lệ, đúng merchant, tham chiếu và số tiền.
+Phiên bản hiện tại có đăng nhập khách/admin, hồ sơ và sổ địa chỉ, giỏ hàng, Mua ngay độc lập, đặt hàng COD thanh toán khi nhận hàng và tích hợp VNPay Sandbox. Xác minh email là tùy chọn cho khách; đặt lại mật khẩu vẫn cần OTP gửi qua email. VNPay chỉ được ghi đã thanh toán khi máy chủ nhận IPN hoặc QueryDr có chữ ký hợp lệ, đúng merchant, tham chiếu và số tiền.
 
 Trang `/admin` và các API `/api/admin/*` yêu cầu phiên đăng nhập có quyền quản trị. Tài khoản mẫu local được hướng dẫn trong [docs/ADMIN_AUTH.md](docs/ADMIN_AUTH.md).
 
-Migration đối soát thanh toán đã áp dụng trên Laragon. Migration theo dõi email đơn hàng mới chỉ được tạo, chưa chạy trên database. VNPay yêu cầu tối thiểu 5.000 đồng; QueryDr mặc định tắt và cần merchant Sandbox cùng IPN HTTPS đến được. Xem [giỏ hàng và thanh toán](docs/CART_CHECKOUT_PAYMENTS.md), [thiết lập SMTP/email](docs/CUSTOMER_AUTH_EMAIL_SETUP.md) và [VNPay Sandbox, SMTP, PDF/CSV](docs/REAL_VNPAY_SMTP_ORDER_EXPORT_SETUP.md).
+Các migration đối soát thanh toán, theo dõi email và database queue đã chạy trên MySQL Laragon hiện tại. Email đơn hàng dùng database queue; bật `ORDER_EMAIL_ENABLED=true` và giữ worker `php artisan queue:work database --queue=order-emails --sleep=3 --tries=1 --timeout=30` hoạt động. VNPay Sandbox yêu cầu khóa trong `.env` cùng Return/IPN HTTPS công khai; không commit khóa lên Git. Giao dịch sandbox không phải thanh toán tiền thật. Xem [giỏ hàng và thanh toán](docs/CART_CHECKOUT_PAYMENTS.md), [thiết lập SMTP/email](docs/CUSTOMER_AUTH_EMAIL_SETUP.md) và [VNPay Sandbox, SMTP, PDF/CSV](docs/REAL_VNPAY_SMTP_ORDER_EXPORT_SETUP.md).
 
 ## Cài lần đầu với Laragon
 
@@ -16,7 +16,9 @@ Migration đối soát thanh toán đã áp dụng trên Laragon. Migration theo
 
 `setup-mysql.bat` tạo `.env` từ mẫu khi chưa có, kiểm tra cấu hình MySQL, rồi tạo database `ecommerce_thltw` nếu cần và chạy migration/seed. Script giữ nguyên `.env` đã có, không xóa database, bảng hay dữ liệu hiện có.
 
-Nếu máy đã có dữ liệu, bỏ qua `setup-mysql.bat`; tự sao lưu, xem `migrate:status`/`migrate --pretend`, rồi mới chạy `php artisan migrate` khi sẵn sàng.
+Không chạy script này trên database Laragon đang sử dụng cho tới khi đã sao lưu và duyệt migration queue `2026_11_03_000003`; script sẽ áp dụng migration đang chờ.
+
+Nếu máy đã có dữ liệu, bỏ qua `setup-mysql.bat`; tự sao lưu, xem `migrate:status`/`migrate --pretend`, rồi chỉ chạy `php artisan migrate` sau khi có phê duyệt riêng.
 
 ## Chạy hằng ngày
 
@@ -73,3 +75,7 @@ npm run dev
 - Axios: `config/api.js` → service → axios client → Laravel API
 
 Xem thêm [database](docs/DATABASE.md), [kiểm thử API](docs/API_TEST.md) và [cấu trúc frontend](docs/FRONTEND_ARCHITECTURE.md).
+
+## Kiểm thử
+
+Chạy kiểm tra tự động trong `backend`: `php artisan test --compact` và `composer audit --locked`. Trong `frontend`: `npm test`, `npm run lint`, `npm run build`, `npm run test:e2e` và `npm audit`. Playwright chạy Edge desktop/mobile với API giả lập; các bài này không gọi SMTP, VNPay, hay database khách hàng Laragon. E2E bao phủ đăng ký không cần xác minh, đăng nhập, giỏ hàng, COD, OTP giả lập, các trạng thái Return, tải PDF, CSV và cập nhật đơn Admin. IPN có chữ ký, lặp callback và đối soát tiếp tục được kiểm tra bằng test API cô lập. Build hoặc test có thể cần Edge đã cài trên máy.

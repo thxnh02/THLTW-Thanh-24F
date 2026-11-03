@@ -43,7 +43,7 @@ class CustomerOrderController extends Controller
             'buy_now_product_id' => ['nullable', 'integer', 'min:1'],
             'buy_now_quantity' => ['required_with:buy_now_product_id', 'integer', 'min:1', 'max:20'],
         ]);
-        if ($data['payment_method'] === 'cod' && ! config('commerce.cod_demo_enabled')) {
+        if ($data['payment_method'] === 'cod' && ! config('commerce.cod_enabled')) {
             throw ValidationException::withMessages(['payment_method' => 'COD chưa được bật trên máy chủ.']);
         }
         if ($data['payment_method'] === 'vnpay' && ! $gateway->configured()) {
@@ -98,7 +98,7 @@ class CustomerOrderController extends Controller
                 'status' => 'pending', 'shipping_snapshot' => $snapshot, 'subtotal_vnd' => $subtotal,
                 'shipping_fee_vnd' => $shipping, 'grand_total_vnd' => $subtotal + $shipping,
                 'payment_method' => $data['payment_method'],
-                'payment_status' => $data['payment_method'] === 'cod' ? 'demo_paid' : 'pending',
+                'payment_status' => 'pending',
                 'idempotency_key' => $data['idempotency_key'], 'customer_note' => $data['customer_note'] ?? null,
             ])->save();
             $order->items()->createMany($lines);
@@ -109,7 +109,7 @@ class CustomerOrderController extends Controller
                     'pay_created_at' => $created, 'pay_expires_at' => $created->copy()->addMinutes(15)]);
                 CommerceNotification::order($order, 'pending', 'Đơn hàng đang chờ thanh toán', 'Đang chờ xác nhận thanh toán VNPay.');
             } else {
-                CommerceNotification::order($order, 'demo_paid', 'Đặt hàng thành công', 'Đơn hàng đã được tạo. Bạn thanh toán khi nhận hàng.');
+                CommerceNotification::order($order, 'cod_placed', 'Đặt hàng thành công', 'Đơn hàng đã được ghi nhận. Bạn thanh toán khi nhận hàng.');
             }
             if (! $buyNow) {
                 CartItem::query()->where('user_id', $request->user()->id)->whereIn('product_id', $cart->pluck('product_id'))->delete();
@@ -167,7 +167,8 @@ class CustomerOrderController extends Controller
     {
         $owned = DB::transaction(function () use ($request, $order): Order {
             $owned = Order::query()->where('user_id', $request->user()->id)->whereKey($order)->lockForUpdate()->firstOrFail();
-            if ($owned->status !== 'pending' || $owned->payment_method !== 'cod' || $owned->payment_status !== 'demo_paid') {
+            if ($owned->status !== 'pending' || $owned->payment_method !== 'cod'
+                || ! in_array($owned->payment_status, ['pending', 'demo_paid'], true)) {
                 throw ValidationException::withMessages(['order' => 'Không thể hủy đơn này.']);
             }
             $owned->status = 'cancelled';

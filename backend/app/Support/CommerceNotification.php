@@ -5,6 +5,8 @@ namespace App\Support;
 use App\Models\CustomerNotification;
 use App\Models\Order;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class CommerceNotification
 {
@@ -17,6 +19,8 @@ class CommerceNotification
             if (is_string(config('commerce.order_admin_email'))
                 && filter_var(config('commerce.order_admin_email'), FILTER_VALIDATE_EMAIL)) {
                 $attributes['admin_email_status'] = 'pending';
+            } else {
+                $attributes['admin_email_status'] = 'skipped';
             }
         }
 
@@ -26,7 +30,14 @@ class CommerceNotification
         );
         if ($notification->wasRecentlyCreated && config('commerce.order_email_enabled')) {
             DB::afterCommit(function () use ($notification): void {
-                app(OrderNotificationDelivery::class)->deliverNew($notification->id);
+                try {
+                    app(OrderNotificationDelivery::class)->enqueue($notification->id);
+                } catch (Throwable $exception) {
+                    Log::warning('Order notification could not be enqueued.', [
+                        'notification_id' => $notification->id,
+                        'error_type' => $exception::class,
+                    ]);
+                }
             });
         }
     }

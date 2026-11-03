@@ -54,16 +54,50 @@ MAIL_FROM_ADDRESS=<gmail-sender>
 MAIL_FROM_NAME="CT_24F"
 ORDER_EMAIL_ENABLED=true
 ORDER_ADMIN_EMAIL=<optional-admin-inbox>
+QUEUE_CONNECTION=database
+ORDER_EMAIL_MAX_ATTEMPTS=3
+ORDER_EMAIL_BACKOFF_SECONDS=60,300,900
+ORDER_EMAIL_STALE_AFTER_SECONDS=300
 ```
 
-Chạy `php artisan config:clear`, rồi `php artisan commerce:check-mail` để kiểm tra các trường đã có mà không gửi thư hay in email/mật khẩu. Sau đó, chỉ định một hộp thư bạn kiểm soát để gửi đúng một thư thử: `php artisan commerce:mail-test <your-email>`. Lệnh gửi chỉ chạy trong `local`/`testing`; thông báo thành công chỉ có nghĩa SMTP nhận thư, không khẳng định thư vào Inbox. Kiểm tra cả Spam. Mã OTP vẫn hết hạn sau 5 phút và gửi lại bị giới hạn thời gian.
+Chạy `php artisan config:clear`, rồi `php artisan commerce:check-mail` để kiểm tra cấu hình mà không gửi thư hoặc in email/mật khẩu. `php artisan commerce:mail-test <your-email>` gửi đúng một thư thử tới hộp thư bạn kiểm soát; chỉ chạy trong `local`/`testing`. Phản hồi thành công chỉ có nghĩa SMTP đã nhận thư, không xác nhận thư đã vào Inbox.
 
-Khi bật email đơn hàng, email tài khoản đã xác minh có chi tiết đơn. Tài khoản chưa xác minh chỉ nhận thư chung cho sự kiện đơn mới, không có mã đơn, mặt hàng, địa chỉ hay số điện thoại. Inbox admin tùy chọn chỉ nhận mã đơn và tổng tiền. Email được thử sau khi transaction ghi đơn commit; lỗi SMTP không hủy đơn. Mỗi loại thư lưu trạng thái riêng, tối đa 3 lần thử. Lệnh `php artisan commerce:retry-order-emails --limit=20` xem trước; chỉ thêm `--execute` sau khi kiểm tra SMTP. Gửi SMTP không hỗ trợ đảm bảo exactly-once nếu tiến trình dừng ngay sau khi máy chủ mail nhận thư.
+Thông báo đơn hàng được ghi trước trong `customer_notifications`, sau commit mới xếp `DeliverOrderNotificationEmail` vào database queue `order-emails`. Job chỉ mang ID thông báo, nạp đơn hiện tại trong worker, khóa dòng khi nhận việc, rồi lưu trạng thái gửi. SMTP không chạy trong checkout, cập nhật đơn hay VNPay IPN. Nếu queue table hoặc database queue tạm thời không sẵn sàng, đơn vẫn được giữ; notification giữ trạng thái pending để command thử xếp lại. Cần database queue migration và worker hoạt động thì email mới được gửi.
 
-## Migration theo dõi gửi thư
+Mở terminal riêng trong `backend` để chạy worker trên Windows/Laragon:
 
-Migration `2026_11_03_000002_add_order_email_delivery_tracking` chỉ thêm bốn cột theo dõi vào `customer_notifications`. Nó chưa được áp dụng trên MySQL Laragon. Có thể xem trạng thái và SQL dự kiến bằng `php artisan migrate:status` và `php artisan migrate --pretend`. **Chưa chạy `php artisan migrate` cho migration này cho tới khi chủ dự án cho phép riêng.** Không dùng `migrate:fresh`, `migrate:refresh` hoặc seed để thay dữ liệu hiện có.
+```powershell
+php artisan queue:work database --queue=order-emails --sleep=3 --tries=1 --timeout=30
+```
 
+Giữ terminal này mở khi phát triển. `ORDER_EMAIL_MAX_ATTEMPTS` mặc định là 3; backoff retry mặc định 60, 300 và 900 giây. Một worker dừng sau khi SMTP nhận thư nhưng trước khi trạng thái `sent` được ghi vẫn có thể dẫn tới gửi lặp; SMTP không cung cấp bảo đảm exactly-once. Không ghi nội dung mail, OTP hay thông tin nhạy cảm vào log.
+
+Admin có thể dò notification chưa thử, email lỗi đã tới hạn và lần thử bị kẹt hơn 5 phút bằng lệnh mặc định chỉ xem trước:
+
+```powershell
+php artisan commerce:retry-order-emails --limit=20
+```
+
+Sau khi kiểm tra cấu hình SMTP và worker, thêm `--execute` để xếp các notification tới hạn vào queue:
+
+```powershell
+php artisan commerce:retry-order-emails --execute --limit=20
+```
+
+Đơn vẫn sử dụng được nếu worker đang tắt; notification chưa gửi sẽ còn trong bảng để xử lý khi worker chạy lại. Mỗi order detail trong Admin cũng cho biết trạng thái email khách/admin và số lần thử. Tài khoản chưa xác minh chỉ nhận thư chung cho đơn mới, không gồm mã đơn, sản phẩm, địa chỉ, số điện thoại hay tổng chi tiết. Tài khoản đã xác minh có thể nhận nội dung đơn. Password reset OTP vẫn gửi qua SMTP thật khi người dùng yêu cầu; không tự gửi thư trong test.
+
+## Trạng thái migration email và queue
+
+Đã kiểm tra database MySQL Laragon trên máy này: các migration `2026_11_03_000001` đến `2026_11_03_000003` đều là `Ran`; migration `000003` tạo bảng `jobs` và `failed_jobs` mà không xóa dữ liệu. Trạng thái chỉ áp dụng cho máy này; kiểm tra lại trên máy khác trước khi cài.
+
+Xem trạng thái và SQL dự kiến trước khi cài:
+
+```powershell
+php artisan migrate:status
+php artisan migrate --pretend
+```
+
+Migration queue đã được xem trước bằng `migrate --pretend` và áp dụng theo xác nhận của chủ dự án trên MySQL Laragon. Migration chỉ tạo bảng queue còn thiếu; không chạy `migrate:fresh`, `migrate:refresh`, `db:wipe`, seed phá hủy dữ liệu hoặc rollback. Trên môi trường khác, sao lưu database và kiểm tra `migrate:status` cùng `migrate --pretend` trước khi cài.
 ## PDF và CSV
 
 - Khách đã đăng nhập tải PDF cho đơn của chính mình tại trang `/account/orders/{id}`. API là `GET /api/account/orders/{id}/export/pdf`; đơn của tài khoản khác trả về 404.
@@ -78,12 +112,12 @@ Migration `2026_11_03_000002_add_order_email_delivery_tracking` chỉ thêm bố
 - **Cấu hình mới không có hiệu lực:** chạy `php artisan config:clear` trong `backend`, khởi động lại Laravel và Next.js sau khi sửa env.
 - **Gmail từ chối SMTP:** bật xác minh 2 bước, tạo App Password, dùng cổng 587 với STARTTLS, xác nhận MAIL_FROM khớp tài khoản gửi. Không thay bằng mật khẩu đăng nhập Google.
 - **Email thử được SMTP chấp nhận nhưng không thấy trong Inbox:** kiểm tra Spam và địa chỉ người nhận; phản hồi SMTP không xác nhận giao hàng cuối cùng.
-- **Migration email còn Pending:** đây là trạng thái dự kiến cho migration mới; xem `migrate --pretend`, rồi đợi phê duyệt riêng trước khi áp dụng trên MySQL Laragon.
+- **Email đang Pending:** xác nhận `ORDER_EMAIL_ENABLED=true`, bảng queue đã được tạo và worker `queue:work database --queue=order-emails` đang chạy. Dùng `commerce:retry-order-emails` để xem trước các thư chưa gửi; chỉ thêm `--execute` khi muốn xếp chúng lại vào hàng đợi.
 - **PDF không hiển thị tiếng Việt:** giữ font DejaVu Sans mặc định của PDF, không bật tải font/ảnh từ URL bên ngoài.
 
 ## Tự kiểm tra
 
-Trong `backend`: `php artisan test --compact`, `composer audit --locked`, `php artisan commerce:check-vnpay`. Trong `frontend`: `npm test`, `npm run lint`, `npm run build`. Kiểm tra SMTP thật cần một lần gửi có chủ đích đến email do bạn kiểm soát. Kiểm tra VNPay cần merchant sandbox, HTTPS public host và xác nhận thủ công ở merchant portal; bộ test tự động không gọi VNPay, SMTP thật hoặc thanh toán ngân hàng.
+Trong `backend`: `php artisan test --compact`, `composer audit --locked`, `php artisan commerce:check-vnpay`. Trong `frontend`: `npm test`, `npm run test:e2e`, `npm run lint`, `npm run build`, `npm audit`. Playwright E2E chỉ dùng API mock và không kết nối MySQL, SMTP hoặc merchant VNPay thật. Kiểm tra SMTP thật cần một lần gửi có chủ đích đến email do bạn kiểm soát. Kiểm tra VNPay cần merchant sandbox, HTTPS public host và xác nhận thủ công ở merchant portal; bộ test tự động không gọi VNPay, SMTP thật hoặc thanh toán ngân hàng.
 
 ### Smoke test thủ công
 

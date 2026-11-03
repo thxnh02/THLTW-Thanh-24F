@@ -56,14 +56,14 @@
   </table>
 
   <h2>Trạng thái</h2>
-  <p><strong>Phương thức:</strong> {{ $order->payment_method === 'vnpay' ? 'VNPay' : ($order->payment_method === 'cod' ? 'COD · thanh toán khi nhận hàng' : 'Đơn cũ') }}</p>
-  <p><strong>Thanh toán:</strong> {{ $order->payment_status === 'demo_paid' ? 'COD · chờ thu khi giao hàng' : ($order->payment_status ?? 'Chưa có dữ liệu') }}</p>
-  <p><strong>Đơn hàng:</strong> {{ $order->status ?? 'Chưa có dữ liệu' }}</p>
+  <p><strong>Phương thức:</strong> {{ \App\Support\OrderPresentation::methodLabel($order) }}</p>
+  <p><strong>Thanh toán:</strong> {{ \App\Support\OrderPresentation::paymentLabel($order) }}</p>
+  <p><strong>Đơn hàng:</strong> {{ \App\Support\OrderPresentation::fulfillmentLabel($order) }}</p>
   @if($order->payment_method === 'vnpay')
     <p><strong>Mã giao dịch VNPay:</strong> {{ $order->paymentAttempts->where('state', 'succeeded')->last()?->provider_transaction_id ?? 'Chưa xác nhận giao dịch' }}</p>
   @endif
   @if($order->payment_method === 'cod')
-    <p class="notice"><strong>Đơn hàng COD.</strong> Khoản thanh toán được thu khi giao hàng.</p>
+    <p class="notice"><strong>Thanh toán khi nhận hàng.</strong> Bạn thanh toán cho nhân viên giao hàng khi nhận đơn.</p>
   @endif
   <p class="muted">Đây là phiếu xác nhận đơn hàng, không phải hóa đơn VAT hoặc chứng từ thuế.</p>
 </body>

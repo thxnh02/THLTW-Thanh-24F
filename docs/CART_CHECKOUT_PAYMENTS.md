@@ -1,23 +1,25 @@
-# Giỏ hàng, đặt hàng và thanh toán
+﻿# Giỏ hàng, đặt hàng và thanh toán
 
 ## Chuẩn bị trên máy local
 
 Trong `backend`, migration `2026_11_03_000001_add_payment_reconciliation_metadata` thêm bốn cột nullable vào `payment_attempts`, cờ `orders.payment_review_required` mặc định false và bảng nhật ký `payment_reconciliation_events`; dữ liệu cũ được giữ nguyên. Migration đã chạy trên MySQL Laragon của máy phát triển ngày 03/11/2026 và `migrate:status` báo `Ran`. Khi cài trên máy khác, sao lưu database, xem `php artisan migrate:status` và `php artisan migrate --pretend` trước khi chạy `php artisan migrate`. Không dùng `migrate:fresh`, `migrate:refresh` hoặc seed hàng loạt với dữ liệu đang dùng.
 
-`COD_DEMO_ENABLED=true` chỉ dùng khi `APP_ENV=local` hoặc `testing`. COD mô phỏng tạo `payment_status=demo_paid` ngay, nhưng **không có tiền thực nhận** và xử lý giao hàng vẫn là `pending`. `ORDER_EMAIL_ENABLED` mặc định tắt; khi bật và SMTP hợp lệ, tài khoản đã xác minh nhận chi tiết đơn, email chưa xác minh chỉ nhận thư chung khi có đơn mới. Email admin mới là tùy chọn qua `ORDER_ADMIN_EMAIL`. Lỗi SMTP không làm mất đơn; trạng thái gửi và lệnh thử lại được mô tả trong [hướng dẫn VNPay/SMTP/xuất đơn](REAL_VNPAY_SMTP_ORDER_EXPORT_SETUP.md).
+COD là phương thức đặt hàng thật, thu tiền khi giao hàng. Bật bằng `COD_ENABLED=true`; các cài đặt cũ dùng `COD_DEMO_ENABLED` vẫn được đọc làm giá trị dự phòng. Khi khách đặt COD, đơn được lưu với `payment_status=pending`, email xác nhận ghi rõ khách thanh toán khi nhận hàng, còn giao hàng bắt đầu ở trạng thái `pending`. Hệ thống không ghi nhận COD là đã thu tiền trước khi giao.
+
+`ORDER_EMAIL_ENABLED` mặc định tắt; khi bật và SMTP hợp lệ, tài khoản đã xác minh nhận chi tiết đơn, email chưa xác minh chỉ nhận thư chung khi có đơn mới. Email admin mới là tùy chọn qua `ORDER_ADMIN_EMAIL`. Email đơn hàng được xếp vào database queue sau commit; checkout và VNPay IPN không chờ SMTP. Dùng `php artisan queue:work database --queue=order-emails --sleep=3 --tries=1 --timeout=30` để chạy worker. `php artisan commerce:retry-order-emails` mặc định chỉ xem trước notification pending/chưa thử, lỗi tới hạn hoặc lần thử kẹt; chỉ thêm `--execute` sau khi rà soát. Hướng dẫn migration, backoff và hạn chế gửi exactly-once nằm trong [hướng dẫn VNPay/SMTP/xuất đơn](REAL_VNPAY_SMTP_ORDER_EXPORT_SETUP.md).
 
 Giỏ khách chỉ lưu ID và số lượng trong localStorage, khi đăng nhập sẽ gộp vào giỏ máy chủ. **Mua ngay** dùng `buy_now_product_id` và `buy_now_quantity` (1–20) riêng, không thêm hay xóa sản phẩm trong giỏ. Tải lại trang hoặc đăng nhập vẫn giữ ID/số lượng trong URL checkout; backend luôn kiểm tra lại sản phẩm, kho và giá. Đặt hàng từ giỏ chỉ xóa các dòng đã mua sau khi tạo đơn thành công. `idempotency_key` UUID giữ một yêu cầu lặp lại không tạo thêm đơn.
 
 ## Tiền, tồn kho và trạng thái
 
-Giá được tính lại trên máy chủ từ giá khuyến mãi hợp lệ, làm tròn VND với phần lẻ từ 0,50 đồng làm tròn lên. VNPay chỉ nhận tổng **5.000–9.999.999.999 VND**; `vnp_Amount` bằng tổng VND × 100 và tối đa 12 chữ số. Kho theo dõi bị trừ khi tạo đơn; `NULL` là không theo dõi. COD demo hủy khi còn chờ xử lý hoàn kho đúng một lần. Phí giao hàng demo hiện là 0 đồng, không phải báo giá vận chuyển thực.
+Giá được tính lại trên máy chủ từ giá khuyến mãi hợp lệ, làm tròn VND với phần lẻ từ 0,50 đồng làm tròn lên. VNPay chỉ nhận tổng **5.000–9.999.999.999 VND**; `vnp_Amount` bằng tổng VND × 100 và tối đa 12 chữ số. Kho theo dõi bị trừ khi tạo đơn; `NULL` là không theo dõi. Đơn COD đang chờ có thể hủy; tồn kho được hoàn đúng một lần. Phí giao hàng hiện là 0 đồng, không phải báo giá vận chuyển thực.
 
 `orders.status` là tình trạng giao hàng, tách khỏi `payment_status`:
 
 | Thanh toán | Ý nghĩa |
 | --- | --- |
-| `demo_paid` | COD mô phỏng, chưa thu tiền thực |
-| `pending` | VNPay chưa được xác nhận |
+| `pending` | COD chờ thu tiền khi giao hàng; hoặc VNPay chưa được xác nhận (xem thêm `payment_method`) |
+| `demo_paid` | Trạng thái tương thích của đơn COD cũ; giao diện hiển thị thanh toán khi nhận hàng |
 | `failed` | IPN/QueryDr xác thực cho biết giao dịch thất bại; kho vẫn được giữ để khách có thể thử lại |
 | `needs_review` | Kết quả mơ hồ, đảo giao dịch, gian lận nghi vấn, URL cũ hoặc IPN muộn; không coi là thành công/thất bại |
 | `paid` | IPN hoặc QueryDr hợp lệ đã xác nhận tiền VNPay |
@@ -59,8 +61,8 @@ API chính: `GET /api/payments/vnpay/ipn` nhận callback có chữ ký; `GET /a
 
 ## Kiểm tra an toàn
 
-Trang quản trị có thể tải CSV theo bộ lọc ngày, trạng thái đơn và trạng thái thanh toán; CSV không chứa thông tin giao hàng và bảo vệ chuỗi có thể bị Excel hiểu là công thức. Khách tải PDF từ chi tiết đơn của mình, Admin có thể tải PDF từ trang quản trị. Hướng dẫn URL HTTPS qua tunnel, cấu hình IPN/SMTP và migration theo dõi email chờ phê duyệt nằm trong [REAL_VNPAY_SMTP_ORDER_EXPORT_SETUP.md](REAL_VNPAY_SMTP_ORDER_EXPORT_SETUP.md).
+Trang quản trị có thể tải CSV theo bộ lọc ngày, trạng thái đơn và trạng thái thanh toán; CSV không chứa thông tin giao hàng và bảo vệ chuỗi có thể bị Excel hiểu là công thức. Khách tải PDF từ chi tiết đơn của mình, Admin có thể tải PDF từ trang quản trị. Migration `2026_11_03_000002_add_order_email_delivery_tracking` đang ở trạng thái `Ran` trên database Laragon đã kiểm tra; migration bổ sung queue `2026_11_03_000003_create_order_email_queue_tables` còn `Pending` và không được tự động áp dụng lên database hiện có. Hướng dẫn URL HTTPS, cấu hình IPN/SMTP và queue nằm trong [REAL_VNPAY_SMTP_ORDER_EXPORT_SETUP.md](REAL_VNPAY_SMTP_ORDER_EXPORT_SETUP.md).
 
-Các bài test PHP dùng SQLite `:memory:`, `Http::fake` cho QueryDr và dữ liệu tổng hợp. Không có lời gọi sandbox, ngân hàng, SMTP hoặc MySQL Laragon trong test. Sau migration được duyệt, thử trên dữ liệu test riêng: giỏ khách → đăng nhập/gộp giỏ; COD mô phỏng → đơn và thông báo; Mua ngay khi giỏ đã có 5 sản phẩm → đặt 1, giỏ còn 5; VNPay dưới 5.000 đồng bị từ chối; URL hết hạn → QueryDr/đối soát; trả về chỉ hiển thị kết quả đã xác nhận. Kiểm tra ở 390, 768, 1024 và 1440 px, bàn phím và hộp thoại địa chỉ. Không dùng thẻ hoặc tiền thật.
+Các bài test PHP dùng SQLite `:memory:`, `Http::fake` cho QueryDr và dữ liệu tổng hợp. Không có lời gọi sandbox, ngân hàng, SMTP hoặc MySQL Laragon trong test. Sau migration được duyệt, thử trên dữ liệu test riêng: giỏ khách → đăng nhập/gộp giỏ; COD → đơn và email xác nhận thanh toán khi giao; Mua ngay khi giỏ đã có 5 sản phẩm → đặt 1, giỏ còn 5; VNPay dưới 5.000 đồng bị từ chối; URL hết hạn → QueryDr/đối soát; trả về chỉ hiển thị kết quả đã xác nhận. Kiểm tra ở 390, 768, 1024 và 1440 px, bàn phím và hộp thoại địa chỉ. Không dùng thẻ hoặc tiền thật.
 
-Chưa chạy Playwright E2E với môi trường thử nghiệm tách biệt; quy trình trên là QA thủ công. Khóa dòng giúp ngăn thao tác trùng trên MySQL/InnoDB, nhưng các race condition giữa IPN, đối soát và Admin đóng đơn vẫn cần thử thêm trên môi trường MySQL riêng trước khi vận hành thật.
+Playwright E2E dùng Edge desktop/mobile và mock toàn bộ API, không kết nối Laragon hay dịch vụ thật. Bộ E2E bao phủ đăng ký không bắt buộc xác minh, đăng nhập, thêm giỏ, checkout COD, OTP giả lập, trạng thái kết quả COD/VNPay, tải PDF, CSV và cập nhật đơn Admin. Chữ ký IPN, callback trùng và đối soát dùng test API/SQLite. Khóa dòng giúp ngăn thao tác trùng trên MySQL/InnoDB, nhưng race condition giữa IPN, đối soát và Admin đóng đơn vẫn cần thử thêm trên MySQL thử nghiệm riêng trước khi vận hành thật.
