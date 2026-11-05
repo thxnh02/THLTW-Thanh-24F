@@ -13,13 +13,15 @@ class PostController extends Controller
     /** Cửa hàng chỉ liệt kê bài đã xuất bản và chưa bị xóa. */
     public function index(Request $request): AnonymousResourceCollection
     {
-        $filters = $request->validate(['page' => ['sometimes', 'integer', 'min:1'], 'per_page' => ['sometimes', 'integer', 'min:1', 'max:9']]);
+        $filters = $request->validate(['page' => ['sometimes', 'integer', 'min:1'], 'per_page' => ['sometimes', 'integer', 'min:1', 'max:9'], 'topic' => ['nullable', 'string', 'max:150']]);
 
-        return PublicPostResource::collection(Post::where('status', true)->orderByDesc('created_at')->orderByDesc('id')->paginate((int) ($filters['per_page'] ?? 9))->withQueryString());
+        $query = Post::where('status', true)->with('topic');
+        if (! empty($filters['topic'])) $query->whereHas('topic', fn ($q) => $q->where('slug', $filters['topic']));
+        return PublicPostResource::collection($query->orderByDesc('created_at')->orderByDesc('id')->paginate((int) ($filters['per_page'] ?? 9))->withQueryString());
     }
 
     public function show(string $slug): PublicPostResource
     {
-        return new PublicPostResource(Post::where('status', true)->where('slug', $slug)->firstOrFail());
+        return new PublicPostResource(Post::where('status', true)->with('topic')->where('slug', $slug)->firstOrFail());
     }
 }

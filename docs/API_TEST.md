@@ -3,7 +3,7 @@
 Base URL: `http://127.0.0.1:8000/api`
 Header: `Accept: application/json`
 
-Các endpoint `/admin/*` yêu cầu đăng nhập tại `POST /admin/login` bằng cookie session Sanctum và CSRF. Có thể đăng nhập qua giao diện `/admin/login`; xem [ADMIN_AUTH.md](ADMIN_AUTH.md) để tạo tài khoản mẫu local. Truy cập không có phiên nhận `401`, tài khoản khách nhận `403`.
+Các endpoint `/admin/*` yêu cầu đăng nhập tại `POST /admin/login` bằng cookie HttpOnly admin riêng và CSRF. Cookie khách hàng Sanctum không đăng nhập admin và đăng xuất admin không đăng xuất khách hàng. Có thể đăng nhập qua giao diện `/admin/login`; xem [ADMIN_AUTH.md](ADMIN_AUTH.md) để tạo tài khoản mẫu local. Truy cập khi chưa có phiên admin nhận `401`.
 
 ## Public
 

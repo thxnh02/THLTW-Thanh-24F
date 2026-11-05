@@ -15,7 +15,6 @@ const safeGuest = () => {
 
 export function CartProvider({ children }) {
   const { user, loading: authLoading } = useCustomerAuth();
-  const [guest, setGuest] = useState([]);
   const [server, setServer] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -32,9 +31,8 @@ export function CartProvider({ children }) {
     let active = true;
     Promise.resolve().then(async () => {
       if (!active) return;
-      const rows = safeGuest();
-      setGuest(rows);
       if (!user) { setServer(null); setLoading(false); return; }
+      const rows = safeGuest();
       setServer(null);
       setLoading(true);
       try {
@@ -43,7 +41,6 @@ export function CartProvider({ children }) {
           const accepted = new Set(result.data?.data?.accepted_product_ids ?? []);
           const remaining = rows.filter((row) => !accepted.has(row.product_id));
           localStorage.setItem(KEY, JSON.stringify(remaining));
-          if (active) setGuest(remaining);
         }
         const result = await commerceServices.cart();
         if (active) { setServer(result.data.data); setError(''); }
@@ -53,30 +50,29 @@ export function CartProvider({ children }) {
     return () => { active = false; };
   }, [user?.id, authLoading]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const persistGuest = (rows) => { localStorage.setItem(KEY, JSON.stringify(rows)); setGuest(rows); };
   const add = async (productId, quantity = 1) => {
-    if (user) { const result = await commerceServices.add(productId, quantity); setServer(result.data.data); return; }
-    const rows = safeGuest();
-    const existing = rows.find((row) => row.product_id === productId);
-    if (existing) existing.quantity = Math.min(20, existing.quantity + quantity);
-    else rows.push({ product_id: productId, quantity: Math.min(20, quantity) });
-    persistGuest(rows);
+    if (!user) throw new Error('Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng.');
+    const result = await commerceServices.add(productId, quantity);
+    setServer(result.data.data);
   };
   const update = async (productId, quantity) => {
     if (!Number.isInteger(quantity) || quantity < 1 || quantity > 20) return;
-    if (user) { const result = await commerceServices.update(productId, quantity); setServer(result.data.data); return; }
-    persistGuest(safeGuest().map((row) => row.product_id === productId ? { ...row, quantity } : row));
+    if (!user) throw new Error('Vui lòng đăng nhập để cập nhật giỏ hàng.');
+    const result = await commerceServices.update(productId, quantity);
+    setServer(result.data.data);
   };
   const remove = async (productId) => {
-    if (user) { const result = await commerceServices.remove(productId); setServer(result.data.data); return; }
-    persistGuest(safeGuest().filter((row) => row.product_id !== productId));
+    if (!user) throw new Error('Vui lòng đăng nhập để cập nhật giỏ hàng.');
+    const result = await commerceServices.remove(productId);
+    setServer(result.data.data);
   };
   const clear = async () => {
-    if (user) { const result = await commerceServices.clear(); setServer(result.data.data); return; }
-    persistGuest([]);
+    if (!user) throw new Error('Vui lòng đăng nhập để cập nhật giỏ hàng.');
+    const result = await commerceServices.clear();
+    setServer(result.data.data);
   };
-  const count = useMemo(() => (user ? (server?.items ?? []) : guest).reduce((sum, row) => sum + row.quantity, 0), [user, server, guest]);
-  return <CartContext.Provider value={{ guest, server, loading, error, count, add, update, remove, clear, refresh }}>{children}</CartContext.Provider>;
+  const count = useMemo(() => (user ? (server?.items ?? []) : []).reduce((sum, row) => sum + row.quantity, 0), [user, server]);
+  return <CartContext.Provider value={{ server, loading, error, count, add, update, remove, clear, refresh }}>{children}</CartContext.Provider>;
 }
 
 export function useCart() {

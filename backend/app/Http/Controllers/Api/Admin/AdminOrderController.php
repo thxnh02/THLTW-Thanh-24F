@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\UpdateOrderStatusRequest;
 use App\Http\Resources\OrderResource;
 use App\Models\Order;
+use App\Models\Product;
 use App\Support\CommerceNotification;
 use App\Support\OrderPresentation;
 use App\Support\OrderStatus;
@@ -56,7 +57,7 @@ class AdminOrderController extends Controller
 
     public function show(Order $order): OrderResource
     {
-        return new OrderResource($order->load(['user', 'items', 'paymentAttempts', 'paymentEvents', 'notifications']));
+        return new OrderResource($order->load(['user', 'items', 'paymentAttempts', 'paymentEvents', 'notifications', 'statusHistory']));
     }
 
     public function updateStatus(UpdateOrderStatusRequest $request, Order $order): OrderResource
@@ -70,10 +71,29 @@ class AdminOrderController extends Controller
             if ($locked->payment_method === 'vnpay' && $locked->payment_status !== 'paid') {
                 throw ValidationException::withMessages(['status' => 'Đơn VNPay chưa được xác nhận thanh toán.']);
             }
-            $locked->update(['status' => $nextStatus]);
+            if ($nextStatus === 'cancelled') {
+                foreach ($locked->items as $item) {
+                    if ($item->product_id) {
+                        $product = Product::withTrashed()->whereKey($item->product_id)->lockForUpdate()->first();
+                        if ($product && $product->stock_quantity !== null) {
+                            $product->stockReason = 'Quản trị hủy đơn';
+                            $product->stock_quantity += $item->quantity;
+                            $product->save();
+                        }
+                    }
+                }
+                $locked->stock_restored_at = now();
+            }
+            $locked->status = $nextStatus;
+            $locked->save();
             if ($locked->payment_method !== null) {
                 CommerceNotification::order($locked, 'status:'.$nextStatus,
-                    'Đơn hàng đã cập nhật', $nextStatus === 'delivered' ? 'Đơn hàng đã giao.' : 'Đơn hàng đang được xử lý.');
+                    'Đơn hàng đã cập nhật', match ($nextStatus) {
+                        'cancelled' => 'Đơn hàng đã hủy.',
+                        'shipping' => 'Đơn hàng đang được giao.',
+                        'delivered' => 'Đơn hàng đã giao.',
+                        default => 'Đơn hàng đang được xử lý.',
+                    });
             }
 
             return $locked->load('user');
@@ -87,6 +107,7 @@ class AdminOrderController extends Controller
         $paymentStatuses = ['pending', 'failed', 'paid', 'demo_paid', 'needs_review'];
 
         return Validator::make($request->query(), [
+            'q' => ['nullable', 'string', 'max:100'],
             'status' => ['nullable', 'string', 'in:'.implode(',', OrderStatus::values())],
             'payment_status' => ['nullable', 'string', 'in:'.implode(',', $paymentStatuses)],
             'created_from' => ['nullable', 'date_format:Y-m-d'],
@@ -97,6 +118,14 @@ class AdminOrderController extends Controller
     private function filteredOrders(array $filters): Builder
     {
         $query = Order::query();
+        if ($term = trim($filters['q'] ?? '')) {
+            $like = '%'.str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $term).'%';
+            $query->where(function ($builder) use ($like, $term): void {
+                $builder->whereRaw("order_code LIKE ? ESCAPE '!'", [$like])
+                    ->orWhereHas('user', fn ($user) => $user->whereRaw("name LIKE ? ESCAPE '!'", [$like])->orWhereRaw("email LIKE ? ESCAPE '!'", [$like])->orWhereRaw("phone LIKE ? ESCAPE '!'", [$like]));
+                if (ctype_digit($term)) $builder->orWhere('id', (int) $term);
+            });
+        }
         if (! empty($filters['status'])) {
             $query->where('status', $filters['status']);
         }

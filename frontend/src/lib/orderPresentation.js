@@ -16,6 +16,7 @@ export function getFulfillmentLabel(order = {}) {
   return ({
     pending: 'Đơn hàng đang chờ xử lý',
     processing: 'Đơn hàng đang được xử lý',
+    shipping: 'Đơn hàng đang được giao',
     delivered: 'Đơn hàng đã giao',
   })[order.status] ?? 'Chưa có dữ liệu trạng thái đơn';
 }

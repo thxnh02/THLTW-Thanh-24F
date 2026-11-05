@@ -34,7 +34,9 @@ test("public category and brand cards link to their API filter IDs", async () =>
 test("public post pagination is driven by URL state for refresh and browser history", () => {
   const page = read("../src/app/(shop)/posts/page.jsx");
   assert.match(page, /useSearchParams\(\)/);
-  assert.match(page, /router\.push\(postsPageHref\(target\)\)/);
-  assert.match(page, /router\.replace\(postsPageHref\(page\)/);
+  assert.match(page, /query\.set\('topic', topic\)/);
+  assert.match(page, /query\.set\('page', String\(target\)\)/);
+  assert.match(page, /router\.push\(`\/posts/);
+  assert.match(page, /router\.replace\(`\/posts/);
   assert.match(page, /new AbortController\(\)/);
 });

@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\DB;
 
 class ProductController extends Controller
 {
@@ -99,6 +100,18 @@ class ProductController extends Controller
             'min_price' => $range?->min_price === null ? null : number_format((float) $range->min_price, 2, '.', ''),
             'max_price' => $range?->max_price === null ? null : number_format((float) $range->max_price, 2, '.', ''),
         ]]);
+    }
+
+    public function bestsellers(): AnonymousResourceCollection
+    {
+        $sales = DB::table('order_items')->join('orders', 'orders.id', '=', 'order_items.order_id')
+            ->where('orders.status', 'delivered')->whereNotNull('order_items.product_id')
+            ->selectRaw('order_items.product_id, SUM(order_items.quantity) AS sold_quantity')
+            ->groupBy('order_items.product_id');
+        $products = $this->visibleProducts()->with(['category', 'brand'])
+            ->joinSub($sales, 'sales', 'sales.product_id', '=', 'products.id')
+            ->select('products.*')->orderByDesc('sales.sold_quantity')->orderByDesc('products.id')->limit(4)->get();
+        return ProductResource::collection($products);
     }
 
     public function suggestions(Request $request): AnonymousResourceCollection
@@ -202,7 +215,8 @@ class ProductController extends Controller
         $pattern = '%'.$literal.'%';
         $query->where(function (Builder $searchQuery) use ($pattern): void {
             $searchQuery->whereRaw("LOWER(products.name) LIKE ? ESCAPE '!'", [$pattern])
-                ->orWhereRaw("LOWER(products.slug) LIKE ? ESCAPE '!'", [$pattern]);
+                ->orWhereRaw("LOWER(products.slug) LIKE ? ESCAPE '!'", [$pattern])
+                ->orWhereRaw("LOWER(products.description) LIKE ? ESCAPE '!'", [$pattern]);
         });
     }
 

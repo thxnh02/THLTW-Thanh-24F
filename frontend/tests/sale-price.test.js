@@ -18,5 +18,7 @@ test("storefront and admin prices show the discount alongside the original price
   assert.match(card, /product\.sale_price != null/);
   assert.match(card, /formatPrice\(onSale \? product\.sale_price : product\.price\)/);
   assert.match(card, /line-through/);
-  assert.match(list, /item\.sale_price \?\? item\.price/);
+  assert.match(list, /salePrice < originalPrice/);
+  assert.match(list, /formatPrice\(hasDiscount \? salePrice : originalPrice\)/);
+  assert.match(list, /line-through/);
 });

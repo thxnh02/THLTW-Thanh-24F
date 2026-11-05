@@ -13,6 +13,7 @@
   </tr>@endforeach</tbody>
 </table>
 <p>Tạm tính: {{ $order->subtotal_vnd === null ? 'Chưa có dữ liệu' : number_format($order->subtotal_vnd, 0, ',', '.') . ' đ' }}</p>
+@if($order->coupon_code)<p>Mã {{ $order->coupon_code }}: giảm {{ number_format($order->discount_vnd, 0, ',', '.') }} đ</p>@endif
 <p>Phí giao hàng: {{ number_format($order->shipping_fee_vnd ?? 0, 0, ',', '.') }} đ</p>
 <p><strong>Tổng cộng: {{ $order->grand_total_vnd === null ? 'Chưa có dữ liệu' : number_format($order->grand_total_vnd, 0, ',', '.') . ' đ' }}</strong></p>
 <p>Thanh toán: {{ \App\Support\OrderPresentation::methodLabel($order) }} · {{ \App\Support\OrderPresentation::paymentLabel($order) }}</p>

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Http\Middleware\EnsureAdminAccess;
+use App\Http\Middleware\EnsureAdminBrowserSession;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
@@ -19,7 +20,7 @@ class CatalogApiTest extends TestCase
     {
         parent::setUp();
         // Catalog behavior is tested here; admin authorization has dedicated feature tests.
-        $this->withoutMiddleware([Authenticate::class, EnsureAdminAccess::class]);
+        $this->withoutMiddleware([Authenticate::class, EnsureAdminAccess::class, EnsureAdminBrowserSession::class]);
     }
 
     public function test_public_category_and_brand_endpoints_return_only_active_data(): void

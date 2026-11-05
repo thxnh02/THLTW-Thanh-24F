@@ -19,7 +19,8 @@ test("home categories link to the real category filter and feature only API-back
   assert.match(home, /sort=newest/);
   assert.match(home, /sale=1/);
   assert.match(home, /featured=1/);
-  assert.doesNotMatch(home, /bán chạy|best sellers|lượt mua/i);
+  assert.match(home, /productServices\.getBestsellers\(\)/);
+  assert.match(home, /Theo số lượng đã giao/);
 });
 
 test("product detail renders real relations, valid sale price, and related products", () => {

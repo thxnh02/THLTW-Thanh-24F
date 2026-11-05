@@ -11,6 +11,21 @@ class Order extends Model
 {
     protected $fillable = ['user_id', 'status'];
 
+    protected static function booted(): void
+    {
+        static::created(fn (Order $order) => $order->statusHistory()->create(['from_status' => null, 'to_status' => $order->status ?? 'pending', 'created_at' => now()]));
+        static::updated(function (Order $order): void {
+            if ($order->wasChanged('status')) {
+                $order->statusHistory()->create(['from_status' => $order->getOriginal('status'), 'to_status' => $order->status, 'created_at' => now()]);
+            }
+        });
+    }
+
+    public function statusHistory(): HasMany
+    {
+        return $this->hasMany(OrderStatusHistory::class)->orderBy('id');
+    }
+
     protected function casts(): array
     {
         return ['shipping_snapshot' => 'array', 'paid_at' => 'datetime', 'stock_restored_at' => 'datetime', 'payment_review_required' => 'boolean'];
@@ -43,6 +58,11 @@ class Order extends Model
 
     public function allowedNextStatuses(): array
     {
-        return OrderStatus::next($this->status);
+        $statuses = OrderStatus::next($this->status);
+        if ($this->payment_method === 'cod' && in_array($this->payment_status, ['pending', 'demo_paid'], true)
+            && in_array($this->status, ['pending', 'processing'], true) && ! $this->stock_restored_at) {
+            $statuses[] = 'cancelled';
+        }
+        return $statuses;
     }
 }

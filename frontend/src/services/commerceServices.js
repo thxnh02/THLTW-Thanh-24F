@@ -13,6 +13,7 @@ const commerceServices = {
   clear: () => change('delete', '/account/cart'),
   merge: (items) => change('post', '/account/cart/merge', { items }),
   checkout: (data) => change('post', '/account/orders', data),
+  previewCoupon: (data) => change('post', '/account/coupons/preview', data),
   orders: (page = 1) => authClient.get('/account/orders', { params: { page } }),
   order: (id) => authClient.get(`/account/orders/${id}`),
   orderPdf: (id) => authClient.get(`/account/orders/${id}/export/pdf`, { responseType: 'blob' }),

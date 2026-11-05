@@ -8,13 +8,15 @@ use App\Http\Requests\UpdatePostRequest;
 use App\Http\Resources\PostResource;
 use App\Models\Post;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use App\Support\AdminListFilters;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class AdminPostController extends Controller
 {
-    public function index(): AnonymousResourceCollection
+    public function index(Request $request): AnonymousResourceCollection
     {
-        return PostResource::collection(Post::orderByDesc('id')->paginate(10));
+        return PostResource::collection(AdminListFilters::apply($request, Post::orderByDesc('id'), 'title')->paginate(10)->withQueryString());
     }
 
     public function store(StorePostRequest $request): JsonResponse

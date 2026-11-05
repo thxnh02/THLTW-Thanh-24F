@@ -231,7 +231,7 @@ class CommerceApiTest extends TestCase
         $order = Order::query()->firstOrFail();
         $attempt = $order->paymentAttempts()->firstOrFail();
         $user->forceFill(['email_verified_at' => now()])->save();
-        $this->postJson('/api/admin/orders/'.$order->id.'/reconcile-payment', ['attempt_id' => $attempt->id])->assertForbidden();
+        $this->postJson('/api/admin/orders/'.$order->id.'/reconcile-payment', ['attempt_id' => $attempt->id])->assertUnauthorized();
         $this->postJson('/api/auth/logout')->assertOk();
         Http::fake(function ($request) use ($attempt) {
             $payload = $request->data();
@@ -243,8 +243,8 @@ class CommerceApiTest extends TestCase
         });
         $admin = $this->customer('query-admin@example.test');
         $admin->forceFill(['is_admin' => true, 'email_verified_at' => now()])->save();
-        $this->postJson('/api/admin/login', ['email' => $admin->email, 'password' => 'example-password'])->assertOk();
-        $this->signIn($admin);
+        $login = $this->postJson('/api/admin/login', ['email' => $admin->email, 'password' => 'example-password'])->assertOk();
+        $this->withCredentials()->withCookie('ct24f_admin_auth', $login->getCookie('ct24f_admin_auth')->getValue());
         $this->postJson('/api/admin/orders/'.$order->id.'/reconcile-payment', ['attempt_id' => $attempt->id])
             ->assertOk()->assertJsonPath('data.outcome', 'success')->assertJsonPath('data.order.payment_status', 'paid');
         $this->assertSame(1, $product->fresh()->stock_quantity);
@@ -366,12 +366,13 @@ class CommerceApiTest extends TestCase
             'idempotency_key' => (string) Str::uuid(), 'buy_now_product_id' => $product->id, 'buy_now_quantity' => 1])->assertCreated();
         $order = Order::query()->firstOrFail();
         $user->forceFill(['email_verified_at' => now()])->save();
-        $this->postJson('/api/admin/orders/'.$order->id.'/close-unpaid', ['reason' => 'Đã kiểm tra thất bại'])->assertForbidden();
+        $this->postJson('/api/admin/orders/'.$order->id.'/close-unpaid', ['reason' => 'Đã kiểm tra thất bại'])->assertUnauthorized();
         $this->postJson('/api/auth/logout')->assertOk();
         $admin = $this->customer('close-admin@example.test');
         $admin->forceFill(['is_admin' => true, 'email_verified_at' => now()])->save();
-        $this->postJson('/api/admin/login', ['email' => $admin->email, 'password' => 'example-password'])->assertOk();
-        $this->signIn($admin);
+        $this->withoutMiddleware(\Illuminate\Routing\Middleware\ThrottleRequests::class);
+        $login = $this->postJson('/api/admin/login', ['email' => $admin->email, 'password' => 'example-password'])->assertOk();
+        $this->withCredentials()->withCookie('ct24f_admin_auth', $login->getCookie('ct24f_admin_auth')->getValue());
         $this->postJson('/api/admin/orders/'.$order->id.'/close-unpaid', ['reason' => 'Đã kiểm tra thất bại'])->assertUnprocessable();
         $attempt = $order->paymentAttempts()->firstOrFail();
         $fields = ['vnp_TmnCode' => 'TESTMERCHANT', 'vnp_CurrCode' => 'VND', 'vnp_Amount' => '500000',

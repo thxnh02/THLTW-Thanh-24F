@@ -233,9 +233,9 @@ class CustomerAuthApiTest extends TestCase
         $validUser = $this->createUser('rate@example.com', verified: false);
         $this->postJson('/api/auth/email/resend', ['email' => $validUser->email])->assertAccepted();
         foreach (range(1, 10) as $attempt) {
-            $response = $this->postJson('/api/auth/email/verify', ['email' => $validUser->email, 'code' => '000000']);
+            $this->postJson('/api/auth/email/verify', ['email' => $validUser->email, 'code' => '000000'])->assertUnprocessable();
         }
-        $response->assertStatus(429);
+        $this->postJson('/api/auth/email/verify', ['email' => $validUser->email, 'code' => '000000'])->assertStatus(429);
     }
 
     public function test_password_reset_version_change_rejects_an_existing_customer_session(): void

@@ -26,6 +26,7 @@ class UpdatePostRequest extends FormRequest
             'title' => ['required', 'string', 'max:180'],
             'slug' => ['required', 'string', 'max:200', Rule::unique('posts', 'slug')->ignore($this->route('post'))],
             'content' => ['required', 'string'],
+            'topic_id' => ['nullable', 'integer', Rule::exists('post_topics', 'id')],
             'status' => ['required', 'boolean'],
         ];
     }

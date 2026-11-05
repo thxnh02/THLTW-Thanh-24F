@@ -9,8 +9,10 @@ use App\Models\Order;
 use App\Models\PaymentAttempt;
 use App\Models\Product;
 use App\Models\User;
+use App\Models\SiteSetting;
 use App\Support\CommerceNotification;
 use App\Support\CommercePrice;
+use App\Support\CouponDiscount;
 use App\Support\VnPayGateway;
 use App\Support\VnPayReconciler;
 use Illuminate\Http\JsonResponse;
@@ -30,7 +32,7 @@ class CustomerOrderController extends Controller
 
     public function show(Request $request, int $order): OrderResource
     {
-        return new OrderResource($this->owned($request, $order)->load(['items', 'paymentAttempts']));
+        return new OrderResource($this->owned($request, $order)->load(['items', 'paymentAttempts', 'statusHistory']));
     }
 
     public function checkout(Request $request, VnPayGateway $gateway): JsonResponse
@@ -40,6 +42,10 @@ class CustomerOrderController extends Controller
             'payment_method' => ['required', 'in:cod,vnpay'],
             'idempotency_key' => ['required', 'uuid'],
             'customer_note' => ['nullable', 'string', 'max:500'],
+            'coupon_code' => ['nullable', 'string', 'max:40'],
+            'coupon_expected_subtotal' => ['required_with:coupon_code', 'integer', 'min:0', 'max:900000000000'],
+            'coupon_expected_discount' => ['required_with:coupon_code', 'integer', 'min:0', 'max:900000000000'],
+            'expected_shipping_fee_vnd' => ['sometimes', 'integer', 'min:0', 'max:1000000000'],
             'buy_now_product_id' => ['nullable', 'integer', 'min:1'],
             'buy_now_quantity' => ['required_with:buy_now_product_id', 'integer', 'min:1', 'max:20'],
         ]);
@@ -83,29 +89,41 @@ class CustomerOrderController extends Controller
                     'product_slug' => $product->slug, 'product_image' => $product->image,
                     'unit_price_vnd' => $price, 'quantity' => $item->quantity, 'line_total_vnd' => $total];
                 if ($product->stock_quantity !== null) {
+                    $product->stockReason = 'Đặt hàng';
                     $product->stock_quantity -= $item->quantity;
                     $product->save();
                 }
             }
-            $shipping = (int) config('commerce.shipping_fee_vnd', 0);
+            $shipping = (int) (SiteSetting::find(1)?->shipping_fee_vnd ?? config('commerce.shipping_fee_vnd', 0));
+            if (isset($data['expected_shipping_fee_vnd']) && $shipping !== (int) $data['expected_shipping_fee_vnd']) {
+                throw ValidationException::withMessages(['shipping' => 'Phí giao hàng đã thay đổi. Vui lòng tải lại trang trước khi đặt hàng.']);
+            }
+            $coupon = ! empty($data['coupon_code']) ? CouponDiscount::find($data['coupon_code'], true) : null;
+            $discount = $coupon ? CouponDiscount::calculate($coupon, $subtotal, $request->user()->id, $lines) : 0;
+            if ($coupon && ($subtotal !== (int) $data['coupon_expected_subtotal'] || $discount !== (int) $data['coupon_expected_discount'])) {
+                throw ValidationException::withMessages(['coupon_code' => 'Giá hoặc mã giảm giá đã thay đổi. Vui lòng áp dụng lại mã trước khi đặt hàng.']);
+            }
+            $total = $subtotal - $discount + $shipping;
             if ($data['payment_method'] === 'vnpay') {
-                $gateway->assertAmount($subtotal + $shipping);
+                $gateway->assertAmount($total);
             }
             $snapshot = $address->only(['recipient_name', 'recipient_phone', 'province', 'ward', 'district', 'street', 'detail', 'delivery_note']);
             $order = new Order;
             $order->forceFill([
                 'user_id' => $request->user()->id, 'order_code' => (string) Str::uuid(),
                 'status' => 'pending', 'shipping_snapshot' => $snapshot, 'subtotal_vnd' => $subtotal,
-                'shipping_fee_vnd' => $shipping, 'grand_total_vnd' => $subtotal + $shipping,
+                'shipping_fee_vnd' => $shipping, 'coupon_id' => $coupon?->id, 'coupon_code' => $coupon?->code,
+                'discount_vnd' => $discount, 'grand_total_vnd' => $total,
                 'payment_method' => $data['payment_method'],
                 'payment_status' => 'pending',
                 'idempotency_key' => $data['idempotency_key'], 'customer_note' => $data['customer_note'] ?? null,
             ])->save();
             $order->items()->createMany($lines);
+            if ($coupon) $coupon->increment('used_count');
             if ($data['payment_method'] === 'vnpay') {
                 $created = now();
                 $order->paymentAttempts()->create(['provider' => 'vnpay', 'txn_ref' => (string) Str::ulid(),
-                    'amount_vnd' => $subtotal + $shipping, 'state' => 'pending',
+                    'amount_vnd' => $total, 'state' => 'pending',
                     'pay_created_at' => $created, 'pay_expires_at' => $created->copy()->addMinutes(15)]);
                 CommerceNotification::order($order, 'pending', 'Đơn hàng đang chờ thanh toán', 'Đang chờ xác nhận thanh toán VNPay.');
             } else {
@@ -176,7 +194,12 @@ class CustomerOrderController extends Controller
             $owned->save();
             foreach ($owned->items as $item) {
                 if ($item->product_id) {
-                    Product::withTrashed()->whereKey($item->product_id)->whereNotNull('stock_quantity')->increment('stock_quantity', $item->quantity);
+                    $product = Product::withTrashed()->whereKey($item->product_id)->lockForUpdate()->first();
+                    if ($product && $product->stock_quantity !== null) {
+                        $product->stockReason = 'Khách hủy đơn';
+                        $product->stock_quantity += $item->quantity;
+                        $product->save();
+                    }
                 }
             }
             CommerceNotification::order($owned, 'cancelled', 'Đơn hàng đã hủy', 'Đơn COD đã được hủy.');

@@ -1,5 +1,5 @@
-const labels = { pending: "Chờ xử lý", processing: "Đang xử lý", delivered: "Đã giao", cancelled: "Đã hủy" };
-const tones = { pending: "bg-amber-50 text-amber-800 ring-amber-200", processing: "bg-indigo-50 text-indigo-800 ring-indigo-200", delivered: "bg-emerald-50 text-emerald-800 ring-emerald-200", cancelled: "bg-slate-100 text-slate-700 ring-slate-200" };
+const labels = { pending: "Chờ xử lý", processing: "Đã xác nhận", shipping: "Đang giao", delivered: "Đã giao", cancelled: "Đã hủy" };
+const tones = { pending: "bg-amber-50 text-amber-800 ring-amber-200", processing: "bg-indigo-50 text-indigo-800 ring-indigo-200", shipping: "bg-sky-50 text-sky-800 ring-sky-200", delivered: "bg-emerald-50 text-emerald-800 ring-emerald-200", cancelled: "bg-slate-100 text-slate-700 ring-slate-200" };
 
 export function orderStatusLabel(status) {
   return labels[status] ?? status ?? "—";

@@ -1,11 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { slugify } from "@/lib/slugify.mjs";
+import axiosClient from "@/lib/axiosClient";
 
 export default function PostForm({ initialData, errors = {}, onSubmit, submitting }) {
-  const [form, setForm] = useState({ title: initialData?.title ?? "", slug: initialData?.slug ?? "", content: initialData?.content ?? "", status: initialData?.status ?? false });
+  const [form, setForm] = useState({ title: initialData?.title ?? "", slug: initialData?.slug ?? "", content: initialData?.content ?? "", status: initialData?.status ?? false, topic_id: initialData?.topic_id ?? "" });
+  const [topics, setTopics] = useState([]);
+  const [topicError, setTopicError] = useState(false);
+  useEffect(() => {
+    let active = true;
+    axiosClient.get('/post-topics').then(({ data }) => { if (active) setTopics(data.data ?? []); }).catch(() => { if (active) setTopicError(true); });
+    return () => { active = false; };
+  }, []);
   const [manualSlug, setManualSlug] = useState(false);
   const message = (field) => errors[field]?.[0];
 
@@ -17,7 +25,7 @@ export default function PostForm({ initialData, errors = {}, onSubmit, submittin
 
   const save = (event) => {
     event.preventDefault();
-    onSubmit(form);
+    onSubmit({ ...form, topic_id: form.topic_id ? Number(form.topic_id) : null });
   };
 
   return (
@@ -30,6 +38,7 @@ export default function PostForm({ initialData, errors = {}, onSubmit, submittin
         </section>
         <section className="space-y-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
           <div><h2 className="text-lg font-semibold text-slate-950">Xuất bản</h2><p className="mt-1 text-sm text-slate-500">Đường dẫn và trạng thái hiển thị.</p></div>
+          <label className="admin-label">Chủ đề<select className="admin-input" name="topic_id" value={form.topic_id} onChange={change} disabled={topicError}><option value="">Chưa phân loại</option>{topics.map((topic) => <option key={topic.id} value={topic.id}>{topic.name}</option>)}</select>{topicError && <small className="text-rose-700" role="alert">Không tải được chủ đề. Vui lòng tải lại trang.</small>}{message('topic_id') && <small className="text-rose-700" role="alert">{message('topic_id')}</small>}</label>
           <div><label className="admin-label" htmlFor="post-slug">Đường dẫn (slug)</label><input aria-invalid={Boolean(message("slug"))} className="admin-input" id="post-slug" maxLength={200} name="slug" required value={form.slug} onChange={change} /><button className="mt-2 text-xs font-semibold text-indigo-700 hover:underline" onClick={() => { setForm((current) => ({ ...current, slug: slugify(current.title) })); setManualSlug(false); }} type="button">Tạo lại từ tiêu đề</button>{message("slug") && <small className="mt-1 block text-rose-700" role="alert">{message("slug")}</small>}</div>
           <label className="flex min-h-11 items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-700"><input checked={form.status} className="size-4 accent-indigo-700" name="status" onChange={change} type="checkbox" /> Hiển thị bài viết</label>
         </section>

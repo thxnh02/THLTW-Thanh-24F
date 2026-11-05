@@ -75,7 +75,7 @@ export default function PaymentResultPage() {
     schedule();
     document.addEventListener('visibilitychange', schedule);
     return () => { window.clearTimeout(timer); document.removeEventListener('visibilitychange', schedule); };
-  }, [result?.id, result?.payment_status, pollCount, refreshOrder]);
+  }, [result?.id, result?.payment_method, result?.payment_status, pollCount, refreshOrder]);
 
   const status = result?.payment_status;
   const paymentCopy = getPaymentResultCopy(result ?? {});

@@ -34,15 +34,18 @@ function Harness() {
   const cart = useCart();
   return React.createElement('div', null,
     React.createElement('span', { id: 'count' }, cart.count),
-    React.createElement('button', { onClick: () => cart.add(7, 1) }, 'Thêm'));
+    React.createElement('button', { onClick: () => cart.add(7, 1).catch((error) => { document.getElementById('error').textContent = error.message; }) }, 'Thêm'),
+    React.createElement('span', { id: 'error' }));
 }
 
-test('guest cart stores only product IDs and merges once after login', async () => {
+test('guest cannot add to cart and legacy cart merges once after login', async () => {
   const root = createRoot(document.getElementById('root'));
   await act(async () => { root.render(React.createElement(CartProvider, null, React.createElement(Harness))); });
   await act(async () => { document.querySelector('button').click(); });
-  assert.deepEqual(JSON.parse(localStorage.getItem('ct24f_guest_cart_v1')), [{ product_id: 7, quantity: 1 }]);
-  assert.equal(document.getElementById('count').textContent, '1');
+  assert.equal(localStorage.getItem('ct24f_guest_cart_v1'), null);
+  assert.match(document.getElementById('error').textContent, /đăng nhập/);
+  assert.equal(document.getElementById('count').textContent, '0');
+  localStorage.setItem('ct24f_guest_cart_v1', JSON.stringify([{ product_id: 7, quantity: 1 }]));
   activeUser = { id: 10 };
   await act(async () => { root.render(React.createElement(CartProvider, null, React.createElement(Harness))); });
   assert.deepEqual(merges, [[{ product_id: 7, quantity: 1 }]]);

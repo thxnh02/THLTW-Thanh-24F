@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { catalogImageUrl } from "@/lib/catalogImage";
 import { useCart } from "@/contexts/CartContext";
+import { useCustomerAuth } from "@/contexts/CustomerAuthContext";
 
 export function formatPrice(value) {
   return `${Number(value ?? 0).toLocaleString("vi-VN")} đ`;
@@ -13,11 +14,13 @@ export function formatPrice(value) {
 export default function ProductCard({ product }) {
   const router = useRouter();
   const { add } = useCart();
+  const { user, loading: authLoading } = useCustomerAuth();
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState('');
   const soldOut = product.stock_quantity === 0;
   const addItem = async (buyNow = false) => {
     if (buyNow) { router.push(`/checkout?buy=${product.id}&quantity=1`); return; }
+    if (!user) { router.push(`/login?returnTo=${encodeURIComponent(`${window.location.pathname}${window.location.search}`)}`); return; }
     setBusy(true); setNotice('');
     try {
       await add(product.id, 1);
@@ -45,7 +48,7 @@ export default function ProductCard({ product }) {
         </div>
       </div>
     </Link>
-    <div className="flex gap-2 border-t border-[#edf1ed] p-3"><button aria-label={`Thêm ${product.name} vào giỏ`} className="min-h-10 flex-1 rounded-full border border-[#b7d0bd] px-2 text-xs font-semibold text-[#28584a] hover:bg-[#eef5ef] disabled:opacity-50" disabled={busy || soldOut} onClick={() => addItem(false)} type="button">{soldOut ? 'Hết hàng' : 'Thêm vào giỏ'}</button><button className="min-h-10 rounded-full bg-[#193f36] px-3 text-xs font-semibold text-white hover:bg-[#28564d] disabled:opacity-50" disabled={busy || soldOut} onClick={() => addItem(true)} type="button">Mua ngay</button></div>
+    <div className="flex gap-2 border-t border-[#edf1ed] p-3"><button aria-label={user ? `Thêm ${product.name} vào giỏ` : `Đăng nhập để thêm ${product.name} vào giỏ`} className="min-h-10 flex-1 rounded-full border border-[#b7d0bd] px-2 text-xs font-semibold text-[#28584a] hover:bg-[#eef5ef] disabled:opacity-50" disabled={busy || soldOut || authLoading} onClick={() => addItem(false)} type="button">{soldOut ? 'Hết hàng' : authLoading ? 'Đang kiểm tra…' : user ? 'Thêm vào giỏ' : 'Đăng nhập để thêm'}</button><button className="min-h-10 rounded-full bg-[#193f36] px-3 text-xs font-semibold text-white hover:bg-[#28564d] disabled:opacity-50" disabled={busy || soldOut || authLoading} onClick={() => addItem(true)} type="button">Mua ngay</button></div>
     {notice && <p aria-live="polite" className="px-3 pb-3 text-xs text-[#37665b]">{notice}</p>}
   </article>;
 }

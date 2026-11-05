@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Http\Middleware\EnsureAdminAccess;
+use App\Http\Middleware\EnsureAdminBrowserSession;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
@@ -140,7 +141,7 @@ class PublicProductSearchDetailTest extends TestCase
 
     public function test_admin_can_create_a_curated_featured_product(): void
     {
-        $this->withoutMiddleware([Authenticate::class, EnsureAdminAccess::class]);
+        $this->withoutMiddleware([Authenticate::class, EnsureAdminAccess::class, EnsureAdminBrowserSession::class]);
         $category = $this->category('admin-featured');
 
         $this->postJson('/api/admin/products', [

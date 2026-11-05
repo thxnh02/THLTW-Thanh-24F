@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { ArrowUpRight, Sparkles } from "lucide-react";
 import ProductCard from "@/components/shop/ProductCard";
@@ -8,11 +9,12 @@ import PostCard from "@/components/shop/PostCard";
 import categoryServices from "@/services/categoryServices";
 import productServices from "@/services/productServices";
 import postServices from "@/services/postServices";
+import axiosClient from "@/lib/axiosClient";
 
 const categoryIcons = { "dien-thoai": "◉", laptop: "▱", "phu-kien": "⌁", "sac-va-cap": "ϟ" };
-const initialData = { categories: [], newest: [], sale: [], featured: [], posts: [] };
-const initialLoading = { categories: true, newest: true, sale: true, featured: true, posts: true };
-const initialErrors = { categories: false, newest: false, sale: false, featured: false, posts: false };
+const initialData = { categories: [], newest: [], sale: [], featured: [], bestselling: [], banners: [], posts: [] };
+const initialLoading = { categories: true, newest: true, sale: true, featured: true, bestselling: true, posts: true };
+const initialErrors = { categories: false, newest: false, sale: false, featured: false, bestselling: false, posts: false };
 
 function ProductSection({ eyebrow, title, href, linkLabel, products, loading, error, emptyMessage, onRetry }) {
   return <section aria-label={title}>
@@ -37,6 +39,8 @@ export default function HomePage() {
       ["newest", productServices.getProducts({ sort: "newest", per_page: 4 })],
       ["sale", productServices.getProducts({ sale: 1, sort: "price_asc", per_page: 4 })],
       ["featured", productServices.getProducts({ featured: 1, sort: "newest", per_page: 4 })],
+      ["bestselling", productServices.getBestsellers()],
+      ["banners", axiosClient.get('/site-content/banner')],
       ["posts", postServices.getPublishedPosts({ page: 1, per_page: 3 })],
     ];
 
@@ -52,7 +56,7 @@ export default function HomePage() {
       });
       setData(nextData);
       setErrors(nextErrors);
-      setLoading({ categories: false, newest: false, sale: false, featured: false, posts: false });
+      setLoading({ categories: false, newest: false, sale: false, featured: false, bestselling: false, posts: false });
     });
 
     return () => { active = false; };
@@ -78,9 +82,11 @@ export default function HomePage() {
       {!loading.categories && !errors.categories && data.categories.length === 0 && <p className="rounded-2xl border border-dashed border-[#d6dfd9] p-7 text-center text-sm text-slate-500">Chưa có danh mục đang hiển thị.</p>}
     </section>
 
+    {data.banners?.map((banner) => <section className="overflow-hidden rounded-2xl border border-[#dce7de] bg-[#edf4ee]" key={banner.slug}><div className="grid items-center gap-4 p-6 sm:grid-cols-2"> <div><h2 className="text-xl font-semibold text-[#19352f]">{banner.title}</h2>{banner.body && <p className="mt-2 whitespace-pre-wrap text-sm text-slate-600">{banner.body}</p>}{banner.href && <Link className="mt-4 inline-flex min-h-11 items-center rounded-full bg-[#193f36] px-5 text-sm font-semibold text-white" href={banner.href}>Tìm hiểu thêm</Link>}</div>{banner.image && <Image unoptimized width={640} height={240} className="h-40 w-full rounded-xl object-cover" src={banner.image} alt="" />}</div></section>)}
     <ProductSection eyebrow="Cập nhật từ danh mục đang hiển thị" title="Sản phẩm mới nhất" href="/products?sort=newest" linkLabel="Xem tất cả" products={data.newest} loading={loading.newest} error={errors.newest} emptyMessage="Chưa có sản phẩm đang hiển thị." onRetry={retrySection} />
     <ProductSection eyebrow="Chỉ sản phẩm có giá ưu đãi hợp lệ" title="Đang khuyến mãi" href="/products?sale=1" linkLabel="Xem ưu đãi" products={data.sale} loading={loading.sale} error={errors.sale} emptyMessage="Hiện chưa có sản phẩm có giá khuyến mãi thấp hơn giá gốc." onRetry={retrySection} />
     <ProductSection eyebrow="Được quản trị viên lựa chọn" title="Sản phẩm nổi bật" href="/products?featured=1" linkLabel="Xem sản phẩm nổi bật" products={data.featured} loading={loading.featured} error={errors.featured} emptyMessage="Chưa có sản phẩm được quản trị viên chọn nổi bật." onRetry={retrySection} />
+    <ProductSection eyebrow="Theo số lượng đã giao" title="Sản phẩm bán chạy" href="/products" linkLabel="Xem sản phẩm" products={data.bestselling} loading={loading.bestselling} error={errors.bestselling} emptyMessage="Chưa có sản phẩm trong đơn hàng đã giao." onRetry={retrySection} />
 
     <section aria-labelledby="home-posts-heading">
       <div className="mb-6 flex items-end justify-between gap-4"><div><p className="eyebrow">Nội dung đã xuất bản</p><h2 className="section-title" id="home-posts-heading">Bài viết mới</h2></div><Link className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-[#37665b] hover:underline" href="/posts">Tất cả bài viết<ArrowUpRight aria-hidden="true" size={16} /></Link></div>

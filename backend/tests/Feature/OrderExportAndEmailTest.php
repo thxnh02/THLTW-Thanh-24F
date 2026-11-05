@@ -66,7 +66,8 @@ class OrderExportAndEmailTest extends TestCase
         $cancelled = $this->order($admin);
         $cancelled->forceFill(['status' => 'cancelled', 'created_at' => now(), 'updated_at' => now()])->save();
 
-        $this->postJson('/api/admin/login', ['email' => $admin->email, 'password' => 'synthetic-password'])->assertOk();
+        $login = $this->postJson('/api/admin/login', ['email' => $admin->email, 'password' => 'synthetic-password'])->assertOk();
+        $this->withCredentials()->withCookie('ct24f_admin_auth', $login->getCookie('ct24f_admin_auth')->getValue());
         $response = $this->getJson('/api/admin/orders/export/csv?payment_status=demo_paid&created_from='.now()->format('Y-m-d'))
             ->assertOk()->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
         $csv = $response->streamedContent();

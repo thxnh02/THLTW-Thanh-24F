@@ -26,6 +26,7 @@ class StorePostRequest extends FormRequest
             'title' => ['required', 'string', 'max:180'],
             'slug' => ['required', 'string', 'max:200', Rule::unique('posts', 'slug')],
             'content' => ['required', 'string'],
+            'topic_id' => ['nullable', 'integer', Rule::exists('post_topics', 'id')],
             'status' => ['required', 'boolean'],
         ];
     }

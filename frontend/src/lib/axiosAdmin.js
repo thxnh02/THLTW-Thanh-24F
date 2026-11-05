@@ -2,7 +2,7 @@ import axios from 'axios';
 import API_CONFIG from '@/config/api';
 import { ensureAuthCsrfCookie } from '@/lib/axiosAuth';
 
-// Admin API calls use the same Sanctum session cookie as the login form.
+// Admin API calls use a dedicated HttpOnly cookie; the CSRF token still comes from Laravel.
 const axiosAdmin = axios.create({
   baseURL: API_CONFIG.BASE_URL,
   headers: API_CONFIG.HEADERS,

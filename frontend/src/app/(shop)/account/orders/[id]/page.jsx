@@ -7,6 +7,7 @@ import commerceServices from '@/services/commerceServices';
 import { formatPrice } from '@/components/shop/ProductCard';
 import { downloadErrorMessage, saveBlobDownload } from '@/lib/downloadFile';
 import { getFulfillmentLabel, getPaymentLabel } from '@/lib/orderPresentation';
+import OrderHistory from '@/components/common/OrderHistory';
 
 const attemptLabels = { pending: 'Đang chờ', needs_review: 'Cần đối soát', failed: 'Không thành công', succeeded: 'Đã xác nhận' };
 
@@ -26,7 +27,7 @@ export default function CustomerOrderDetailPage() {
   const cancel = async () => {
     if (!window.confirm('Hủy đơn hàng này?')) return;
     setBusy(true);
-    try { const { data } = await commerceServices.cancel(id); setOrder(data.data); }
+    try { await commerceServices.cancel(id); await reload(); }
     catch (requestError) { setError(requestError.response?.data?.message ?? 'Không thể hủy đơn.'); }
     finally { setBusy(false); }
   };
@@ -60,8 +61,9 @@ export default function CustomerOrderDetailPage() {
         <button className="min-h-11 rounded-full border border-[#b7d0bd] px-5 text-sm font-semibold text-[#28584a] disabled:opacity-50" disabled={downloading} onClick={downloadPdf} type="button">{downloading ? 'Đang tạo phiếu…' : 'Tải phiếu đơn hàng PDF'}</button>
       </div>
     </section>
+    <section className="rounded-2xl border border-[#e3ebe5] bg-white p-5"><OrderHistory history={order.status_history} /></section>
     {order.payment_method === 'vnpay' && <section className="rounded-2xl border border-[#e3ebe5] bg-white p-5"><h3 className="font-semibold">Lịch sử giao dịch VNPay</h3><div className="mt-3 space-y-3">{order.payment_attempts?.length ? order.payment_attempts.map((attempt) => <div className="rounded-xl bg-[#f4f7f4] p-3 text-sm" key={attempt.id}><p>Giao dịch #{attempt.id}: <strong>{attemptLabels[attempt.state] ?? 'Chưa rõ'}</strong></p><p className="mt-1 text-xs text-slate-600">Tạo: {attempt.created_at ? new Date(attempt.created_at).toLocaleString('vi-VN') : 'Chưa rõ'} · Kiểm tra gần nhất: {attempt.last_checked_at ? new Date(attempt.last_checked_at).toLocaleString('vi-VN') : 'Chưa kiểm tra'}</p></div>) : <p className="text-sm text-slate-500">Chưa có giao dịch.</p>}</div></section>}
-    <section className="rounded-2xl border border-[#e3ebe5] bg-white p-5"><h3 className="font-semibold">Sản phẩm</h3><div className="mt-3 space-y-2">{order.items?.length ? order.items.map((item) => <p className="flex justify-between gap-3 text-sm" key={item.id}><span>{item.product_name} × {item.quantity}</span><span>{formatPrice(item.line_total_vnd)}</span></p>) : <p className="text-sm text-slate-500">Đơn cũ chưa có chi tiết sản phẩm.</p>}</div><p className="mt-4 border-t pt-3 font-bold">Tổng cộng: {order.grand_total_vnd == null ? 'Chưa có tổng tiền' : formatPrice(order.grand_total_vnd)}</p></section>
+    <section className="rounded-2xl border border-[#e3ebe5] bg-white p-5"><h3 className="font-semibold">Sản phẩm</h3><div className="mt-3 space-y-2">{order.items?.length ? order.items.map((item) => <p className="flex justify-between gap-3 text-sm" key={item.id}><span>{item.product_name} × {item.quantity}</span><span>{formatPrice(item.line_total_vnd)}</span></p>) : <p className="text-sm text-slate-500">Đơn cũ chưa có chi tiết sản phẩm.</p>}</div>{order.coupon_code && <p className="mt-3 text-sm text-emerald-700">Mã {order.coupon_code}: −{formatPrice(order.discount_vnd)}</p>}<p className="mt-4 border-t pt-3 font-bold">Tổng cộng: {order.grand_total_vnd == null ? 'Chưa có tổng tiền' : formatPrice(order.grand_total_vnd)}</p></section>
     {address && <section className="rounded-2xl border border-[#e3ebe5] bg-white p-5"><h3 className="font-semibold">Địa chỉ lúc đặt hàng</h3><p className="mt-2 text-sm text-slate-600">{address.recipient_name} · {address.recipient_phone}<br />{[address.detail, address.street, address.ward, address.district, address.province].filter(Boolean).join(', ')}</p></section>}
   </div>;
 }

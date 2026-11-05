@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import AdminTable from "@/components/admin/AdminTable";
+import AdminSearchFilter from "@/components/admin/AdminSearchFilter";
 import AdminRowActions from "@/components/admin/AdminRowActions";
 import AdminCatalogThumbnail from "@/components/admin/AdminCatalogThumbnail";
 import ConfirmDialog from "@/components/admin/ConfirmDialog";
@@ -14,6 +15,8 @@ import categoryServices from "@/services/categoryServices";
 export default function AdminCategoriesPage() {
   const [data, setData] = useState([]);
   const [meta, setMeta] = useState(null);
+  const [query, setQuery] = useState("");
+  const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [confirming, setConfirming] = useState(null);
@@ -22,17 +25,17 @@ export default function AdminCategoriesPage() {
   const load = useCallback((page = 1) => {
     setLoading(true);
     setError("");
-    categoryServices.getAdminCategories({ page }).then((response) => {
+    categoryServices.getAdminCategories({ page, q: query || undefined, status: status || undefined }).then((response) => {
       setData(response.data.data);
       setMeta(response.data.meta);
     }).catch((requestError) => {
       setError(requestError.response?.data?.message ?? "Không thể tải danh mục.");
     }).finally(() => setLoading(false));
-  }, []);
+  }, [query, status]);
 
   useEffect(() => {
     let current = true;
-    categoryServices.getAdminCategories({ page: 1 }).then((response) => {
+    categoryServices.getAdminCategories({ page: 1, q: query || undefined, status: status || undefined }).then((response) => {
       if (!current) return;
       setData(response.data.data);
       setMeta(response.data.meta);
@@ -42,7 +45,7 @@ export default function AdminCategoriesPage() {
       if (current) setLoading(false);
     });
     return () => { current = false; };
-  }, []);
+  }, [query, status]);
 
   // Cấu hình các cột mà AdminTable sẽ hiển thị.
   const columns = [
@@ -62,6 +65,7 @@ export default function AdminCategoriesPage() {
           <Link className="inline-flex min-h-11 items-center rounded-lg bg-slate-950 px-4 text-sm font-semibold text-white hover:bg-indigo-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2" href="/admin/category/create">Thêm danh mục</Link>
         </div>
       </header>
+      <AdminSearchFilter onSearch={setQuery} status={status} onStatusChange={setStatus} />
       <AdminTable columns={columns} data={data} emptyMessage="Chưa có danh mục nào." error={error} loading={loading} onRetry={() => load(meta?.current_page ?? 1)} renderActions={(item) => <AdminRowActions editHref={`/admin/category/${item.id}/edit`} itemName={`danh mục ${item.name}`} onDelete={() => setConfirming(item)} />} />
       <ConfirmDialog actionLabel="Chuyển vào thùng rác" description="Bạn có chắc muốn xóa danh mục" onComplete={() => load(meta?.current_page ?? 1)} onConfirm={(item) => categoryServices.deleteCategory(item.id)} onDismiss={() => setConfirming(null)} record={confirming} title="Xóa danh mục này?" />
       <Pagination meta={meta} onPageChange={load} />

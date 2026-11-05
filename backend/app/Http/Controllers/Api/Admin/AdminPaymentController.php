@@ -42,7 +42,12 @@ class AdminPaymentController extends Controller
             $locked->forceFill(['status' => 'cancelled', 'stock_restored_at' => now()])->save();
             foreach ($locked->items as $item) {
                 if ($item->product_id) {
-                    Product::withTrashed()->whereKey($item->product_id)->whereNotNull('stock_quantity')->increment('stock_quantity', $item->quantity);
+                    $product = Product::withTrashed()->whereKey($item->product_id)->lockForUpdate()->first();
+                    if ($product && $product->stock_quantity !== null) {
+                        $product->stockReason = 'Đóng đơn VNPay thất bại';
+                        $product->stock_quantity += $item->quantity;
+                        $product->save();
+                    }
                 }
             }
             DB::table('payment_reconciliation_events')->insert([

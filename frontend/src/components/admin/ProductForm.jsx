@@ -29,10 +29,25 @@ export default function ProductForm({ initialData = blank, categories = [], bran
   const [slugManual, setSlugManual] = useState(false);
 
   const message = (name) => errors[name]?.[0];
+  const originalPrice = Number(form.price);
+  const salePrice = form.sale_price === "" ? null : Number(form.sale_price);
+  const hasDiscount = salePrice !== null && originalPrice > 0 && salePrice >= 0 && salePrice < originalPrice;
+  const discountPercent = hasDiscount ? Math.round(((originalPrice - salePrice) / originalPrice) * 100) : "";
+  const discountAmount = hasDiscount ? originalPrice - salePrice : 0;
   const change = (event) => {
     const { name, value, type, checked } = event.target;
     setForm((current) => ({ ...current, [name]: type === "checkbox" ? checked : value, ...(name === "name" && !slugManual ? { slug: slugify(value) } : {}) }));
     if (name === "slug") setSlugManual(Boolean(value.trim()));
+  };
+  const changeDiscountPercent = (event) => {
+    const value = event.target.value;
+    const percent = Number(value);
+    if (value === "") {
+      setForm((current) => ({ ...current, sale_price: "" }));
+    } else if (originalPrice > 0 && percent >= 1 && percent <= 99) {
+      const nextSalePrice = Math.round(originalPrice * (1 - percent / 100) * 100) / 100;
+      setForm((current) => ({ ...current, sale_price: String(nextSalePrice) }));
+    }
   };
   const resetSlug = () => {
     setForm((current) => ({ ...current, slug: slugify(current.name) }));
@@ -69,13 +84,16 @@ export default function ProductForm({ initialData = blank, categories = [], bran
         <div className="space-y-5">
       <section aria-labelledby="product-pricing-heading" className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
         <h2 className="text-lg font-semibold text-slate-950" id="product-pricing-heading">Giá bán và hình ảnh</h2>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <label className="admin-label">Giá gốc<input {...fieldProps("price")} className="admin-input" inputMode="decimal" min="0" name="price" required step="0.01" type="number" value={form.price} onChange={change} />{fieldError("price")}</label>
-          <label className="admin-label">Giá khuyến mãi <span className="font-normal text-slate-500">(không bắt buộc)</span><input {...fieldProps("sale_price")} className="admin-input" inputMode="decimal" min="0" name="sale_price" step="0.01" type="number" value={form.sale_price} onChange={change} />{fieldError("sale_price")}</label>
-        </div>
-        <p className="text-xs text-slate-500">Để trống nếu không giảm giá. Giá khuyến mãi phải thấp hơn giá gốc.</p>
+        <label className="admin-label">Giá gốc<input {...fieldProps("price")} className="admin-input" inputMode="decimal" min="0" name="price" required step="0.01" type="number" value={form.price} onChange={change} />{fieldError("price")}</label>
         <label className="admin-label">Tồn kho theo dõi <span className="font-normal text-slate-500">(để trống nếu chưa theo dõi)</span><input {...fieldProps('stock_quantity')} className="admin-input" min="0" name="stock_quantity" step="1" type="number" value={form.stock_quantity} onChange={change} />{fieldError('stock_quantity')}</label>
         <AdminImageField errors={errors} file={form.image_file} fileName="image_file" label="Ảnh sản phẩm" name="image" value={form.image} onError={onError} onFileChange={(file) => setForm((current) => ({ ...current, image_file: file }))} onUrlChange={(image) => setForm((current) => ({ ...current, image }))} />
+      </section>
+
+      <section aria-labelledby="product-discount-heading" className="space-y-4 rounded-2xl border border-emerald-200 bg-emerald-50/50 p-5 shadow-sm sm:p-6">
+        <div><h2 className="text-lg font-semibold text-emerald-950" id="product-discount-heading">Khuyến mãi</h2><p className="mt-1 text-sm text-emerald-900/75">Cài mức giảm riêng cho sản phẩm này.</p></div>
+        <label className="admin-label">Mức giảm (%)<input aria-describedby={hasDiscount ? "discount-preview" : undefined} className="admin-input" disabled={originalPrice <= 0} inputMode="numeric" max="99" min="1" onChange={changeDiscountPercent} step="1" type="number" value={discountPercent} /><span className="text-xs font-normal text-slate-500">Nhập từ 1 đến 99 để tự tính giá khuyến mãi.</span></label>
+        <label className="admin-label">Hoặc nhập giá khuyến mãi<input {...fieldProps("sale_price")} className="admin-input" inputMode="decimal" min="0" name="sale_price" step="0.01" type="number" value={form.sale_price} onChange={change} />{fieldError("sale_price")}</label>
+        {hasDiscount ? <p className="rounded-xl border border-emerald-200 bg-white px-4 py-3 text-sm font-medium text-emerald-900" id="discount-preview">Giảm {discountPercent}% · Khách tiết kiệm {new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 2 }).format(discountAmount)} đ.</p> : <p className="text-xs text-slate-600">Để trống giá khuyến mãi nếu sản phẩm không giảm giá. Giá này phải thấp hơn giá gốc.</p>}
       </section>
 
       <section aria-labelledby="product-visibility-heading" className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">

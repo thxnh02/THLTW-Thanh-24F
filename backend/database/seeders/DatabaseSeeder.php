@@ -11,6 +11,7 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
+        $this->call(StoreInformationSeeder::class);
         $electronics = $this->category('dien-tu', ['name' => 'Điện tử', 'description' => 'Thiết bị điện tử và công nghệ', 'sort_order' => 1, 'status' => true]);
         $phones = $this->category('dien-thoai', ['parent_id' => $electronics->id, 'name' => 'Điện thoại', 'sort_order' => 1, 'status' => true]);
         $laptops = $this->category('laptop', ['parent_id' => $electronics->id, 'name' => 'Laptop', 'sort_order' => 2, 'status' => true]);

@@ -16,6 +16,32 @@ use Throwable;
 
 class OrderNotificationDelivery
 {
+    /** Lên lịch lại các lần gửi thất bại mới, không tự gửi lại thư đã thành công. */
+    public function scheduleRetryIfNeeded(int $notificationId): void
+    {
+        if (! config('commerce.order_email_enabled')) return;
+        $notification = CustomerNotification::find($notificationId);
+        if (! $notification) return;
+        $delays = [];
+        foreach (['email', 'admin_email'] as $prefix) {
+            $attempts = (int) $notification->{$prefix.'_attempt_count'};
+            if ($notification->{$prefix.'_status'} !== 'failed' || $attempts < 1
+                || $attempts >= (int) config('commerce.order_email_max_attempts', 3)) continue;
+            $attempted = $notification->{$prefix.'_attempted_at'};
+            if ($attempted === null) continue;
+            $due = $attempted->copy()->addSeconds($this->retryBackoffSeconds($attempts));
+            $delays[] = max(1, (int) ceil(now()->diffInSeconds($due, false)));
+        }
+        if ($delays === []) return;
+        try {
+            $job = (new DeliverOrderNotificationEmail($notificationId, true))->onConnection('database')
+                ->onQueue('order-emails')->delay(now()->addSeconds(min($delays)));
+            app(Dispatcher::class)->dispatch($job);
+        } catch (Throwable $exception) {
+            Log::warning('Order email retry could not be queued.', ['notification_id' => $notificationId, 'error_type' => $exception::class]);
+        }
+    }
+
     public function enqueue(int $notificationId, bool $retry = false): bool
     {
         if (! config('commerce.order_email_enabled')) {
@@ -73,6 +99,7 @@ class OrderNotificationDelivery
 
     private function deliverCustomer(CustomerNotification $notification, bool $retry): string
     {
+        if (in_array($notification->email_status, ['sent', 'skipped'], true)) return 'not_due';
         $order = $notification->order;
         $user = $order?->user;
         if (! $order || ! $user || $user->blocked_at !== null || ! filter_var($user->email, FILTER_VALIDATE_EMAIL)) {
@@ -120,6 +147,7 @@ class OrderNotificationDelivery
 
     private function deliverAdmin(CustomerNotification $notification, bool $retry): string
     {
+        if (in_array($notification->admin_email_status, ['sent', 'skipped'], true)) return 'not_due';
         $address = config('commerce.order_admin_email');
         if (! $this->isNewOrderEvent($notification)) {
             $this->setStatus($notification->id, 'admin_email_status', 'skipped');

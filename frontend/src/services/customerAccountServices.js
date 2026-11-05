@@ -20,6 +20,7 @@ const customerAccountServices = {
   updateAddress: (id, data) => mutate('patch', `addresses/${id}`, data),
   deleteAddress: (id) => mutate('delete', `addresses/${id}`),
   setDefaultAddress: (id) => mutate('patch', `addresses/${id}/default`),
+  reviewProduct: (productId, data) => mutate('post', `products/${productId}/reviews`, data),
 };
 
 export default customerAccountServices;

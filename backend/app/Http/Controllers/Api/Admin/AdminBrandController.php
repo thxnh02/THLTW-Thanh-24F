@@ -9,6 +9,8 @@ use App\Http\Resources\BrandResource;
 use App\Models\Brand;
 use App\Services\CatalogImageService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use App\Support\AdminListFilters;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -16,9 +18,9 @@ use Illuminate\Support\Facades\DB;
 class AdminBrandController extends Controller
 {
     /** GET /api/admin/brands — paginated active brands. */
-    public function index(): AnonymousResourceCollection
+    public function index(Request $request): AnonymousResourceCollection
     {
-        return BrandResource::collection(Brand::orderBy('sort_order')->orderBy('id')->paginate(10));
+        return BrandResource::collection(AdminListFilters::apply($request, Brand::orderBy('sort_order')->orderBy('id'), 'name')->paginate(10)->withQueryString());
     }
 
     /** GET /api/admin/brands/trash — paginated soft-deleted brands. */

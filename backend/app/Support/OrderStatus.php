@@ -4,10 +4,11 @@ namespace App\Support;
 
 class OrderStatus
 {
-    // Fulfillment status is independent from payment_status; a customer may cancel a pending demo COD order.
+    // Fulfillment and payment have independent states.
     private const NEXT = [
         'pending' => ['processing'],
-        'processing' => ['delivered'],
+        'processing' => ['shipping', 'delivered'],
+        'shipping' => ['delivered'],
         'delivered' => [],
         'cancelled' => [],
     ];

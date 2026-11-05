@@ -23,7 +23,8 @@ class AdminAuthenticationTest extends TestCase
     {
         $this->getJson('/api/admin/categories')->assertUnauthorized();
         $this->postJson('/api/admin/categories', ['name' => 'Forbidden', 'slug' => 'forbidden'])->assertUnauthorized();
-        $this->deleteJson('/api/admin/categories/1')->assertUnauthorized();
+        $category = \App\Models\Category::create(['name' => 'Protected', 'slug' => 'protected', 'status' => true]);
+        $this->deleteJson('/api/admin/categories/'.$category->id)->assertUnauthorized();
     }
 
     public function test_customer_login_does_not_grant_admin_access(): void
@@ -31,8 +32,17 @@ class AdminAuthenticationTest extends TestCase
         $customer = $this->user('customer@example.test');
         $this->postJson('/api/admin/login', ['email' => $customer->email, 'password' => 'example-password'])->assertUnprocessable();
         $this->postJson('/api/auth/login', ['email' => $customer->email, 'password' => 'example-password'])->assertOk();
-        $this->getJson('/api/admin/categories')->assertForbidden();
-        $this->postJson('/api/admin/products', [])->assertForbidden();
+        $this->getJson('/api/admin/categories')->assertUnauthorized();
+        $this->postJson('/api/admin/products', [])->assertUnauthorized();
+    }
+
+    public function test_payment_diagnostics_do_not_consume_admin_login_rate_limit(): void
+    {
+        $admin = $this->user('rate-admin@example.test', true);
+        for ($i = 0; $i < 10; $i++) {
+            $this->getJson('/api/payments/vnpay/ipn')->assertOk();
+        }
+        $this->postJson('/api/admin/login', ['email' => $admin->email, 'password' => 'example-password'])->assertOk();
     }
 
     public function test_public_registration_cannot_assign_admin_role(): void
@@ -51,8 +61,9 @@ class AdminAuthenticationTest extends TestCase
     {
         $admin = $this->user('admin@example.test', true);
         $this->postJson('/api/admin/login', ['email' => $admin->email, 'password' => 'wrong'])->assertUnprocessable();
-        $this->postJson('/api/admin/login', ['email' => $admin->email, 'password' => 'example-password'])
+        $login = $this->postJson('/api/admin/login', ['email' => $admin->email, 'password' => 'example-password'])
             ->assertOk()->assertJsonPath('data.user.email', $admin->email)->assertJsonMissingPath('data.user.password');
+        $this->useAdminCookie($login);
         $this->getJson('/api/admin/me')->assertOk()->assertJsonPath('data.user.id', $admin->id);
         $this->getJson('/api/admin/categories')->assertOk();
         $this->postJson('/api/admin/logout')->assertOk();
@@ -66,7 +77,8 @@ class AdminAuthenticationTest extends TestCase
         $this->seed(AdminExampleSeeder::class);
         $seeded = User::query()->where('email', 'seeded-admin@example.test')->firstOrFail();
         $this->assertTrue($seeded->is_admin);
-        $this->postJson('/api/admin/login', ['email' => $seeded->email, 'password' => 'synthetic-seed-password-123'])->assertOk();
+        $login = $this->postJson('/api/admin/login', ['email' => $seeded->email, 'password' => 'synthetic-seed-password-123'])->assertOk();
+        $this->useAdminCookie($login);
         $this->postJson('/api/admin/logout')->assertOk();
         $real = $this->user('independent-admin@example.test', true);
         $this->postJson('/api/admin/login', ['email' => $real->email, 'password' => 'example-password'])
@@ -79,7 +91,8 @@ class AdminAuthenticationTest extends TestCase
         $admin->forceFill(['blocked_at' => now()])->save();
         $this->postJson('/api/admin/login', ['email' => $admin->email, 'password' => 'example-password'])->assertUnprocessable();
         $admin->forceFill(['blocked_at' => null])->save();
-        $this->postJson('/api/admin/login', ['email' => $admin->email, 'password' => 'example-password'])->assertOk();
+        $login = $this->postJson('/api/admin/login', ['email' => $admin->email, 'password' => 'example-password'])->assertOk();
+        $this->useAdminCookie($login);
         $admin->forceFill(['customer_auth_version' => 2])->save();
         $this->getJson('/api/admin/categories')->assertUnauthorized();
     }
@@ -87,7 +100,8 @@ class AdminAuthenticationTest extends TestCase
     public function test_removed_admin_role_takes_effect_on_the_next_request(): void
     {
         $admin = $this->user('role-revoked@example.test', true);
-        $this->postJson('/api/admin/login', ['email' => $admin->email, 'password' => 'example-password'])->assertOk();
+        $login = $this->postJson('/api/admin/login', ['email' => $admin->email, 'password' => 'example-password'])->assertOk();
+        $this->useAdminCookie($login);
         $admin->forceFill(['is_admin' => false])->save();
         $this->getJson('/api/admin/categories')->assertForbidden();
     }
@@ -96,11 +110,17 @@ class AdminAuthenticationTest extends TestCase
     {
         $admin = $this->user('first-admin@example.test', true);
         $target = $this->user('second-admin@example.test', true);
-        $this->postJson('/api/admin/login', ['email' => $admin->email, 'password' => 'example-password'])->assertOk();
+        $login = $this->postJson('/api/admin/login', ['email' => $admin->email, 'password' => 'example-password'])->assertOk();
+        $this->useAdminCookie($login);
         $this->getJson('/api/admin/users')->assertOk()->assertJsonMissing(['email' => $target->email]);
         $this->getJson("/api/admin/users/{$target->id}")->assertNotFound();
         $this->patchJson("/api/admin/users/{$target->id}/block")->assertForbidden();
         $this->assertNull($target->fresh()->blocked_at);
+    }
+
+    private function useAdminCookie(\Illuminate\Testing\TestResponse $response): void
+    {
+        $this->withCredentials()->withCookie('ct24f_admin_auth', $response->getCookie('ct24f_admin_auth')->getValue());
     }
 
     private function user(string $email, bool $admin = false): User

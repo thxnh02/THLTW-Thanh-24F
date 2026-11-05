@@ -37,6 +37,7 @@ class OrderPresentation
         return match ($order->status) {
             'pending' => 'Đơn hàng đang chờ xử lý',
             'processing' => 'Đơn hàng đang được xử lý',
+            'shipping' => 'Đơn hàng đang được giao',
             'delivered' => 'Đơn hàng đã giao',
             default => $order->status ?? 'Chưa có dữ liệu trạng thái đơn',
         };

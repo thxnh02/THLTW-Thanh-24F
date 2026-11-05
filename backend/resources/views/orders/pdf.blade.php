@@ -51,6 +51,7 @@
   </table>
   <table class="totals">
     <tr><th>Tạm tính</th><td class="right">{{ $order->subtotal_vnd === null ? 'Chưa có dữ liệu' : number_format($order->subtotal_vnd, 0, ',', '.') . ' đ' }}</td></tr>
+    @if($order->coupon_code)<tr><th>Giảm giá ({{ $order->coupon_code }})</th><td class="right">-{{ number_format($order->discount_vnd, 0, ',', '.') }} đ</td></tr>@endif
     <tr><th>Phí giao hàng</th><td class="right">{{ number_format($order->shipping_fee_vnd ?? 0, 0, ',', '.') }} đ</td></tr>
     <tr><th>Tổng cộng</th><td class="right"><strong>{{ $order->grand_total_vnd === null ? 'Chưa có dữ liệu' : number_format($order->grand_total_vnd, 0, ',', '.') . ' đ' }}</strong></td></tr>
   </table>

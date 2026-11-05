@@ -5,10 +5,12 @@ import { catalogFormData } from "@/lib/catalogFormData.mjs";
 
 // Các hàm gọi API sản phẩm: cửa hàng dùng axiosClient, quản trị dùng axiosAdmin.
 const productServices = {
+  getBestsellers: () => axiosClient.get('/products/bestsellers'),
   getProducts: (params, options = {}) => axiosClient.get(API_CONFIG.ENDPOINTS.PRODUCTS.INDEX, { params, ...options }),
   getPublicPriceRange: () => axiosClient.get(API_CONFIG.ENDPOINTS.PRODUCTS.PRICE_RANGE),
   getSuggestions: (params, options = {}) => axiosClient.get(API_CONFIG.ENDPOINTS.PRODUCTS.SUGGESTIONS, { params, ...options }),
   getPublicProduct: (slug, options = {}) => axiosClient.get(API_CONFIG.ENDPOINTS.PRODUCTS.SHOW_BY_SLUG(slug), options),
+  getProductReviews: (slug, params = {}) => axiosClient.get(`/products/${encodeURIComponent(slug)}/reviews`, { params }),
   getRelatedProducts: (slug, params, options = {}) => axiosClient.get(API_CONFIG.ENDPOINTS.PRODUCTS.RELATED(slug), { params, ...options }),
   // params.page quyết định trang danh sách sản phẩm trong admin.
   getAdminProducts: (params) => axiosAdmin.get(API_CONFIG.ENDPOINTS.PRODUCTS.ADMIN_INDEX, { params }),

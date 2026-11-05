@@ -33,6 +33,8 @@ netstat -ano | findstr /r /c:":3000 .*LISTENING" >nul && (echo Port 3000 dang du
 
 start "CT_24F Backend" cmd /k "cd /d ""%BACKEND%"" && php artisan serve --host=127.0.0.1 --port=8000"
 start "CT_24F Frontend" cmd /k "cd /d ""%FRONTEND%"" && npm.cmd run dev -- --hostname 127.0.0.1 --port 3000"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%BACKEND%\scripts\start-order-email-worker.ps1"
+if errorlevel 1 echo Khong the khoi dong worker email. Hay xem log trong backend\storage\logs.
 start "" "http://127.0.0.1:3000"
 
 echo Da mo Backend: http://127.0.0.1:8000/api

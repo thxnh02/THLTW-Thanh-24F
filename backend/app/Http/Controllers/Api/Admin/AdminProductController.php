@@ -11,16 +11,19 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Services\CatalogImageService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use App\Support\AdminListFilters;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class AdminProductController extends Controller
 {
     /** GET /api/admin/products */
-    public function index(): AnonymousResourceCollection
+    public function index(Request $request): AnonymousResourceCollection
     {
-        return ProductResource::collection(Product::with(['category', 'brand'])->orderByDesc('id')->paginate(10));
+        return ProductResource::collection(AdminListFilters::apply($request, Product::with(['category', 'brand'])->orderByDesc('id'), 'name')->paginate(10)->withQueryString());
     }
 
     /** POST /api/admin/products */
@@ -46,8 +49,13 @@ class AdminProductController extends Controller
     public function update(UpdateProductRequest $request, Product $product, CatalogImageService $images): ProductResource
     {
         DB::transaction(function () use ($request, $product, $images): void {
-            $product->update(Arr::except($request->validated(), ['image_file']));
-            $images->sync($product, 'image', $request->file('image_file'));
+            $locked = Product::whereKey($product->id)->lockForUpdate()->firstOrFail();
+            $expected = $request->validated('expected_stock_quantity');
+            if ($request->exists('expected_stock_quantity') && ($expected === null ? null : (int) $expected) !== $locked->stock_quantity) {
+                throw ValidationException::withMessages(['stock_quantity' => 'Tồn kho đã thay đổi. Vui lòng tải lại trang trước khi lưu.']);
+            }
+            $locked->update(Arr::except($request->validated(), ['image_file', 'expected_stock_quantity']));
+            $images->sync($locked, 'image', $request->file('image_file'));
         });
 
         return new ProductResource($product->fresh()->load(['category', 'brand']));

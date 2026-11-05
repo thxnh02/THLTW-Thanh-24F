@@ -10,6 +10,8 @@ Trang đăng nhập: `http://127.0.0.1:3000/admin/login`. Tài khoản mẫu tr�
 
 Seeder chỉ hoạt động khi `APP_ENV=local` hoặc `testing`. Nếu email đã thuộc tài khoản khách, seeder dừng mà không tự cấp quyền. Chạy lại seeder không đặt lại mật khẩu của tài khoản admin đã tồn tại.
 
-API admin yêu cầu cookie session Sanctum, CSRF và cờ `is_admin`. Người chưa đăng nhập nhận `401`, tài khoản khách nhận `403`; tài khoản bị khóa, chưa xác minh hoặc phiên bị vô hiệu không được truy cập. Các thao tác danh sách người dùng không hiển thị hoặc khóa tài khoản admin. Đăng xuất admin làm mất hiệu lực phiên hiện tại.
+API admin dùng cookie HttpOnly riêng `ct24f_admin_auth`, có phạm vi `/api/admin`; cookie lưu token ngẫu nhiên, còn máy chủ chỉ lưu mã băm của token trong `admin_browser_sessions`. Cookie khách hàng Sanctum vẫn hoạt động độc lập. Đăng nhập hoặc đăng xuất admin không thay đổi phiên khách hàng. Các API ghi vẫn dùng bảo vệ CSRF của Laravel. Tài khoản bị khóa, chưa xác minh, bị gỡ quyền admin hoặc có phiên bị vô hiệu không được truy cập. Đăng xuất admin thu hồi phiên admin hiện tại.
+
+Cookie admin hết hạn cùng thời lượng với `SESSION_LIFETIME`, dùng `HttpOnly`, `SameSite=Lax`, chỉ truyền qua HTTPS khi `SESSION_SECURE_COOKIE=true`, và chỉ gửi tới `/api/admin`. Chạy migration `2026_11_04_000001_create_admin_browser_sessions_table` trước khi dùng phiên quản trị mới.
 
 Trang `/admin/recover` giải thích cách khôi phục. Admin kiểm soát hộp thư thật có thể dùng OTP của `/forgot-password` và `/reset-password`; việc đặt lại mật khẩu không tự cấp quyền admin. Với email mẫu `.test` không nhận được thư, người có quyền quản lý hệ thống cần cấp lại mật khẩu qua quy trình nội bộ trên máy local. Không có mật khẩu admin cố định trong frontend và không có đường tắt bỏ qua xác thực.

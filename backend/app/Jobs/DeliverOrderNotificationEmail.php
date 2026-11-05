@@ -23,10 +23,9 @@ class DeliverOrderNotificationEmail implements ShouldQueue
     {
         if ($this->retryDelivery) {
             $delivery->retry($this->notificationId);
-
-            return;
+        } else {
+            $delivery->deliverNew($this->notificationId);
         }
-
-        $delivery->deliverNew($this->notificationId);
+        $delivery->scheduleRetryIfNeeded($this->notificationId);
     }
 }

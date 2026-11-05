@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Support\VnPayGateway;
+use App\Models\SiteSetting;
 use Illuminate\Http\JsonResponse;
 
 class CommerceOptionsController extends Controller
@@ -13,7 +14,7 @@ class CommerceOptionsController extends Controller
         return response()->json(['data' => [
             'cod_enabled' => (bool) config('commerce.cod_enabled'),
             'vnpay_sandbox_enabled' => $gateway->configured(),
-            'shipping_fee_vnd' => (int) config('commerce.shipping_fee_vnd', 0),
+            'shipping_fee_vnd' => (int) (SiteSetting::find(1)?->shipping_fee_vnd ?? config('commerce.shipping_fee_vnd', 0)),
         ]]);
     }
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Bell, LogIn, LogOut, Menu, Search, ShoppingCart, UserRound, X } from "lucide-react";
@@ -11,14 +12,23 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 import { useCustomerAuth } from "@/contexts/CustomerAuthContext";
 import { useCart } from "@/contexts/CartContext";
 import commerceServices from "@/services/commerceServices";
+import axiosClient from "@/lib/axiosClient";
+import { useShopSettings } from "@/contexts/ShopSettingsContext";
 
-const links = [["/", "Trang chủ"], ["/products", "Sản phẩm"], ["/categories", "Danh mục"], ["/brands", "Thương hiệu"], ["/posts", "Bài viết"]];
+const links = [["/", "Trang chủ"], ["/products", "Sản phẩm"], ["/categories", "Danh mục"], ["/brands", "Thương hiệu"], ["/posts", "Bài viết"], ["/contact", "Liên hệ"]];
 
 function ShopHeaderContent() {
   const pathname = usePathname();
+  const settings = useShopSettings();
   const { user, loading: authLoading, logout } = useCustomerAuth();
   const { count } = useCart();
   const [unread, setUnread] = useState(0);
+  const [extraLinks, setExtraLinks] = useState([]);
+  useEffect(() => {
+    let active = true;
+    axiosClient.get('/site-content/menu').then(({ data }) => { if (active) setExtraLinks(data.data ?? []); }).catch(() => {});
+    return () => { active = false; };
+  }, []);
   useEffect(() => {
     if (!user) return;
     let active = true;
@@ -39,14 +49,14 @@ function ShopHeaderContent() {
     setLogoutError("");
     try { await logout(); } catch { setLogoutError("Không thể đăng xuất lúc này. Vui lòng thử lại."); }
   };
-  const navLinks = (className = "") => links.map(([href, label]) => <Link aria-current={pathname === href ? "page" : undefined} className={className} href={href} key={href} onClick={closePanels}>{label}</Link>);
+  const navLinks = (className = "") => [...links, ...extraLinks.filter((item) => item.href).map((item) => [item.href, item.title])].map(([href, label], index) => <Link aria-current={pathname === href ? "page" : undefined} className={className} href={href} key={`${href}:${index}`} onClick={closePanels}>{label}</Link>);
   const loginHref = pathname === "/login" || pathname === "/register" ? "/login" : `/login?returnTo=${encodeURIComponent(pathname)}`;
 
   return <header className="shop-header relative z-40 border-b border-[#e5ebe6] bg-[#fbfcfa]/95 backdrop-blur">
     <nav aria-label="Điều hướng cửa hàng" className="relative mx-auto flex h-16 max-w-[1280px] items-center gap-2 px-3 sm:px-5 lg:px-8">
-      <Link aria-label="CT_24F — Trang chủ" className="flex min-w-0 shrink-0 items-center gap-2.5 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#37665b]" href="/" onClick={closePanels}>
-        <span aria-hidden="true" className="grid size-9 place-items-center rounded-xl bg-[#142f2c] font-serif text-lg italic text-[#cde8d4]">C</span>
-        <span className="leading-tight"><span className="block text-[13px] font-bold tracking-[.12em] text-[#142f2c]">CT_24F</span><span className="hidden text-[9px] tracking-[.1em] text-slate-500 sm:block">CÔNG NGHỆ ĐƯỢC CHỌN LỌC</span></span>
+      <Link aria-label={`${settings.shop_name} — Trang chủ`} className="flex min-w-0 shrink-0 items-center gap-2.5 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#37665b]" href="/" onClick={closePanels}>
+        {settings.logo_url ? <Image unoptimized width={36} height={36} aria-hidden="true" className="size-9 rounded-xl object-contain" src={settings.logo_url} alt="" /> : <span aria-hidden="true" className="grid size-9 place-items-center rounded-xl bg-[#142f2c] font-serif text-lg italic text-[#cde8d4]">C</span>}
+        <span className="leading-tight"><span className="block text-[13px] font-bold tracking-[.12em] text-[#142f2c]">{settings.shop_name}</span><span className="hidden text-[9px] tracking-[.1em] text-slate-500 sm:block">CÔNG NGHỆ ĐƯỢC CHỌN LỌC</span></span>
       </Link>
 
       <div className="ml-auto hidden items-center gap-3 md:flex lg:gap-5">{navLinks("min-h-11 inline-flex items-center whitespace-nowrap text-[12px] font-medium text-slate-600 transition hover:text-[#193f36] focus-visible:rounded focus-visible:outline-2 focus-visible:outline-[#37665b] lg:text-[13px]")}</div>

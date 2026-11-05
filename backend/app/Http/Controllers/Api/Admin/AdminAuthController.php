@@ -3,10 +3,11 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Middleware\EnsureAdminBrowserSession;
+use App\Models\AdminBrowserSession;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
@@ -35,12 +36,18 @@ class AdminAuthController extends Controller
             return response()->json(['message' => 'Thông tin đăng nhập quản trị không hợp lệ.'], 422);
         }
 
-        Auth::guard('web')->login($user);
-        $request->session()->regenerate();
-        $request->session()->put('customer_auth_version', (int) $user->customer_auth_version);
+        AdminBrowserSession::query()->where('user_id', $user->id)->where('expires_at', '<=', now())->delete();
+        $plainToken = Str::random(80);
+        AdminBrowserSession::query()->create([
+            'user_id' => $user->id,
+            'token_hash' => hash('sha256', $plainToken),
+            'customer_auth_version' => (int) $user->customer_auth_version,
+            'expires_at' => now()->addMinutes((int) config('session.lifetime', 120)),
+        ]);
         RateLimiter::clear($limitKey);
 
-        return response()->json(['data' => ['user' => $this->userData($user)]]);
+        return response()->json(['data' => ['user' => $this->userData($user)]])
+            ->withCookie(app(EnsureAdminBrowserSession::class)->authCookie($plainToken, (int) config('session.lifetime', 120)));
     }
 
     public function me(Request $request): JsonResponse
@@ -50,11 +57,10 @@ class AdminAuthController extends Controller
 
     public function logout(Request $request): JsonResponse
     {
-        Auth::guard('web')->logout();
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
+        $request->attributes->get('admin_browser_session')?->delete();
 
-        return response()->json(['message' => 'Đã đăng xuất quản trị.']);
+        return response()->json(['message' => 'Đã đăng xuất quản trị.'])
+            ->withCookie(app(EnsureAdminBrowserSession::class)->authCookie('', -262800));
     }
 
     private function userData(User $user): array

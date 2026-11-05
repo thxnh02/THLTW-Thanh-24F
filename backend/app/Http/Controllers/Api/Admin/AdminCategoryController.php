@@ -9,6 +9,8 @@ use App\Http\Resources\CategoryResource;
 use App\Models\Category;
 use App\Services\CatalogImageService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use App\Support\AdminListFilters;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -16,9 +18,9 @@ use Illuminate\Support\Facades\DB;
 class AdminCategoryController extends Controller
 {
     /** GET /api/admin/categories — paginated active categories. */
-    public function index(): AnonymousResourceCollection
+    public function index(Request $request): AnonymousResourceCollection
     {
-        return CategoryResource::collection(Category::with('parent')->orderBy('sort_order')->orderBy('id')->paginate(10));
+        return CategoryResource::collection(AdminListFilters::apply($request, Category::with('parent')->orderBy('sort_order')->orderBy('id'), 'name')->paginate(10)->withQueryString());
     }
 
     /** GET /api/admin/categories/trash — paginated soft-deleted categories. */

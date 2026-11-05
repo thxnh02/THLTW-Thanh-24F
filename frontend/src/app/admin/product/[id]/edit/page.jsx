@@ -41,11 +41,11 @@ export default function EditProductPage() {
     setErrors({});
     setError("");
     try {
-      await productServices.updateProduct(id, data);
+      await productServices.updateProduct(id, { ...data, expected_stock_quantity: product.stock_quantity ?? null });
       router.push("/admin/product");
     } catch (requestError) {
       setErrors(requestError.response?.data?.errors ?? {});
-      setError(requestError.response?.data?.message ?? "Không thể lưu sản phẩm.");
+      setError(requestError.response?.data?.errors?.stock_quantity?.[0] ?? requestError.response?.data?.message ?? "Không thể lưu sản phẩm.");
     } finally {
       setSubmitting(false);
     }

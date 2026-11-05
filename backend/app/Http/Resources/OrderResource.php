@@ -17,6 +17,8 @@ class OrderResource extends JsonResource
             'shipping_snapshot' => $this->shipping_snapshot,
             'subtotal_vnd' => $this->subtotal_vnd,
             'shipping_fee_vnd' => $this->shipping_fee_vnd,
+            'coupon_code' => $this->coupon_code,
+            'discount_vnd' => $this->discount_vnd,
             'grand_total_vnd' => $this->grand_total_vnd,
             'payment_method' => $this->payment_method,
             'payment_status' => $this->payment_status,
@@ -25,6 +27,7 @@ class OrderResource extends JsonResource
             'items' => $this->whenLoaded('items'),
             'payment_attempts' => $this->whenLoaded('paymentAttempts'),
             'payment_events' => $this->whenLoaded('paymentEvents'),
+            'status_history' => $this->whenLoaded('statusHistory'),
             'notification_delivery' => $this->when($request->is('api/admin/*') && $this->relationLoaded('notifications'), fn () => $this->notifications->map(fn ($notification) => [
                 'id' => $notification->id,
                 'title' => $notification->title,
